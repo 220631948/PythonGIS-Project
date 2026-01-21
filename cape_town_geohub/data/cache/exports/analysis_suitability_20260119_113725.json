@@ -1,0 +1,114 @@
+{
+  "analysis_type": "suitability",
+  "location": {
+    "lat": -33.9249,
+    "lng": 18.4241
+  },
+  "overall_score": 87.5,
+  "suitability_class": "Highly Suitable",
+  "criteria_results": [
+    {
+      "criterion": "flood_risk",
+      "score": 100,
+      "weight": 0.15,
+      "weighted_score": 15.0,
+      "details": {
+        "in_flood_zone": false,
+        "risk_level": "low",
+        "flood_return_period": "N/A"
+      }
+    },
+    {
+      "criterion": "biodiversity",
+      "score": 90,
+      "weight": 0.15,
+      "weighted_score": 13.5,
+      "details": {
+        "in_biodiversity_network": false,
+        "classification": "none",
+        "vegetation_type": "Unknown"
+      }
+    },
+    {
+      "criterion": "wetlands",
+      "score": 50,
+      "weight": 0.1,
+      "weighted_score": 5.0,
+      "details": {
+        "in_wetland": false,
+        "buffer_distance_m": 0,
+        "required_buffer_m": 32
+      }
+    },
+    {
+      "criterion": "protected_areas",
+      "score": 100,
+      "weight": 0.1,
+      "weighted_score": 10.0,
+      "details": {
+        "in_protected_area": false,
+        "area_name": null,
+        "protection_type": null
+      }
+    },
+    {
+      "criterion": "zoning_compatible",
+      "score": 100,
+      "weight": 0.15,
+      "weighted_score": 15.0,
+      "details": {
+        "current_zoning": "Residential 1",
+        "compatible_with": "residential",
+        "rezoning_required": false
+      }
+    },
+    {
+      "criterion": "road_access",
+      "score": 100,
+      "weight": 0.1,
+      "weighted_score": 10.0,
+      "details": {
+        "distance_to_road_m": 50,
+        "nearest_road_class": "Local Road",
+        "access_quality": "Good"
+      }
+    },
+    {
+      "criterion": "transport_access",
+      "score": 40,
+      "weight": 0.1,
+      "weighted_score": 4.0,
+      "details": {
+        "distance_to_transit_m": 800,
+        "nearest_transit_type": "MyCiTi Bus",
+        "walking_time_min": 10.0
+      }
+    },
+    {
+      "criterion": "utilities_access",
+      "score": 100,
+      "weight": 0.05,
+      "weighted_score": 5.0,
+      "details": {
+        "water_available": true,
+        "electricity_available": true,
+        "sewer_available": true
+      }
+    },
+    {
+      "criterion": "urban_edge",
+      "score": 100,
+      "weight": 0.1,
+      "weighted_score": 10.0,
+      "details": {
+        "within_urban_edge": true,
+        "distance_to_edge_m": 0
+      }
+    }
+  ],
+  "constraints_violated": [],
+  "recommendations": [
+    "Site appears suitable for development pending detailed studies"
+  ],
+  "generated_at": "2026-01-19T11:37:25.344390"
+}

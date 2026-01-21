@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/cape-town-geohub/sw.js', { scope: '/cape-town-geohub/' })})}

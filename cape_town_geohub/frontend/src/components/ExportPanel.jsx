@@ -1,0 +1,420 @@
+/**
+ * ExportPanel - Data export and printable reports
+ *
+ * Provides:
+ * - Export spatial data in CSV, XLSX, GeoJSON formats
+ * - Export analysis results
+ * - Printable map configuration
+ */
+
+import React, { useState, useEffect } from 'react';
+import { Download, FileText, Map, Printer, X, Check, Clock, ExternalLink } from 'lucide-react';
+import apiClient from '../api-client';
+
+const EXPORT_FORMATS = [
+  { id: 'csv', name: 'CSV', icon: '📊', description: 'Comma-separated values (attributes only)' },
+  { id: 'xlsx', name: 'Excel', icon: '📗', description: 'Microsoft Excel format' },
+  { id: 'geojson', name: 'GeoJSON', icon: '🗺️', description: 'GeoJSON with full geometry' },
+  { id: 'kml', name: 'KML', icon: '🌍', description: 'Google Earth format' }
+];
+
+function DataExportForm({ datasets, onExport }) {
+  const [selectedDataset, setSelectedDataset] = useState('');
+  const [format, setFormat] = useState('geojson');
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (!selectedDataset) return;
+
+    setIsExporting(true);
+    try {
+      await onExport({
+        dataset: selectedDataset,
+        format: format
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <div className="export-form">
+      <h3><Download size={18} /> Export Dataset</h3>
+
+      <div className="form-group">
+        <label>Dataset</label>
+        <select
+          value={selectedDataset}
+          onChange={(e) => setSelectedDataset(e.target.value)}
+        >
+          <option value="">Select a dataset...</option>
+          {datasets.map(d => (
+            <option key={d.id} value={d.id}>{d.title || d.id}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label>Format</label>
+        <div className="format-options">
+          {EXPORT_FORMATS.map(f => (
+            <button
+              key={f.id}
+              className={`format-option ${format === f.id ? 'selected' : ''}`}
+              onClick={() => setFormat(f.id)}
+              title={f.description}
+            >
+              <span className="format-icon">{f.icon}</span>
+              <span className="format-name">{f.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <button
+        className="btn-primary export-btn"
+        onClick={handleExport}
+        disabled={!selectedDataset || isExporting}
+      >
+        {isExporting ? (
+          <>
+            <Clock size={16} className="spin" /> Exporting...
+          </>
+        ) : (
+          <>
+            <Download size={16} /> Export
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
+
+function AnalysisExportForm({ onExport }) {
+  const [analysisType, setAnalysisType] = useState('suitability');
+  const [lat, setLat] = useState(-33.9249);
+  const [lng, setLng] = useState(18.4241);
+  const [format, setFormat] = useState('geojson');
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await onExport({
+        analysis_type: analysisType,
+        format: format,
+        parameters: { lat, lng }
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <div className="export-form">
+      <h3><FileText size={18} /> Export Analysis</h3>
+
+      <div className="form-group">
+        <label>Analysis Type</label>
+        <select
+          value={analysisType}
+          onChange={(e) => setAnalysisType(e.target.value)}
+        >
+          <option value="suitability">Site Suitability</option>
+          <option value="flood_risk">Flood Risk</option>
+          <option value="accessibility">Accessibility</option>
+        </select>
+      </div>
+
+      <div className="form-row">
+        <div className="form-group">
+          <label>Latitude</label>
+          <input
+            type="number"
+            step="0.0001"
+            value={lat}
+            onChange={(e) => setLat(parseFloat(e.target.value))}
+          />
+        </div>
+        <div className="form-group">
+          <label>Longitude</label>
+          <input
+            type="number"
+            step="0.0001"
+            value={lng}
+            onChange={(e) => setLng(parseFloat(e.target.value))}
+          />
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>Format</label>
+        <select value={format} onChange={(e) => setFormat(e.target.value)}>
+          <option value="geojson">JSON</option>
+          <option value="csv">CSV</option>
+        </select>
+      </div>
+
+      <button
+        className="btn-primary export-btn"
+        onClick={handleExport}
+        disabled={isExporting}
+      >
+        {isExporting ? 'Exporting...' : 'Export Analysis'}
+      </button>
+    </div>
+  );
+}
+
+function PrintMapForm({ mapBounds, activeLayers, onPrint }) {
+  const [config, setConfig] = useState({
+    title: 'Cape Town Map',
+    subtitle: '',
+    paper_size: 'a4',
+    orientation: 'landscape',
+    show_legend: true,
+    show_scale_bar: true,
+    show_north_arrow: true,
+    dpi: 150
+  });
+
+  const handlePrint = () => {
+    onPrint({
+      ...config,
+      bounds: mapBounds,
+      layers: activeLayers
+    });
+  };
+
+  return (
+    <div className="export-form">
+      <h3><Printer size={18} /> Print Map</h3>
+
+      <div className="form-group">
+        <label>Title</label>
+        <input
+          type="text"
+          value={config.title}
+          onChange={(e) => setConfig({...config, title: e.target.value})}
+          placeholder="Map title"
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Subtitle</label>
+        <input
+          type="text"
+          value={config.subtitle}
+          onChange={(e) => setConfig({...config, subtitle: e.target.value})}
+          placeholder="Optional subtitle"
+        />
+      </div>
+
+      <div className="form-row">
+        <div className="form-group">
+          <label>Paper Size</label>
+          <select
+            value={config.paper_size}
+            onChange={(e) => setConfig({...config, paper_size: e.target.value})}
+          >
+            <option value="a4">A4</option>
+            <option value="a3">A3</option>
+            <option value="letter">Letter</option>
+          </select>
+        </div>
+        <div className="form-group">
+          <label>Orientation</label>
+          <select
+            value={config.orientation}
+            onChange={(e) => setConfig({...config, orientation: e.target.value})}
+          >
+            <option value="landscape">Landscape</option>
+            <option value="portrait">Portrait</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="form-group checkboxes">
+        <label>
+          <input
+            type="checkbox"
+            checked={config.show_legend}
+            onChange={(e) => setConfig({...config, show_legend: e.target.checked})}
+          />
+          Show Legend
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={config.show_scale_bar}
+            onChange={(e) => setConfig({...config, show_scale_bar: e.target.checked})}
+          />
+          Show Scale Bar
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={config.show_north_arrow}
+            onChange={(e) => setConfig({...config, show_north_arrow: e.target.checked})}
+          />
+          Show North Arrow
+        </label>
+      </div>
+
+      <button className="btn-primary" onClick={handlePrint}>
+        <Printer size={16} /> Generate Print Layout
+      </button>
+
+      <p className="print-hint">
+        Tip: Use your browser's print function (Ctrl+P) with the generated layout
+      </p>
+    </div>
+  );
+}
+
+function PendingExports({ exports, onDownload }) {
+  if (!exports || exports.length === 0) return null;
+
+  return (
+    <div className="pending-exports">
+      <h4>Recent Exports</h4>
+      {exports.map(exp => (
+        <div key={exp.file_id} className="export-item">
+          <span className="export-filename">{exp.filename}</span>
+          <span className="export-size">{(exp.size_bytes / 1024).toFixed(1)} KB</span>
+          <a
+            href={apiClient.getExportDownloadUrl(exp.file_id)}
+            className="download-link"
+            download
+          >
+            <Download size={14} /> Download
+          </a>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function ExportPanel({
+  isOpen,
+  onClose,
+  mapBounds,
+  activeLayers,
+  onNotification
+}) {
+  const [activeTab, setActiveTab] = useState('data');
+  const [datasets, setDatasets] = useState([]);
+  const [pendingExports, setPendingExports] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadDatasets();
+      loadPendingExports();
+    }
+  }, [isOpen]);
+
+  const loadDatasets = async () => {
+    try {
+      const data = await apiClient.getCatalogDatasets();
+      setDatasets(data || []);
+    } catch (error) {
+      console.error('Failed to load datasets:', error);
+    }
+  };
+
+  const loadPendingExports = async () => {
+    try {
+      const data = await apiClient.getPendingExports();
+      setPendingExports(data.exports || []);
+    } catch (error) {
+      console.error('Failed to load pending exports:', error);
+    }
+  };
+
+  const handleDataExport = async (request) => {
+    setIsLoading(true);
+    try {
+      const result = await apiClient.exportData(request);
+      onNotification?.(`Export ready: ${result.filename}`, 'success');
+      loadPendingExports();
+    } catch (error) {
+      onNotification?.('Export failed: ' + error.message, 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAnalysisExport = async (request) => {
+    setIsLoading(true);
+    try {
+      const result = await apiClient.exportAnalysis(request);
+      onNotification?.(`Analysis export ready: ${result.filename}`, 'success');
+      loadPendingExports();
+    } catch (error) {
+      onNotification?.('Export failed: ' + error.message, 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePrint = (config) => {
+    // For now, trigger browser print with current map view
+    // Full implementation would generate a printable layout
+    onNotification?.('Print layout configured. Use Ctrl+P to print.', 'info');
+    window.print();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="export-panel">
+      <div className="panel-header">
+        <h2><Download size={20} /> Export & Print</h2>
+        <button onClick={onClose}><X size={18} /></button>
+      </div>
+
+      <div className="tab-bar">
+        <button
+          className={activeTab === 'data' ? 'active' : ''}
+          onClick={() => setActiveTab('data')}
+        >
+          <Download size={14} /> Data
+        </button>
+        <button
+          className={activeTab === 'analysis' ? 'active' : ''}
+          onClick={() => setActiveTab('analysis')}
+        >
+          <FileText size={14} /> Analysis
+        </button>
+        <button
+          className={activeTab === 'print' ? 'active' : ''}
+          onClick={() => setActiveTab('print')}
+        >
+          <Printer size={14} /> Print
+        </button>
+      </div>
+
+      <div className="tab-content">
+        {activeTab === 'data' && (
+          <DataExportForm
+            datasets={datasets}
+            onExport={handleDataExport}
+          />
+        )}
+        {activeTab === 'analysis' && (
+          <AnalysisExportForm onExport={handleAnalysisExport} />
+        )}
+        {activeTab === 'print' && (
+          <PrintMapForm
+            mapBounds={mapBounds}
+            activeLayers={activeLayers}
+            onPrint={handlePrint}
+          />
+        )}
+      </div>
+
+      <PendingExports exports={pendingExports} />
+    </div>
+  );
+}

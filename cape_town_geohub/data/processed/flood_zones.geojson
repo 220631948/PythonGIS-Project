@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"name": "flood_zones",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "name": "Dummy" }, "geometry": { "type": "Point", "coordinates": [ 18.42, -33.92 ] } }
+]
+}
