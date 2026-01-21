@@ -21,61 +21,11 @@ export interface ParkProperties {
     access: 'Public' | 'Restricted';
 }
 
-// Mock Flood Zones (Blue/Red polygons)
-const MOCK_FLOOD_ZONES: FeatureCollection<Polygon, FloodZoneProperties> = {
-    type: 'FeatureCollection',
-    features: [
-        {
-            type: 'Feature',
-            properties: {
-                id: 1,
-                risk_level: 'High',
-                description: 'Black River Floodplain',
-                return_period: '1:50 year'
-            },
-            geometry: {
-                type: 'Polygon',
-                coordinates: [[[18.47, -33.93], [18.49, -33.93], [18.49, -33.91], [18.47, -33.91], [18.47, -33.93]]]
-            }
-        },
-        {
-            type: 'Feature',
-            properties: {
-                id: 2,
-                risk_level: 'Medium',
-                description: 'Salt River Canal Zone',
-                return_period: '1:100 year'
-            },
-            geometry: {
-                type: 'Polygon',
-                coordinates: [[[18.45, -33.92], [18.47, -33.92], [18.47, -33.90], [18.45, -33.90], [18.45, -33.92]]]
-            }
-        }
-    ]
-};
+// ... imports
+import { useGeoData } from '../../../hooks/useGeoData';
+import { API_ENDPOINTS } from '../../../lib/api';
 
-// Mock Parks (Green polygons)
-const MOCK_PARKS: FeatureCollection<Polygon, ParkProperties> = {
-    type: 'FeatureCollection',
-    features: [
-        {
-            type: 'Feature',
-            properties: { id: 1, name: 'Green Point Park', type: 'Urban Park', access: 'Public' },
-            geometry: {
-                type: 'Polygon',
-                coordinates: [[[18.40, -33.90], [18.41, -33.90], [18.41, -33.89], [18.40, -33.89], [18.40, -33.90]]]
-            }
-        },
-        {
-            type: 'Feature',
-            properties: { id: 2, name: 'De Waal Park', type: 'Community Park', access: 'Public' },
-            geometry: {
-                type: 'Polygon',
-                coordinates: [[[18.41, -33.94], [18.42, -33.94], [18.42, -33.93], [18.41, -33.93], [18.41, -33.94]]]
-            }
-        }
-    ]
-};
+// Types...
 
 export const useEnvironmentData = () => {
     const [activeLayers, setActiveLayers] = useState({
@@ -85,6 +35,20 @@ export const useEnvironmentData = () => {
 
     const [nearestParkDist, setNearestParkDist] = useState<number | null>(null);
 
+    // Fetch Real Data
+    const { data: floodData } = useGeoData(
+        'environment_flood_zones',
+        API_ENDPOINTS.environment.flood_zones
+    );
+
+    const { data: parksData } = useGeoData(
+        'environment_open_spaces',
+        API_ENDPOINTS.environment.open_spaces
+    );
+
+    const floodZones = floodData || { type: 'FeatureCollection', features: [] };
+    const parks = parksData || { type: 'FeatureCollection', features: [] };
+
     const toggleLayer = useCallback((layerId: 'floodUtils' | 'parks') => {
         setActiveLayers(prev => {
             const newState = { ...prev, [layerId]: !prev[layerId] };
@@ -93,31 +57,37 @@ export const useEnvironmentData = () => {
     }, []);
 
     const calculateGreenSpaceAccess = useCallback((lat: number, lng: number) => {
-        // Convert polygons to points (centroids) for simple distance calc
-        // In a real app, we'd use nearest point on polygon
+        if (!parksData || !parksData.features || parksData.features.length === 0) return;
+
+        // Simplify for distance calculation: convert first point of polygon to Point
+        // In production, use turf.pointOnFeature
         const parkCentroids: any = {
             type: 'FeatureCollection',
-            features: MOCK_PARKS.features.map(f => ({
-                type: 'Feature',
-                geometry: { type: 'Point', coordinates: f.geometry.coordinates[0][0] } // APPROX: First point
-            }))
+            features: parksData.features.map((f: any) => {
+                // Handle Polygon or MultiPolygon
+                const coords = f.geometry.type === 'MultiPolygon'
+                    ? f.geometry.coordinates[0][0][0]
+                    : f.geometry.coordinates[0][0];
+
+                return {
+                    type: 'Feature',
+                    geometry: { type: 'Point', coordinates: coords || [0, 0] }
+                };
+            })
         };
 
         const dist = calculateNearestDistance([lng, lat], parkCentroids);
         setNearestParkDist(Math.round(dist));
-    }, []);
+    }, [parksData]);
 
     const getFloodColor = (risk: string) => {
-        switch (risk) {
-            case 'High': return '#ef4444'; // Red
-            case 'Medium': return '#f59e0b'; // Amber
-            default: return '#3b82f6'; // Blue
-        }
+        // Map CCT risk attributes if needed, or default
+        return '#3b82f6';
     };
 
     return {
-        floodZones: MOCK_FLOOD_ZONES,
-        parks: MOCK_PARKS,
+        floodZones,
+        parks,
         activeLayers,
         toggleLayer,
         calculateGreenSpaceAccess,

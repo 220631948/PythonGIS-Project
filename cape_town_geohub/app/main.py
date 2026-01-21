@@ -1,9 +1,11 @@
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import logging
 import time
+import json
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
@@ -15,6 +17,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+# httpx import removed as it is no longer used in proxy_data
 
 from app.config import settings
 from app.utils.logging_config import setup_logging
@@ -29,16 +32,12 @@ from app.api import (
     spatial_tools_api,
     infrastructure_api,
     portal_api,
-    suitability_api
+    suitability_api,
 )
+
 # New enhanced API modules
-from app.api import (
-    geocode_api,
-    temporal_api,
-    network_api,
-    reports_api,
-    filter_api
-)
+from app.api import geocode_api, temporal_api, network_api, reports_api, filter_api
+
 # Advanced feature API modules
 from app.api import (
     collaboration_api,
@@ -47,7 +46,7 @@ from app.api import (
     metadata_api,
     advanced_analysis_api,
     realtime_api,
-    data_status_api
+    data_status_api,
 )
 
 # Setup logging
@@ -56,6 +55,7 @@ logger = logging.getLogger(__name__)
 
 # Application state for tracking metrics
 app_start_time: float = 0.0
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -72,6 +72,7 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown
     logger.info(f"Shutting down {settings.APP_NAME}...")
+
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -97,14 +98,14 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(SlowAPIMiddleware)
 
 limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"]
+    key_func=get_remote_address, default_limits=["200 per day", "50 per hour"]
 )
 app.state.limiter = limiter
 
 # Global request tracking for monitoring
 request_stats = defaultdict(int)
 error_stats = defaultdict(int)
+
 
 @app.middleware("http")
 async def enhanced_monitoring_middleware(request: Request, call_next):
@@ -124,7 +125,9 @@ async def enhanced_monitoring_middleware(request: Request, call_next):
 
         # Log slow requests
         if process_time > 1.0:  # Log requests taking more than 1 second
-            logger.warning(f"Slow request: {request.method} {request.url.path} took {process_time:.3f}s")
+            logger.warning(
+                f"Slow request: {request.method} {request.url.path} took {process_time:.3f}s"
+            )
 
         return response
     except Exception as e:
@@ -135,6 +138,7 @@ async def enhanced_monitoring_middleware(request: Request, call_next):
         # Log errors
         logger.error(f"Request error: {request.method} {request.url.path} - {str(e)}")
         raise
+
 
 # Rate limiting exception handler
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -167,42 +171,121 @@ app.include_router(advanced_analysis_api.router, prefix=settings.API_PREFIX)
 app.include_router(realtime_api.router, prefix=settings.API_PREFIX)
 app.include_router(data_status_api.router, prefix=settings.API_PREFIX)
 
-# Health check
+# Generic Data Proxy Endpoint (Phase 7.5: System Integration)
+
+
+@app.get("/api/data/{dataset_key}")
+async def proxy_data(dataset_key: str):
+    """
+    Smart Data Proxy & Domain Intelligence Endpoint.
+
+    1. Fetches data via DataLoader (Handles ZIP, CRS, Caching)
+    2. Applies Domain Intelligence (Safety Merging, Transport Optimization)
+    3. Returns optimized GeoJSON
+    """
+    from app.core.data_loader import data_loader
+    from app.spatial_analysis.safety import safety_analyzer
+    from app.spatial_analysis.transport import transport_optimizer
+    from app.config import settings
+
+    if dataset_key not in settings.DATA_URLS:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Dataset '{dataset_key}' not found. Available: {list(settings.DATA_URLS.keys())}",
+        )
+
+    try:
+        # Domain Intelligence Logic
+
+        # 1. Transport Domain - Optimize Routes
+        if dataset_key == "myciti_routes":
+            gdf = data_loader.get_gdf(dataset_key)
+            optimized = transport_optimizer.optimize_routes(gdf)
+            return JSONResponse(
+                content=json.loads(optimized.to_json()),
+                headers={
+                    "X-Optimization": "TransportOptimizer",
+                    "Cache-Control": "public, max-age=86400",
+                },
+            )
+
+        # 2. Safety Domain - Merge Precincts with Stats
+        elif dataset_key == "safety_precincts":
+            try:
+                precincts = data_loader.get_gdf("precincts")
+                stats = data_loader.load_csv("crime_stats")
+                merged = safety_analyzer.merge_stats_with_precincts(precincts, stats)
+                return JSONResponse(
+                    content=json.loads(merged.to_json()),
+                    headers={
+                        "X-Merged": "SafetyAnalyzer",
+                        "Cache-Control": "public, max-age=86400",
+                    },
+                )
+            except Exception as e:
+                logger.error(f"Safety domain error: {e}. Falling back to boundaries.")
+                precincts = data_loader.get_gdf("precincts")
+                return JSONResponse(content=json.loads(precincts.to_json()))
+
+        # 3. Default Path - Smart Loader
+        gdf = data_loader.get_gdf(dataset_key)
+        return JSONResponse(
+            content=json.loads(gdf.to_json()),
+            headers={
+                "Cache-Control": f"public, max-age={settings.CACHE_DURATION_DAYS * 86400}",
+                "X-Data-Source": "City of Cape Town",
+                "X-Loader-Version": "v2",
+            },
+        )
+
+    except Exception as e:
+        logger.error(f"Smart proxy error for {dataset_key}: {e}")
+        # Improve error messages for known types
+        status = 500
+        if "timeout" in str(e).lower():
+            status = 504
+        elif "not found" in str(e).lower():
+            status = 404
+
+        raise HTTPException(status_code=status, detail=str(e))
+
+
+# Health check (Simple - for load balancers)
+@app.get("/health")
+def health_check_simple():
+    return {"status": "online", "system": "Cape Town GeoHub API", "version": "1.0.0"}
+
+
+# Detailed System Health check
 @app.get("/api/health")
 async def health_check():
     import psutil
 
     # System information
     memory = psutil.virtual_memory()
-    disk = psutil.disk_usage('/')
+    disk = psutil.disk_usage("/")
 
     return {
         "status": "healthy",
         "version": settings.APP_VERSION,
         "timestamp": time.time(),
-        "uptime": time.time() - getattr(app.state, 'start_time', time.time()),
+        "uptime": time.time() - getattr(app.state, "start_time", time.time()),
         "system": {
             "cpu_percent": psutil.cpu_percent(interval=1),
             "memory": {
                 "total": memory.total,
                 "available": memory.available,
-                "percent": memory.percent
+                "percent": memory.percent,
             },
-            "disk": {
-                "total": disk.total,
-                "free": disk.free,
-                "percent": disk.percent
-            }
+            "disk": {"total": disk.total, "free": disk.free, "percent": disk.percent},
         },
         "requests": {
             "total": sum(request_stats.values()),
-            "by_method": dict(request_stats)
+            "by_method": dict(request_stats),
         },
-        "errors": {
-            "total": sum(error_stats.values()),
-            "by_type": dict(error_stats)
-        }
+        "errors": {"total": sum(error_stats.values()), "by_type": dict(error_stats)},
     }
+
 
 # System monitoring endpoints
 @app.get("/api/stats")
@@ -211,8 +294,9 @@ async def get_system_stats():
     return {
         "request_stats": dict(request_stats),
         "error_stats": dict(error_stats),
-        "timestamp": time.time()
+        "timestamp": time.time(),
     }
+
 
 @app.post("/api/cache/clear")
 async def clear_cache():
@@ -229,6 +313,7 @@ async def clear_cache():
         logger.error(f"Error clearing cache: {e}")
         raise HTTPException(status_code=500, detail="Failed to clear cache")
 
+
 @app.get("/api/config")
 async def get_config():
     """Get application configuration (safe, non-sensitive info)"""
@@ -239,8 +324,9 @@ async def get_config():
         "api_prefix": settings.API_PREFIX,
         "cors_origins": settings.CORS_ORIGINS,
         "host": settings.HOST,
-        "port": settings.PORT
+        "port": settings.PORT,
     }
+
 
 # PWA and Static Files
 @app.get("/manifest.json")
@@ -250,6 +336,7 @@ async def serve_manifest():
         return FileResponse(manifest_file, media_type="application/manifest+json")
     return JSONResponse(status_code=404, content={"error": "Manifest not found"})
 
+
 @app.get("/sw.js")
 async def serve_service_worker():
     sw_file = settings.STATIC_DIR / "sw.js"
@@ -257,35 +344,48 @@ async def serve_service_worker():
         return FileResponse(sw_file, media_type="application/javascript")
     return JSONResponse(status_code=404, content={"error": "Service worker not found"})
 
+
 # Serve static assets
 if (settings.STATIC_DIR / "assets").exists():
-    app.mount("/assets", StaticFiles(directory=str(settings.STATIC_DIR / "assets")), name="assets")
+    app.mount(
+        "/assets",
+        StaticFiles(directory=str(settings.STATIC_DIR / "assets")),
+        name="assets",
+    )
 
 # Icons for PWA
 if (settings.STATIC_DIR / "icons").exists():
-    app.mount("/icons", StaticFiles(directory=str(settings.STATIC_DIR / "icons")), name="icons")
+    app.mount(
+        "/icons",
+        StaticFiles(directory=str(settings.STATIC_DIR / "icons")),
+        name="icons",
+    )
+
 
 # SPA Fallback
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
     if full_path.startswith("api"):
         return JSONResponse(status_code=404, content={"detail": "Not Found"})
-    
+
     index_file = settings.STATIC_DIR / "index.html"
     if not index_file.exists():
         return JSONResponse(
-            status_code=503, 
-            content={"error": "Frontend not built. Run 'npm run build' in the frontend directory."}
+            status_code=503,
+            content={
+                "error": "Frontend not built. Run 'npm run build' in the frontend directory."
+            },
         )
     return FileResponse(index_file)
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
-        "app.main:app", 
-        host=settings.HOST, 
-        port=settings.PORT, 
+        "app.main:app",
+        host=settings.HOST,
+        port=settings.PORT,
         reload=settings.DEBUG,
-        workers=settings.WORKERS
+        workers=settings.WORKERS,
     )

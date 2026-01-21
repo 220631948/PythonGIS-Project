@@ -14,57 +14,28 @@ export interface WasteZoneProperties {
     color: string;
 }
 
-// Mock Waste Zones
-const MOCK_WASTE_ZONES: FeatureCollection<Polygon, WasteZoneProperties> = {
-    type: 'FeatureCollection',
-    features: [
-        {
-            type: 'Feature',
-            properties: {
-                id: 1,
-                suburb: 'City Bowl',
-                collection_day: 'Tuesday',
-                recycling_day: 'Tuesday (Fortnightly)',
-                color: '#facc15' // Yellow
-            },
-            geometry: {
-                type: 'Polygon',
-                coordinates: [[[18.41, -33.93], [18.43, -33.93], [18.43, -33.91], [18.41, -33.91], [18.41, -33.93]]]
-            }
-        },
-        {
-            type: 'Feature',
-            properties: {
-                id: 2,
-                suburb: 'Green Point',
-                collection_day: 'Monday',
-                recycling_day: 'Monday (Weekly)',
-                color: '#22c55e' // Green
-            },
-            geometry: {
-                type: 'Polygon',
-                coordinates: [[[18.39, -33.91], [18.41, -33.91], [18.41, -33.89], [18.39, -33.89], [18.39, -33.91]]]
-            }
-        },
-        {
-            type: 'Feature',
-            properties: {
-                id: 3,
-                suburb: 'Woodstock',
-                collection_day: 'Thursday',
-                recycling_day: 'Thursday (Fortnightly)',
-                color: '#f97316' // Orange
-            },
-            geometry: {
-                type: 'Polygon',
-                coordinates: [[[18.44, -33.93], [18.46, -33.93], [18.46, -33.92], [18.44, -33.92], [18.44, -33.93]]]
-            }
-        }
-    ]
-};
+// ... types (keep existing)
+import { useGeoData } from '../../../hooks/useGeoData';
+import { API_ENDPOINTS } from '../../../lib/api';
+
+// ... interface WasteZoneProperties (keep existing)
 
 export const useUtilitiesData = () => {
     const [active, setActive] = useState(false);
+
+    const { data: wasteData, isLoading: loadingWaste } = useGeoData(
+        'utilities_waste',
+        API_ENDPOINTS.utilities.waste
+    );
+
+    const { data: recyclingData, isLoading: loadingRecycling } = useGeoData(
+        'utilities_recycling',
+        API_ENDPOINTS.utilities.recycling
+    );
+
+    const wasteZones = wasteData || { type: 'FeatureCollection', features: [] };
+    // Merge recycling if needed or expose separately. The mock only returned wasteZones.
+    // For now, let's just use wasteData as wasteZones.
 
     const toggleLayer = () => setActive(prev => !prev);
 
@@ -74,9 +45,11 @@ export const useUtilitiesData = () => {
     };
 
     return {
-        wasteZones: MOCK_WASTE_ZONES,
+        wasteZones,
+        recyclingData, // Expose this too if needed
         active,
         toggleLayer,
-        reportIssue
+        reportIssue,
+        loading: loadingWaste || loadingRecycling
     };
 };

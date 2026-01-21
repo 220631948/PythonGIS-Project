@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Backend Service (GIS Engine) - Production Mode
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: geohub-api-prod
+    # Port 8000 is NOT exposed to the host in production for security.
+    # It is only accessible via the internal network from the 'web' service.
+    command: gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+    volumes:
+      - geohub-data:/code/data
+      - geohub-logs:/code/logs
+    environment:
+      - ENV=production
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - .env
+    networks:
+      - geohub-net
+    restart: always
+
+  # Frontend Service (Nginx) - Production Mode
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: geohub-web-prod
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - geohub-net
+    restart: always
+
+volumes:
+  geohub-data:
+  geohub-logs:
+
+networks:
+  geohub-net:
+    driver: bridge

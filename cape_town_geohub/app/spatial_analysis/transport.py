@@ -1,77 +1,97 @@
+"""
+Transport Optimizer - Route Simplifier
+Optimizes complex transport route geometries for faster frontend rendering
+"""
+
 import logging
-import pandas as pd
 import geopandas as gpd
-from typing import Dict, Any, Optional
-from shapely.geometry import Point
-from app.spatial_analysis.base import BaseAnalyzer
-from app.spatial_analysis.spatial_utils import create_buffer, gdf_to_geojson
-from app.config import settings
+from shapely.geometry import LineString, MultiLineString
 
 logger = logging.getLogger(__name__)
 
-class TransportAnalyzer(BaseAnalyzer):
-    def __init__(self):
-        super().__init__("transport")
 
-    def run_analysis(self, lat: float, lon: float, simplify: Optional[float] = None) -> Dict[str, Any]:
+class TransportOptimizer:
+    """
+    Optimizes transport route geometries.
+    Reduces file size by simplifying geometry while preserving topological accuracy.
+    """
+
+    def optimize_routes(
+        self, routes_gdf: gpd.GeoDataFrame, tolerance: float = 0.0001
+    ) -> gpd.GeoDataFrame:
         """
-        Analyzes transport accessibility (MyCiTi stops) for a given location.
+        Simplify route geometries to reduce payload size.
+
+        Args:
+            routes_gdf: GeoDataFrame of transport routes
+            tolerance: Simplification tolerance in degrees (default 0.0001 ~= 10m)
+
+        Returns:
+            Optimized GeoDataFrame
         """
-        try:
-            point = Point(lon, lat)
-            stops = self.load_dataset("myciti_stops")
-            rail = self.load_dataset("rail_stations")
-            
-            # Create buffers (800m, 1600m, 2400m)
-            distances = [800, 1600, 2400]
-            buffer_gdfs = []
-            stop_counts = {}
-            
-            for dist in distances:
-                buf_geom = create_buffer(point, dist)
-                buf_gdf = gpd.GeoDataFrame(geometry=[buf_geom], crs=settings.TARGET_CRS)
-                
-                # Count stops within buffer
-                if not stops.empty:
-                    within_stops = stops[stops.geometry.within(buf_geom)]
-                    stop_counts[f"{dist}m"] = len(within_stops)
-                else:
-                    stop_counts[f"{dist}m"] = 0
-                
-                buffer_gdfs.append(buf_gdf)
+        if routes_gdf.empty:
+            return routes_gdf
 
-            # Combined buffers for output
-            all_buffers = gpd.GeoDataFrame(pd.concat(buffer_gdfs, ignore_index=True), crs=settings.TARGET_CRS)
-            all_buffers['distance'] = distances
-            
-            # Accessibility Score calculation
-            # Max 100. Bonus for stops in 800m, smaller bonus for further.
-            score = min(100, (stop_counts["800m"] * 20) + (stop_counts["1600m"] * 5))
-            
-            # Rail access bonus - calculate distance in projected CRS for accuracy
-            if not rail.empty:
-                # Project to UTM for accurate distance calculation in meters
-                rail_proj = rail.to_crs(settings.PROJECTED_CRS)
-                point_proj = gpd.GeoDataFrame(geometry=[point], crs=settings.TARGET_CRS).to_crs(settings.PROJECTED_CRS).geometry.iloc[0]
-                nearest_rail_dist_m = rail_proj.distance(point_proj).min()
-                
-                if nearest_rail_dist_m < 1000:
-                    score = min(100, score + 30)
+        original_vertices = self._count_vertices(routes_gdf)
+        logger.info(
+            f"Optimizing {len(routes_gdf)} routes. Original vertices: {original_vertices}"
+        )
 
-            return {
-                "geojson": gdf_to_geojson(all_buffers),
-                "summary": {
-                    "stop_counts": stop_counts,
-                    "accessibility_score": score,
-                    "level": "Excellent" if score > 80 else ("Good" if score > 50 else ("Adequate" if score > 20 else "Poor"))
-                },
-                "metadata": {
-                    "stops": self.get_metadata("myciti_stops"),
-                    "rail": self.get_metadata("rail_stations")
-                }
-            }
-        except Exception as e:
-            logger.error(f"Transport analysis failed: {e}")
-            return {"error": str(e)}
+        # Create copy and ensure valid geometry
+        optimized = routes_gdf.copy()
 
-transport_analyzer = TransportAnalyzer()
+        # 1. Simplify
+        optimized.geometry = optimized.geometry.simplify(
+            tolerance, preserve_topology=True
+        )
+
+        # 2. Filter ghost routes (zero length)
+        # Note: In EPSG:4326 length calculation is degrees, strict 0 check is safe
+        optimized = optimized[optimized.geometry.length > 0]
+
+        # 3. Clean attributes (optional, keeps JSON small)
+        # Assuming we want to keep specific standard GTFS-like columns if they exist
+        keep_cols = [
+            "route_id",
+            "route_short_name",
+            "route_long_name",
+            "route_type",
+            "color",
+            "agency_id",
+            "OBJECTID",
+            "Route",
+            "Shape_Length",
+        ]
+
+        # Keep columns that exist in the dataframe
+        cols_to_keep = [c for c in keep_cols if c in optimized.columns]
+
+        # Always keep geometry
+        if cols_to_keep:
+            optimized = optimized[cols_to_keep + ["geometry"]]
+
+        final_vertices = self._count_vertices(optimized)
+        reduction = (1 - final_vertices / original_vertices) * 100
+
+        logger.info(
+            f"Optimization complete. Final vertices: {final_vertices} ({reduction:.1f}% reduction)"
+        )
+
+        return optimized
+
+    def _count_vertices(self, gdf: gpd.GeoDataFrame) -> int:
+        """Count total vertices in GeoDataFrame."""
+        total = 0
+        for geom in gdf.geometry:
+            if geom is None:
+                continue
+            if isinstance(geom, LineString):
+                total += len(geom.coords)
+            elif isinstance(geom, MultiLineString):
+                for part in geom.geoms:
+                    total += len(part.coords)
+        return total
+
+
+# Singleton instance
+transport_optimizer = TransportOptimizer()

@@ -1,0 +1,23 @@
+import{r as i,j as e,w as o,L as c,x as d}from"./index-Do9r2Cah.js";import{u as p,A as x}from"./useGeoData-Dv7F0rMd.js";const m=()=>{const[t,l]=i.useState(!1),{data:a,isLoading:r}=p("landuse_zoning",x.landuse.zoning);return{zoningData:a||{type:"FeatureCollection",features:[]},active:t,toggleLayer:()=>l(n=>!n),loading:r}},u=({onLayerUpdate:t})=>{const{zoningData:l,active:a,toggleLayer:r}=m();return i.useEffect(()=>{a||r()},[]),i.useEffect(()=>{t&&t(a?{id:"landuse-zoning",type:"geojson",data:l,style:s=>({color:s.properties.color,weight:1,opacity:1,fillOpacity:.6}),popup:s=>`
+            <div class="p-2 min-w-[150px]">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="font-bold text-white px-2 py-0.5 rounded text-sm" style="background-color: ${s.properties.color}">
+                  ${s.properties.code}
+                </span>
+                <span class="text-sm font-semibold text-slate-700">Zoning</span>
+              </div>
+              <h4 class="font-medium text-slate-800 border-b border-slate-100 pb-1 mb-1">
+                ${s.properties.description}
+              </h4>
+              <div class="grid grid-cols-2 gap-2 text-xs mt-2">
+                <div>
+                  <span class="text-slate-500 block">Max Height</span>
+                  <span class="font-medium text-slate-700">${s.properties.max_height}</span>
+                </div>
+                <div>
+                  <span class="text-slate-500 block">Coverage</span>
+                  <span class="font-medium text-slate-700">${s.properties.coverage}</span>
+                </div>
+              </div>
+            </div>
+          `}:null)},[a,l,t]),e.jsxs("div",{className:"flex flex-col h-full",children:[e.jsxs("div",{className:"p-4 border-b border-slate-200 bg-white",children:[e.jsxs("div",{className:"flex items-center gap-2 mb-1",children:[e.jsx(o,{className:"w-5 h-5 text-purple-600"}),e.jsx("h2",{className:"text-lg font-semibold text-slate-800",children:"Land Use & Zoning"})]}),e.jsx("p",{className:"text-xs text-slate-500",children:"Zoning regulations and development rights"})]}),e.jsx("div",{className:"p-4 bg-slate-50 border-b border-slate-200",children:e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx(c,{className:"w-4 h-4 text-purple-600"}),e.jsx("span",{className:"text-sm font-medium text-slate-700",children:"Zoning Map"})]}),e.jsxs("label",{className:"relative inline-flex items-center cursor-pointer",children:[e.jsx("input",{type:"checkbox",className:"sr-only peer",checked:a,onChange:r}),e.jsx("div",{className:"w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"})]})]})}),e.jsxs("div",{className:"p-4",children:[e.jsx("h3",{className:"text-xs font-semibold text-slate-500 uppercase mb-3",children:"Zoning Types"}),e.jsxs("div",{className:"space-y-2",children:[l.features.map(s=>e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("div",{className:"w-8 h-4 rounded border border-slate-200",style:{backgroundColor:s.properties.color}}),e.jsxs("div",{className:"flex-1",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsx("span",{className:"text-xs font-bold text-slate-700",children:s.properties.code}),e.jsx("span",{className:"text-[10px] text-slate-400",children:s.properties.max_height})]}),e.jsx("div",{className:"text-xs text-slate-500",children:s.properties.description})]})]},s.properties.id)),e.jsxs("div",{className:"flex items-center gap-2 mt-2 pt-2 border-t border-slate-100",children:[e.jsx("div",{className:"w-8 h-4 bg-slate-100 rounded border border-slate-200"}),e.jsx("span",{className:"text-xs text-slate-400 italic",children:"Other zones (not shown)"})]})]})]}),e.jsx("div",{className:"p-4 pt-0 mt-auto",children:e.jsx("div",{className:"bg-purple-50 rounded-lg p-3 border border-purple-100",children:e.jsxs("div",{className:"flex items-start gap-2",children:[e.jsx(d,{className:"w-4 h-4 text-purple-600 mt-1"}),e.jsxs("div",{children:[e.jsx("h4",{className:"text-xs font-bold text-purple-800",children:"Development Application?"}),e.jsx("p",{className:"text-xs text-purple-700 mt-1",children:'Check zoning overlays before submitting building plans. Use the "Export" Tool to get a generate a zoning report.'})]})]})})})]})};export{u as default};
