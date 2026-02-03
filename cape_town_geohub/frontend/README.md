@@ -1,43 +1,72 @@
-# Cape Town GeoHub 🌍📍
+# Cape Town GeoHub — Frontend
 
-![React](https://img.shields.io/badge/React-v19-blue)
-![Vite](https://img.shields.io/badge/Vite-v6-purple)
-![PWA](https://img.shields.io/badge/PWA-Offline%20Ready-green)
-![Status](https://img.shields.io/badge/Status-Production-orange)
-
-A modern, offline-capable GIS application for the City of Cape Town. Built to provide planners, officials, and citizens with instant access to Services, Transport, Safety, and Land Use data.
-
-## 🚀 Quick Start
-
-```bash
-# 1. Install dependencies
-npm install
-
-# 2. Start development server
-npm run dev
-
-# 3. Build for production
-npm run build
-```
+The frontend is a mobile-responsive GIS application built with **React**, **Vite**, and **Leaflet**. It provides the interactive map experience, analysis tools, and collaboration workflows for the Cape Town GeoHub platform.
 
 ## ✨ Key Features
 
-*   **Offline First:** Works without internet. Caches map tiles and GeoJSON data using Service Workers and IndexedDB.
-*   **No Backend Required:** Fully client-side architecture. Deploys to GitHub Pages or any static host.
-*   **Spatial Intelligence:** Built-in analysis tools (Area, Length, Feature Counts) powered by Turf.js.
-*   **Modularity:** 7 Distinct modules loaded on-demand for performance.
+- **Interactive Map UI** with multiple basemaps and layer controls
+- **Routing & Isochrones** for transit and accessibility analysis
+- **Site Suitability** tools triggered via map interactions
+- **Data filtering & thematic styling** for services, safety, land use, and utilities
+- **Collaboration markers** for shared annotations
+- **Offline-ready PWA** with data caching and install prompts
+- **Keyboard & accessibility support** (skip links, ARIA live regions)
 
-## 🏗️ Architecture to "Ship"
+## 🧰 Tech Stack
 
-*   **Framework:** React 19 + TypeScript (partial)
-*   **Build Tool:** Vite
-*   **Mapping:** Leaflet + React-Leaflet
-*   **State:** React Context + URL State (Shareable links)
+- **React 19** + **Vite 6**
+- **Leaflet** + **React-Leaflet**
+- **Turf.js** for client-side spatial operations
+- **Lucide React** icons
+- **vite-plugin-pwa** for offline support
 
-## 📄 Documentation
+## 📂 Key UI Modules
 
-*   [**Data Ethics & Limitations**](./ETHICS.md)
-*   [**Data Sources**](./DATA_SOURCES.md)
+- `MapView.jsx` — Leaflet map wrapper, drawing tools, layers
+- `Sidebar.jsx` — module navigation and layer controls
+- `RoutePanel.jsx` — routing, isochrones, nearest services
+- `Dashboard.jsx` — analytics & reporting views
+- `OfflineDataManager.jsx` — cached dataset management
+- `SearchAutocomplete.jsx` — geocode search component
 
----
-*Built with ❤️ for Cape Town.*
+## 🚀 Development
+
+```bash
+npm install
+npm run dev
+```
+
+The dev server runs at **http://localhost:5173**.
+
+## 🏗️ Build & Preview
+
+```bash
+npm run build
+npm run preview
+```
+
+## ✅ Linting & Tests
+
+```bash
+npm run lint
+npm run test:e2e
+```
+
+## 📍 CRS Notes
+
+Leaflet operates in **EPSG:4326 (WGS84)**. Projected measurements are delegated to the backend or Turf.js as needed.
+
+## 🧭 API Integration
+
+The frontend expects the backend at `/api` (proxied via the dev server or Nginx in production). Relevant endpoints include:
+
+- `GET /api/portal/datasets/{id}/geojson`
+- `GET /api/network/route`
+- `GET /api/network/isochrone`
+- `POST /api/filter/query`
+
+## 📚 Related Docs
+
+- `docs/USER_GUIDE.md`
+- `docs/ENHANCED_FEATURES.md`
+- `docs/OPEN_DATA_WORKFLOW.md`

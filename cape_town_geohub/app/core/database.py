@@ -1,107 +1,213 @@
 """
 PostGIS Database Configuration and Connection Management
 
-Provides SQLAlchemy engine, session management, and PostGIS utilities
-for the Cape Town GeoHub application.
+Provides async SQLAlchemy engine, session management, and PostGIS utilities
+for the Cape Town GeoHub application with robust retry logic.
 """
 
-from contextlib import contextmanager
-from typing import Generator, Optional, Any, Dict
+import asyncio
 import logging
-from sqlalchemy import create_engine, text, event
-from sqlalchemy.orm import sessionmaker, declarative_base, Session
-from sqlalchemy.pool import QueuePool
-from geoalchemy2 import Geometry
-from geoalchemy2.shape import to_shape
-from shapely.geometry import mapping
-import json
+import os
+import time
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator, Optional, Any, Dict
 
-from app.config import settings
+from sqlalchemy import text, event
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    AsyncSession,
+    async_sessionmaker,
+    AsyncEngine,
+)
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.pool import QueuePool
+try:
+    from geoalchemy2 import Geometry
+    from geoalchemy2.shape import to_shape
+except ImportError:
+    Geometry = None
+    def to_shape(x):
+        raise ImportError("geoalchemy2 is required for geometry operations. Please install geoalchemy2.")
+from shapely.geometry import mapping
 
 logger = logging.getLogger(__name__)
 
-# Create SQLAlchemy engine with connection pool
+# Read DATABASE_URL from environment
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError(
+        "DATABASE_URL environment variable is required. "
+        "Example: postgresql+asyncpg://geohub:geohub_password@db:5432/geohub_db"
+    )
+
+# Create synchronous DATABASE_URL for geopandas and sync operations
+# Convert asyncpg to psycopg2 format if needed
+SYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+
+# Sync engine for geopandas read_postgis and write_postgis operations
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+
 engine = create_engine(
-    settings.DATABASE_URL,
-    poolclass=QueuePool,
-    pool_size=5,
-    max_overflow=10,
-    pool_timeout=30,
-    pool_pre_ping=True,  # Enable connection health checks
-    echo=settings.DEBUG,
+    SYNC_DATABASE_URL,
+    pool_size=10,
+    max_overflow=20,
+    pool_recycle=3600,
+    pool_pre_ping=True,
+    echo=os.environ.get("DEBUG", "").lower() == "true",
 )
 
-# Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+class DatabaseConnectionError(Exception):
+    """Raised when database connection fails after all retries."""
+
+    pass
+
+
+async def create_engine_with_retry(
+    max_retries: int = 10,
+    initial_delay: float = 2.0,
+    max_delay: float = 30.0,
+) -> AsyncEngine:
+    """
+    Create async SQLAlchemy engine with exponential backoff retry logic.
+
+    Args:
+        max_retries: Maximum number of connection attempts
+        initial_delay: Initial delay between retries in seconds
+        max_delay: Maximum delay between retries in seconds
+
+    Returns:
+        AsyncEngine: Configured SQLAlchemy async engine
+
+    Raises:
+        DatabaseConnectionError: If connection fails after all retries
+    """
+    delay = initial_delay
+    start_time = time.time()
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            logger.info(
+                f"Database connection attempt {attempt}/{max_retries} "
+                f"(elapsed: {time.time() - start_time:.1f}s)"
+            )
+
+            engine = create_async_engine(
+                DATABASE_URL,
+                pool_size=20,
+                max_overflow=40,
+                pool_recycle=3600,
+                pool_pre_ping=True,
+                echo=os.environ.get("DEBUG", "").lower() == "true",
+            )
+
+            # Test the connection
+            async with engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+
+            logger.info("Database connection established successfully!")
+            return engine
+
+        except Exception as e:
+            elapsed = time.time() - start_time
+            logger.warning(
+                f"Database connection failed (attempt {attempt}/{max_retries}, "
+                f"elapsed: {elapsed:.1f}s): {e}"
+            )
+
+            if attempt < max_retries:
+                logger.info(
+                    f"Troubleshooting tips:\n"
+                    f"  - Check if postgres container is running: docker ps\n"
+                    f"  - Check postgres logs: docker logs geohub_postgis\n"
+                    f"  - Verify network connectivity: docker network ls\n"
+                    f"Retrying in {delay:.1f}s..."
+                )
+                await asyncio.sleep(delay)
+                delay = min(delay * 2, max_delay)
+            else:
+                raise DatabaseConnectionError(
+                    f"Failed to connect to database after {max_retries} attempts "
+                    f"({elapsed:.1f}s elapsed).\n"
+                    f"Suggestions:\n"
+                    f"  1. Ensure postgres container is healthy: docker ps\n"
+                    f"  2. Check postgres logs: docker logs geohub_postgis\n"
+                    f"  3. Verify DATABASE_URL is correct: {DATABASE_URL}\n"
+                    f"  4. Check network connectivity between containers"
+                ) from e
+
+
+# Global engine and session factory (initialized lazily)
+_engine: Optional[AsyncEngine] = None
+_async_session_factory: Optional[async_sessionmaker[AsyncSession]] = None
 
 # Base class for declarative models
 Base = declarative_base()
 
 
-def get_db() -> Generator[Session, None, None]:
-    """
-    Dependency that provides a database session.
-    Ensures proper cleanup after request completes.
-    """
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_engine() -> AsyncEngine:
+    """Get or create the database engine."""
+    global _engine
+    if _engine is None:
+        _engine = await create_engine_with_retry()
+    return _engine
 
 
-@contextmanager
-def get_db_context() -> Generator[Session, None, None]:
-    """
-    Context manager for database sessions.
-    Use this for non-FastAPI contexts (scripts, background tasks).
-    """
-    db = SessionLocal()
-    try:
-        yield db
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
+async def get_session_factory() -> async_sessionmaker[AsyncSession]:
+    """Get or create the async session factory."""
+    global _async_session_factory
+    if _async_session_factory is None:
+        engine = await get_engine()
+        _async_session_factory = async_sessionmaker(
+            engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+            autocommit=False,
+            autoflush=False,
+        )
+    return _async_session_factory
 
 
-def init_db() -> bool:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
-    Initialize the database with required extensions.
-    Returns True if successful.
+    Async generator that yields database sessions for FastAPI dependency injection.
+
+    Usage:
+        @app.get("/items")
+        async def get_items(db: AsyncSession = Depends(get_db)):
+            ...
     """
-    try:
-        with engine.connect() as conn:
-            # Enable PostGIS extension
-            conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
-            conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis_topology;"))
-            conn.commit()
-            logger.info("PostGIS extensions enabled successfully")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to initialize database: {e}")
-        return False
+    session_factory = await get_session_factory()
+    async with session_factory() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
 
-def check_postgis_version() -> Optional[str]:
+async def close_database_connections() -> None:
     """
-    Check and return the PostGIS version.
-    Returns None if PostGIS is not available.
+    Gracefully close all database connections.
+    Call this during application shutdown.
     """
-    try:
-        with engine.connect() as conn:
-            result = conn.execute(text("SELECT PostGIS_Version();"))
-            version = result.scalar()
-            logger.info(f"PostGIS version: {version}")
-            return version
-    except Exception as e:
-        logger.warning(f"Could not get PostGIS version: {e}")
-        return None
+    global _engine, _async_session_factory
+
+    if _engine is not None:
+        logger.info("Closing database connections...")
+        await _engine.dispose()
+        _engine = None
+        _async_session_factory = None
+        logger.info("Database connections closed.")
 
 
-def check_db_connection() -> Dict[str, Any]:
+async def check_db_connection() -> Dict[str, Any]:
     """
     Check database connection and return status info.
     """
@@ -109,22 +215,25 @@ def check_db_connection() -> Dict[str, Any]:
         "connected": False,
         "postgis_enabled": False,
         "postgis_version": None,
-        "error": None
+        "error": None,
     }
 
     try:
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1;"))
+        engine = await get_engine()
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1;"))
             status["connected"] = True
 
             # Check PostGIS
-            result = conn.execute(text(
-                "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'postgis');"
-            ))
+            result = await conn.execute(
+                text(
+                    "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'postgis');"
+                )
+            )
             status["postgis_enabled"] = result.scalar()
 
             if status["postgis_enabled"]:
-                version_result = conn.execute(text("SELECT PostGIS_Version();"))
+                version_result = await conn.execute(text("SELECT PostGIS_Version();"))
                 status["postgis_version"] = version_result.scalar()
 
     except Exception as e:
@@ -135,9 +244,7 @@ def check_db_connection() -> Dict[str, Any]:
 
 
 def geometry_to_geojson(geom) -> Optional[Dict[str, Any]]:
-    """
-    Convert a GeoAlchemy2 geometry to GeoJSON dict.
-    """
+    """Convert a GeoAlchemy2 geometry to GeoJSON dict."""
     if geom is None:
         return None
     try:
@@ -149,10 +256,7 @@ def geometry_to_geojson(geom) -> Optional[Dict[str, Any]]:
 
 
 def row_to_feature(row: Any, geom_column: str = "geom") -> Dict[str, Any]:
-    """
-    Convert a SQLAlchemy row result to a GeoJSON Feature.
-    """
-    # Get row as dict
+    """Convert a SQLAlchemy row result to a GeoJSON Feature."""
     if hasattr(row, "_mapping"):
         row_dict = dict(row._mapping)
     elif hasattr(row, "__dict__"):
@@ -160,19 +264,16 @@ def row_to_feature(row: Any, geom_column: str = "geom") -> Dict[str, Any]:
     else:
         row_dict = dict(row)
 
-    # Extract geometry
     geom = row_dict.pop(geom_column, None)
     geometry = geometry_to_geojson(geom) if geom else None
 
-    # Clean up properties (remove SQLAlchemy internals and convert types)
     properties = {}
     for key, value in row_dict.items():
         if key.startswith("_"):
             continue
-        # Handle various types
-        if hasattr(value, "isoformat"):  # datetime
+        if hasattr(value, "isoformat"):
             properties[key] = value.isoformat()
-        elif hasattr(value, "item"):  # numpy types
+        elif hasattr(value, "item"):
             try:
                 properties[key] = value.item()
             except (ValueError, AttributeError):
@@ -182,30 +283,10 @@ def row_to_feature(row: Any, geom_column: str = "geom") -> Dict[str, Any]:
         else:
             properties[key] = str(value)
 
-    return {
-        "type": "Feature",
-        "geometry": geometry,
-        "properties": properties
-    }
+    return {"type": "Feature", "geometry": geometry, "properties": properties}
 
 
 def rows_to_feature_collection(rows: list, geom_column: str = "geom") -> Dict[str, Any]:
-    """
-    Convert a list of SQLAlchemy row results to a GeoJSON FeatureCollection.
-    """
+    """Convert a list of SQLAlchemy row results to a GeoJSON FeatureCollection."""
     features = [row_to_feature(row, geom_column) for row in rows]
-    return {
-        "type": "FeatureCollection",
-        "features": features
-    }
-
-
-# Event listeners for connection debugging
-@event.listens_for(engine, "connect")
-def connect(dbapi_connection, connection_record):
-    logger.debug("Database connection established")
-
-
-@event.listens_for(engine, "checkout")
-def checkout(dbapi_connection, connection_record, connection_proxy):
-    logger.debug("Connection checked out from pool")
+    return {"type": "FeatureCollection", "features": features}

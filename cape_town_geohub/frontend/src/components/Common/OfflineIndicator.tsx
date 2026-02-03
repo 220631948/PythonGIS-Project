@@ -3,7 +3,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Wifi, WifiOff, Cloud, CloudOff } from 'lucide-react';
+import { Cloud, CloudOff } from 'lucide-react';
 
 interface OfflineIndicatorProps {
     isOnline?: boolean;

@@ -13,8 +13,8 @@ git pull origin master
 
 # 2. Rebuild and restart containers
 echo "🏗️ Building and restarting production containers..."
-docker-compose -f docker-compose.prod.yml build
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml build
+docker compose -f docker-compose.prod.yml up -d
 
 # 3. Cleanup
 echo "🧹 Cleaning up old images and volumes..."
@@ -22,4 +22,4 @@ docker system prune -f
 
 echo "✅ Deployment Complete!"
 echo "🌍 App is live at http://localhost"
-echo "📊 Monitoring: 'docker-compose -f docker-compose.prod.yml logs -f --tail 100'"
+echo "📊 Monitoring: 'docker compose -f docker-compose.prod.yml logs -f --tail 100'"

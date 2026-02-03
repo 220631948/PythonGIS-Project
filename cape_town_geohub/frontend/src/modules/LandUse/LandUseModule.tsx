@@ -19,7 +19,7 @@ const LandUseModule: React.FC<LandUseModuleProps> = ({ onLayerUpdate }) => {
         if (!active) {
             toggleLayer();
         }
-    }, []);
+    }, [active, toggleLayer]);
 
     // Update Map Layer
     useEffect(() => {
@@ -103,7 +103,7 @@ const LandUseModule: React.FC<LandUseModuleProps> = ({ onLayerUpdate }) => {
             <div className="p-4">
                 <h3 className="text-xs font-semibold text-slate-500 uppercase mb-3">Zoning Types</h3>
                 <div className="space-y-2">
-                    {zoningData.features.map(feature => (
+                    {zoningData.features.map((feature: { properties: { id: number; code: string; description: string; max_height: string; coverage: string; color: string } }) => (
                         <div key={feature.properties.id} className="flex items-center gap-2">
                             <div
                                 className="w-8 h-4 rounded border border-slate-200"

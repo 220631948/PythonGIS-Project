@@ -15,8 +15,8 @@ import SettlementsTable from './components/SettlementsTable';
 import { useServicesAnalysis, type AnalyzedSettlement } from './hooks/useServicesAnalysis';
 
 interface ServicesModuleProps {
-    onLayerUpdate?: (layerData: any) => void;
-    onSettlementSelect?: (settlement: AnalyzedSettlement) => void;
+    onLayerUpdate?: (_layerData: any) => void;
+    onSettlementSelect?: (_settlement: AnalyzedSettlement) => void;
 }
 
 const ServicesModule: React.FC<ServicesModuleProps> = ({

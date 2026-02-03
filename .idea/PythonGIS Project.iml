@@ -3,6 +3,11 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/cape_town_geohub/.venv/bin" />
+      <excludeFolder url="file://$MODULE_DIR$/cape_town_geohub/.venv/include" />
+      <excludeFolder url="file://$MODULE_DIR$/cape_town_geohub/.venv/lib" />
+      <excludeFolder url="file://$MODULE_DIR$/cape_town_geohub/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/cape_town_geohub/.vscode" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.13 (PythonGIS Project)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

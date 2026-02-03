@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import type { FeatureCollection, Polygon } from 'geojson';
+// geojson types not currently used directly in this file
 
 export interface ZoningProperties {
     id: number;

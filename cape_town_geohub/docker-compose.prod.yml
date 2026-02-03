@@ -1,45 +1,57 @@
-version: '3.8'
-
 services:
-  # Backend Service (GIS Engine) - Production Mode
+  db:
+    image: kartoza/postgis:15-3.3
+    container_name: geohub_postgis_prod
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-geohub}
+      POSTGRES_DB: ${POSTGRES_DB:-geohub_db}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required for production}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql
+      - ./backups:/backups
+    networks:
+      - geohub-prod
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-geohub}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
-    container_name: geohub-api-prod
-    # Port 8000 is NOT exposed to the host in production for security.
-    # It is only accessible via the internal network from the 'web' service.
-    command: gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
-    volumes:
-      - geohub-data:/code/data
-      - geohub-logs:/code/logs
+    container_name: geohub_api_prod
     environment:
-      - ENV=production
-      - PYTHONUNBUFFERED=1
-    env_file:
-      - .env
+      DATABASE_URL: ${DATABASE_URL}
+      ENVIRONMENT: production
+    volumes:
+      - ./data/cache:/app/data/cache:ro
     networks:
-      - geohub-net
-    restart: always
+      - geohub-prod
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 
-  # Frontend Service (Nginx) - Production Mode
-  web:
+  frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: geohub-web-prod
+    container_name: geohub_frontend_prod
     ports:
       - "80:80"
+    networks:
+      - geohub-prod
     depends_on:
       - api
-    networks:
-      - geohub-net
-    restart: always
+    restart: unless-stopped
 
 volumes:
-  geohub-data:
-  geohub-logs:
+  postgres_data_prod:
+    driver: local
 
 networks:
-  geohub-net:
+  geohub-prod:
     driver: bridge

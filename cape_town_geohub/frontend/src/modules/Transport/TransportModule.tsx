@@ -7,11 +7,11 @@ import React from 'react';
 import {
     Bus, MapPin, MousePointer, X, Navigation, Clock
 } from 'lucide-react';
-import { useTransportAnalysis, type TransportAnalysisResult } from './hooks/useTransportAnalysis';
+import { useTransportAnalysis } from './hooks/useTransportAnalysis';
 
 interface TransportModuleProps {
-    onBuffersUpdate?: (buffers: any) => void;
-    onMapClick?: (callback: ((lat: number, lng: number) => void) | null) => void;
+    onBuffersUpdate?: (_buffers: any) => void;
+    onMapClick?: (_callback: ((_lat: number, _lng: number) => void) | null) => void;
 }
 
 const TransportModule: React.FC<TransportModuleProps> = ({

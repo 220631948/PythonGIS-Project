@@ -1,105 +1,76 @@
-# Cape Town GeoHub - Docker Compose Configuration
-# For more help, visit the Docker Compose reference guide at
-# https://docs.docker.com/go/compose-spec-reference/
-
 services:
-  # Main application service - FastAPI backend with GIS capabilities
-  app:
-    build:
-      context: .
-      target: final
-    container_name: cape-town-geohub
-    restart: unless-stopped
-
-    # Expose the FastAPI application on port 8000
-    ports:
-      - "8000:8000"
-
-    # Environment variables for configuration
-    environment:
-      - DEBUG=false
-      - LOG_LEVEL=INFO
-      - HOST=0.0.0.0
-      - PORT=8000
-
-    # Mount volumes for persistent data
-    volumes:
-      - geohub-data:/app/data
-      - geohub-logs:/app/logs
-
-    # Health check configuration
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    depends_on:
-      db:
-        condition: service_healthy
-
   db:
-    image: postgis/postgis:16-3.4
-    container_name: cape-town-geohub-db
-    restart: unless-stopped
-    ports:
-      - "5433:5432"
+    image: kartoza/postgis:15-3.3
+    container_name: geohub_postgis
     environment:
       - POSTGRES_USER=geohub
-      - POSTGRES_PASSWORD=geohub_password
+      - POSTGRES_PASS=geohub_password
       - POSTGRES_DB=geohub_db
+      - ALLOW_IP_RANGE=0.0.0.0/0
+      - POSTGRES_MULTIPLE_EXTENSIONS=postgis,hstore,postgis_topology
+    ports:
+      - "5432:5432"
     volumes:
-      - geohub-db-data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql
+      - ./cape_town_geohub/scripts/init_db:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U geohub -d geohub_db"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - geohub-network
 
-# Named volumes for data persistence
-volumes:
-  geohub-data:
-    driver: local
-  geohub-logs:
-    driver: local
-  geohub-db-data:
-    driver: local
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: geohub_api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://geohub:geohub_password@db:5432/geohub_db
+      - PYTHONUNBUFFERED=1
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./cape_town_geohub:/app
+      - ./cape_town_geohub/data/cache:/app/data/cache
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+    networks:
+      - geohub-network
 
-    # The commented out section below is an example of how to define a PostgreSQL
-    # database that your application can use. `depends_on` tells Docker Compose to
-    # start the database before your application. The `db-data` volume persists the
-    # database data between container restarts. The `db-password` secret is used
-    # to set the database password. You must create `db/password.txt` and add
-    # a password of your choosing to it before running `docker compose up`.
-    #
-    # To add a database, uncomment the following and add depends_on to the app service:
-    #
-    # depends_on:
-    #   db:
-    #     condition: service_healthy
-    #
-    # db:
-    #   image: postgres:16
-    #   restart: always
-    #   user: postgres
-    #   secrets:
-    #     - db-password
-    #   volumes:
-    #     - db-data:/var/lib/postgresql/data
-    #   environment:
-    #     - POSTGRES_DB=geohub
-    #     - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
-    #   expose:
-    #     - 5432
-    #   healthcheck:
-    #     test: [ "CMD", "pg_isready" ]
-    #     interval: 10s
-    #     timeout: 5s
-    #     retries: 5
-    #
-    # db-data:
-    #   driver: local
-    #
-    # secrets:
-    #   db-password:
-    #     file: db/password.txt
+  frontend:
+    build:
+      context: ./cape_town_geohub/frontend
+      dockerfile: Dockerfile.dev
+    container_name: geohub_frontend
+    depends_on:
+      - api
+    environment:
+      - VITE_API_URL=http://localhost:3000
+      - API_PROXY_TARGET=http://api:8000
+      - VITE_DEV_PORT=3000
+      - VITE_MAP_CENTER=-33.9249,18.4241
+      - VITE_MAP_ZOOM=12
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./cape_town_geohub/frontend/src:/app/src
+      - ./cape_town_geohub/frontend/public:/app/public
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0 --port 3000
+    restart: unless-stopped
+    networks:
+      - geohub-network
+
+networks:
+  geohub-network:
+    driver: bridge

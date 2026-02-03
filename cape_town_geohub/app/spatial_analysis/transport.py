@@ -1,20 +1,37 @@
-"""
-Transport Optimizer - Route Simplifier
-Optimizes complex transport route geometries for faster frontend rendering
-"""
-
 import logging
 import geopandas as gpd
 from shapely.geometry import LineString, MultiLineString
+from typing import Dict, Any, Optional
+from app.spatial_analysis.base import BaseAnalyzer
+from app.core.data_loader import data_loader
 
 logger = logging.getLogger(__name__)
 
 
-class TransportOptimizer:
+class TransportOptimizer(BaseAnalyzer):
     """
     Optimizes transport route geometries.
     Reduces file size by simplifying geometry while preserving topological accuracy.
     """
+
+    def __init__(self):
+        super().__init__("transport")
+
+    def run_analysis(self, **kwargs) -> Dict[str, Any]:
+        """
+        Compatibility method for BaseAnalyzer interface.
+        Optimizes MyCiti routes by default.
+        """
+        simplify = kwargs.get("simplify", 0.0001)
+        try:
+            gdf = self.load_dataset("myciti_routes")
+            optimized = self.optimize_routes(gdf, tolerance=simplify)
+            import json
+
+            return json.loads(optimized.to_json())
+        except Exception as e:
+            logger.error(f"Transport analysis failed: {e}")
+            return {"error": str(e)}
 
     def optimize_routes(
         self, routes_gdf: gpd.GeoDataFrame, tolerance: float = 0.0001
@@ -95,3 +112,5 @@ class TransportOptimizer:
 
 # Singleton instance
 transport_optimizer = TransportOptimizer()
+# Compatibility alias for existing API modules
+transport_analyzer = transport_optimizer

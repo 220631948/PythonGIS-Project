@@ -5,7 +5,7 @@
 
 import { useCallback } from 'react';
 import * as turf from '@turf/turf';
-import type { Feature, Polygon, LineString, Point, FeatureCollection } from 'geojson';
+import type { Polygon, LineString, Point, FeatureCollection } from 'geojson';
 
 export interface AnalysisResult {
     type: 'polygon' | 'line' | 'circle' | 'rectangle' | 'marker';
@@ -47,16 +47,17 @@ export const useSpatialAnalysis = () => {
     const analyzeLine = useCallback((geometry: LineString): AnalysisResult => {
         const feature = turf.lineString(geometry.coordinates);
         const length = turf.length(feature, { units: 'meters' });
-        const midpoint = turf.midpoint(
-            turf.point(geometry.coordinates[0]),
-            turf.point(geometry.coordinates[geometry.coordinates.length - 1])
-        );
+        const firstCoord = geometry.coordinates[0];
+        const lastCoord = geometry.coordinates[geometry.coordinates.length - 1];
+        const midpoint = firstCoord && lastCoord
+            ? turf.midpoint(turf.point(firstCoord), turf.point(lastCoord))
+            : null;
 
         return {
             type: 'line',
             length: Math.round(length),
             lengthKm: Math.round(length / 1000 * 100) / 100,
-            centroid: midpoint.geometry.coordinates as [number, number]
+            centroid: midpoint ? midpoint.geometry.coordinates as [number, number] : undefined
         };
     }, []);
 
@@ -104,7 +105,7 @@ export const useSpatialAnalysis = () => {
                 result = analyzeLine(geometry as LineString);
                 break;
 
-            case 'circle':
+            case 'circle': {
                 // Convert circle to polygon for analysis
                 const circlePolygon = turf.circle(
                     geometry.coordinates,
@@ -117,6 +118,7 @@ export const useSpatialAnalysis = () => {
                     result.featureCounts = countFeaturesInPolygon(circlePolygon.geometry as Polygon, activeLayers);
                 }
                 break;
+            }
 
             case 'marker':
                 result = {

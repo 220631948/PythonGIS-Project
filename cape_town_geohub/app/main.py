@@ -188,10 +188,10 @@ async def proxy_data(dataset_key: str):
     from app.spatial_analysis.transport import transport_optimizer
     from app.config import settings
 
-    if dataset_key not in settings.DATA_URLS:
+    if dataset_key not in settings.DATA_URLS and dataset_key != "safety_precincts":
         raise HTTPException(
             status_code=404,
-            detail=f"Dataset '{dataset_key}' not found. Available: {list(settings.DATA_URLS.keys())}",
+            detail=f"Dataset '{dataset_key}' not found. Available: {list(settings.DATA_URLS.keys())} + ['safety_precincts']",
         )
 
     try:
@@ -250,10 +250,22 @@ async def proxy_data(dataset_key: str):
         raise HTTPException(status_code=status, detail=str(e))
 
 
-# Health check (Simple - for load balancers)
+# Health check (Enhanced - validates database connectivity)
 @app.get("/health")
-def health_check_simple():
-    return {"status": "online", "system": "Cape Town GeoHub API", "version": "1.0.0"}
+async def health_check_simple():
+    from app.core.database import check_db_connection
+
+    db_status = await check_db_connection()
+    if not db_status["connected"]:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "partial_outage",
+                "database": "disconnected",
+                "error": db_status["error"],
+            },
+        )
+    return {"status": "online", "database": "connected", "version": "1.0.0"}
 
 
 # Detailed System Health check

@@ -8,7 +8,7 @@ import { TreePine, Waves, Info, MapPin } from 'lucide-react';
 import { useEnvironmentData } from './hooks/useEnvironmentData';
 
 interface EnvironmentModuleProps {
-    onLayerUpdate?: (layerData: any) => void;
+    onLayerUpdate?: (_layerData: any) => void;
     clickedLocation?: { lat: number; lng: number } | null;
 }
 
