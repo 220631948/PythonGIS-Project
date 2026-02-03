@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import type { FeatureCollection, Polygon } from 'geojson';
+// geojson types not directly used in annotation in this file
 import { calculateNearestDistance } from '../../../lib/spatial/analysis';
 
 export interface FloodZoneProperties {
@@ -80,7 +80,7 @@ export const useEnvironmentData = () => {
         setNearestParkDist(Math.round(dist));
     }, [parksData]);
 
-    const getFloodColor = (risk: string) => {
+    const getFloodColor = (_risk: string) => {
         // Map CCT risk attributes if needed, or default
         return '#3b82f6';
     };

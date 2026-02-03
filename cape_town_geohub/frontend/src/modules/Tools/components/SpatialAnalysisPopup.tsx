@@ -11,7 +11,7 @@ interface SpatialAnalysisPopupProps {
     onClose?: () => void;
 }
 
-const SpatialAnalysisPopup: React.FC<SpatialAnalysisPopupProps> = ({ result, onClose }) => {
+const SpatialAnalysisPopup: React.FC<SpatialAnalysisPopupProps> = ({ result, onClose: _onClose }) => {
     return (
         <div className="min-w-[200px] max-w-[280px]">
             {/* Header */}

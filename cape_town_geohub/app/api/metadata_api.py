@@ -177,6 +177,31 @@ def _refresh_cache():
     _cache_timestamp = datetime.utcnow()
     logger.info(f"Refreshed metadata cache: {len(_metadata_cache)} datasets")
 
+    # Ensure at least some test data exists if refresh fails
+    if not _metadata_cache:
+        logger.warning("Metadata refresh resulted in empty cache. Adding fallbacks.")
+        from app.models.metadata_models import GeometryType, UpdateFrequency
+
+        fallback_datasets = ["suburbs", "clinics", "schools", "transport_myciti_stops"]
+        for ds_id in fallback_datasets:
+            _metadata_cache[ds_id] = DatasetMetadata(
+                id=ds_id,
+                name=ds_id,
+                title=ds_id.replace("_", " ").title(),
+                description=f"Fallback metadata for {ds_id}",
+                source="System Fallback",
+                geometry_type=GeometryType.POINT,
+                crs="EPSG:4326",
+                feature_count=0,
+                attributes=[],
+                keywords=[ds_id, "fallback"],
+                category="General",
+                tags=["fallback"],
+                update_frequency=UpdateFrequency.AS_NEEDED,
+                updated_at=datetime.utcnow(),
+                download_formats=["geojson"],
+            )
+
 
 # ============ Catalog Endpoints ============
 

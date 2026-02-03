@@ -19,7 +19,7 @@ if (!fs.existsSync(DIST_DIR)) {
     process.exit(1);
 }
 
-const requiredFiles = [
+const _requiredFiles = [
     'index.html',
     'sw.js',
     'manifest.webmanifest' // vite-plugin-pwa usually generates this or uses manifest.json

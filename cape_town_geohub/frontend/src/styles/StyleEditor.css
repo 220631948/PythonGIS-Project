@@ -92,7 +92,7 @@
 
 .preset-btn:hover {
   transform: scale(1.1);
-  border-color: var(--primary-color, #2196f3);
+  border-color: var(--primary-color, var(--accent));
 }
 
 /* Color picker */
@@ -128,7 +128,7 @@
 
 .color-input:focus {
   outline: none;
-  border-color: var(--primary-color, #2196f3);
+  border-color: var(--primary-color, var(--accent));
 }
 
 .color-palette {
@@ -168,7 +168,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--primary-color, #2196f3);
+  background: var(--primary-color, var(--accent));
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
@@ -178,7 +178,7 @@
   height: 16px;
   border: none;
   border-radius: 50%;
-  background: var(--primary-color, #2196f3);
+  background: var(--primary-color, var(--accent));
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }

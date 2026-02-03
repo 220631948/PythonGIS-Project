@@ -8,7 +8,7 @@ import { Trash2, AlertTriangle, Truck } from 'lucide-react';
 import { useUtilitiesData } from './hooks/useUtilitiesData';
 
 interface UtilitiesModuleProps {
-    onLayerUpdate?: (layerData: any) => void;
+    onLayerUpdate?: (_layerData: any) => void;
     clickedLocation?: { lat: number; lng: number } | null;
 }
 
@@ -23,7 +23,7 @@ const UtilitiesModule: React.FC<UtilitiesModuleProps> = ({
         if (!active) {
             toggleLayer();
         }
-    }, []);
+    }, [active, toggleLayer]);
 
     // Update Map Layer
     useEffect(() => {

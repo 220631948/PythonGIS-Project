@@ -1,29 +1,64 @@
-# Backend Dockerfile (The GIS Tank)
-# Based on GDAL image to avoid compilation hell
-FROM ghcr.io/osgeo/gdal:ubuntu-small-3.6.3
+# Builder stage
+FROM python:3.11-slim-bullseye AS builder
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# Set work directory
-WORKDIR /code
-
-# Install system dependencies (if any extra are needed, usually minimal for this image)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3-pip \
+# Update apt packages and install system dependencies
+RUN apt-get update && apt-get install -y \
+    gdal-bin \
+    libgdal-dev \
+    libgeos-dev \
+    libproj-dev \
+    build-essential \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Install python dependencies
+WORKDIR /build
+
+# Copy only requirements.txt first for layer caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
 
-# Copy project
-COPY . .
+# Install python packages using pip install with no-cache-dir and user flags
+RUN pip install --no-cache-dir --user -r requirements.txt
 
-# Expose port
+# Runtime stage
+FROM python:3.11-slim-bullseye AS runtime
+
+# Install only runtime dependencies
+RUN apt-get update && apt-get install -y \
+    gdal-bin \
+    libgdal28 \
+    libgeos-c1v5 \
+    libproj19 \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user geohub
+RUN useradd -m -u 1000 geohub
+
+# Create app directory and data slash cache subdirectory
+RUN mkdir -p /app/data/cache
+
+# Set ownership to geohub user
+RUN chown -R geohub:geohub /app
+
+WORKDIR /app
+
+# Copy python packages from builder
+COPY --from=builder /root/.local /home/geohub/.local
+
+# Update PATH environment variable
+ENV PATH=/home/geohub/.local/bin:$PATH
+
+# Copy application code setting ownership to geohub
+COPY --chown=geohub:geohub . .
+
+# Switch to geohub user
+USER geohub
+
+# Add healthcheck calling python script
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import requests; exit(0 if requests.get('http://localhost:8000/health').ok else 1)"
+
 EXPOSE 8000
 
-# Run application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Default CMD runs gunicorn serving app.main:app
+CMD ["gunicorn", "app.main:app", "--bind", "0.0.0.0:8000", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--timeout", "120"]

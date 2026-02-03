@@ -2,8 +2,7 @@
  * ToastContext - Simple toast notification system
  * No external dependencies, just React Context
  */
-
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+/* eslint-disable react-refresh/only-export-components */import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { X, CheckCircle, AlertTriangle, Info, XCircle } from 'lucide-react';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -55,8 +54,10 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         setToasts(prev => prev.filter(t => t.id !== id));
     }, []);
 
+    const contextValue = { toasts, addToast, removeToast };
+
     return (
-        <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+        <ToastContext.Provider value={contextValue}>
             {children}
             <ToastContainer toasts={toasts} removeToast={removeToast} />
         </ToastContext.Provider>

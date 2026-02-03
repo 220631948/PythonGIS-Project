@@ -146,7 +146,7 @@ async function handleApiRequest(request) {
       return networkResponse;
     }
     throw new Error('Network response not ok');
-  } catch (error) {
+  } catch {
     // Fall back to cache
     if (cachedResponse) {
       console.log('[SW] Serving cached API response:', request.url);
@@ -183,7 +183,7 @@ async function handleAppShellRequest(request) {
       cache.put(request, networkResponse.clone());
     }
     return networkResponse;
-  } catch (error) {
+  } catch {
     // For navigation requests, return the cached index.html
     if (request.mode === 'navigate') {
       const indexResponse = await cache.match('/index.html');
@@ -203,7 +203,7 @@ async function refreshTileCache(request, cache) {
     if (networkResponse.ok) {
       cache.put(request, networkResponse);
     }
-  } catch (error) {
+  } catch {
     // Silent fail for background refresh
   }
 }
@@ -336,7 +336,7 @@ async function refreshCachedData() {
       if (response.ok) {
         await cache.put(request, response);
       }
-    } catch (error) {
+    } catch {
       console.log('[SW] Failed to refresh:', request.url);
     }
   }

@@ -1,0 +1,724 @@
+{
+  "id": 0,
+  "name": "Basic Services & Infrastructure"
+}
+{
+  "id": 1,
+  "name": "Electricity"
+}
+{
+  "id": 2,
+  "name": "Electricity Generation and Distribution Districts"
+}
+{
+  "id": 3,
+  "name": "Electricity Public Lighting"
+}
+{
+  "id": 4,
+  "name": "Electricity District Areas"
+}
+{
+  "id": 5,
+  "name": "Electricity Supply Authority"
+}
+{
+  "id": 6,
+  "name": "Solid Waste Management"
+}
+{
+  "id": 102,
+  "name": "Landfill Sites And Refuse Transfer Stations"
+}
+{
+  "id": 101,
+  "name": "Think Twice Areas - Recycling"
+}
+{
+  "id": 9,
+  "name": "Drop Offs"
+}
+{
+  "id": 10,
+  "name": "Compost Plant"
+}
+{
+  "id": 11,
+  "name": "Solid Waste Depots"
+}
+{
+  "id": 136,
+  "name": "Refuse Collection Beats"
+}
+{
+  "id": 7,
+  "name": "Topography"
+}
+{
+  "id": 14,
+  "name": "Town Survey Marks"
+}
+{
+  "id": 15,
+  "name": "5m Contours"
+}
+{
+  "id": 16,
+  "name": "Community Services"
+}
+{
+  "id": 17,
+  "name": "Monument"
+}
+{
+  "id": 18,
+  "name": "CCT Free Call Lines"
+}
+{
+  "id": 19,
+  "name": "Municipal Courts"
+}
+{
+  "id": 20,
+  "name": "Recreation and Parks"
+}
+{
+  "id": 21,
+  "name": "Community Centres"
+}
+{
+  "id": 22,
+  "name": "Libraries"
+}
+{
+  "id": 23,
+  "name": "Places of Worship"
+}
+{
+  "id": 24,
+  "name": "Recreational Hubs"
+}
+{
+  "id": 25,
+  "name": "Resorts"
+}
+{
+  "id": 26,
+  "name": "Schools"
+}
+{
+  "id": 27,
+  "name": "Sports Grounds"
+}
+{
+  "id": 28,
+  "name": "Swimming Pools"
+}
+{
+  "id": 29,
+  "name": "Parks"
+}
+{
+  "id": 30,
+  "name": "Cemeteries"
+}
+{
+  "id": 31,
+  "name": "Economic Development"
+}
+{
+  "id": 32,
+  "name": "Tourism Development"
+}
+{
+  "id": 33,
+  "name": "Cape Care Routes"
+}
+{
+  "id": 34,
+  "name": "Langa Heritage and Tourism Route"
+}
+{
+  "id": 35,
+  "name": "Wine Route Farm Points"
+}
+{
+  "id": 36,
+  "name": "Wine Routes"
+}
+{
+  "id": 37,
+  "name": "Tourism Development Areas"
+}
+{
+  "id": 38,
+  "name": "Tourism Signage"
+}
+{
+  "id": 39,
+  "name": "Informal Trading"
+}
+{
+  "id": 40,
+  "name": "Informal Trading Location (Planning Status)"
+}
+{
+  "id": 41,
+  "name": "Informal Trading Bay (Rental Status)"
+}
+{
+  "id": 42,
+  "name": "Health"
+}
+{
+  "id": 43,
+  "name": "Specialised Health"
+}
+{
+  "id": 44,
+  "name": "Health Care Facilities"
+}
+{
+  "id": 45,
+  "name": "Heritage"
+}
+{
+  "id": 46,
+  "name": "Formal Protections (NHRA)"
+}
+{
+  "id": 47,
+  "name": "CCT Heritage Inventory"
+}
+{
+  "id": 48,
+  "name": "Heritage Inventory Objects"
+}
+{
+  "id": 49,
+  "name": "Heritage Inventory"
+}
+{
+  "id": 186,
+  "name": "Formal Protections (HPOZ MPBL)"
+}
+{
+  "id": 185,
+  "name": "Heritage Audit Areas"
+}
+{
+  "id": 50,
+  "name": "Land Administration"
+}
+{
+  "id": 51,
+  "name": "Planning Offices"
+}
+{
+  "id": 52,
+  "name": "Sectional Title Scheme"
+}
+{
+  "id": 53,
+  "name": "Zoning Scheme"
+}
+{
+  "id": 54,
+  "name": "Address"
+}
+{
+  "id": 55,
+  "name": "Street Name"
+}
+{
+  "id": 56,
+  "name": "Land Parcels"
+}
+{
+  "id": 57,
+  "name": "Split Zoning"
+}
+{
+  "id": 58,
+  "name": "Zoning"
+}
+{
+  "id": 59,
+  "name": "."
+}
+{
+  "id": 60,
+  "name": "Natural Resources & the Environment"
+}
+{
+  "id": 61,
+  "name": "Environmental Resource Management"
+}
+{
+  "id": 62,
+  "name": "Dunes"
+}
+{
+  "id": 63,
+  "name": "Open Watercourse"
+}
+{
+  "id": 133,
+  "name": "Biodiversity Network"
+}
+{
+  "id": 65,
+  "name": "Coastal Urban Edge"
+}
+{
+  "id": 66,
+  "name": "Indigenous Vegetation - Current Extent"
+}
+{
+  "id": 67,
+  "name": "Indigenous Vegetation - Historic Extent"
+}
+{
+  "id": 68,
+  "name": "SANBI Ecosystem Status 2011"
+}
+{
+  "id": 69,
+  "name": "Soils"
+}
+{
+  "id": 70,
+  "name": "Wetlands"
+}
+{
+  "id": 71,
+  "name": "Stormwater Waterbodies"
+}
+{
+  "id": 72,
+  "name": "Political and Administrative Boundaries"
+}
+{
+  "id": 73,
+  "name": "Area Based Service Delivery Areas"
+}
+{
+  "id": 74,
+  "name": "City Admin District"
+}
+{
+  "id": 75,
+  "name": "Official Suburb"
+}
+{
+  "id": 76,
+  "name": "Special Rating Areas"
+}
+{
+  "id": 77,
+  "name": "Sub Council"
+}
+{
+  "id": 78,
+  "name": "Ward"
+}
+{
+  "id": 79,
+  "name": "Safety & Security"
+}
+{
+  "id": 80,
+  "name": "Emergency Services"
+}
+{
+  "id": 81,
+  "name": "Fire Stations"
+}
+{
+  "id": 82,
+  "name": "Police Stations"
+}
+{
+  "id": 83,
+  "name": "Spatial Planning"
+}
+{
+  "id": 100,
+  "name": "MURP Areas"
+}
+{
+  "id": 85,
+  "name": "Address"
+}
+{
+  "id": 86,
+  "name": "2D Building Footprints"
+}
+{
+  "id": 64,
+  "name": "Planning"
+}
+{
+  "id": 88,
+  "name": "Koeberg Restricted Area"
+}
+{
+  "id": 89,
+  "name": "Urban Development Zones"
+}
+{
+  "id": 90,
+  "name": "Scenic Routes"
+}
+{
+  "id": 91,
+  "name": "PT1 Zones"
+}
+{
+  "id": 92,
+  "name": "PT2 Zones"
+}
+{
+  "id": 93,
+  "name": "Transport"
+}
+{
+  "id": 94,
+  "name": "TCT Road Centreline"
+}
+{
+  "id": 95,
+  "name": "MyCiTi Bus Routes"
+}
+{
+  "id": 96,
+  "name": "MyCiTi Bus Stops"
+}
+{
+  "id": 97,
+  "name": "Taxi Routes"
+}
+{
+  "id": 121,
+  "name": "June18"
+}
+{
+  "id": 112,
+  "name": "Floor area Factor"
+}
+{
+  "id": 113,
+  "name": "Cape Town CBD"
+}
+{
+  "id": 114,
+  "name": "Roggebaai Sub-area"
+}
+{
+  "id": 115,
+  "name": "St George's Street Sub-area"
+}
+{
+  "id": 116,
+  "name": "Subdivisional Areas"
+}
+{
+  "id": 117,
+  "name": "V&A Waterfront Development area"
+}
+{
+  "id": 118,
+  "name": "Estates"
+}
+{
+  "id": 119,
+  "name": "Complexes"
+}
+{
+  "id": 132,
+  "name": "September18"
+}
+{
+  "id": 135,
+  "name": "CCT Buildings"
+}
+{
+  "id": 134,
+  "name": "City Health Regions"
+}
+{
+  "id": 137,
+  "name": "April19"
+}
+{
+  "id": 138,
+  "name": "Loadshedding Blocks"
+}
+{
+  "id": 140,
+  "name": "May19"
+}
+{
+  "id": 141,
+  "name": "Voting Stations (2019 NPE)"
+}
+{
+  "id": 143,
+  "name": "September19"
+}
+{
+  "id": 144,
+  "name": "Street Name Change"
+}
+{
+  "id": 146,
+  "name": "December 19"
+}
+{
+  "id": 147,
+  "name": "On Street Parking"
+}
+{
+  "id": 149,
+  "name": "March 20"
+}
+{
+  "id": 152,
+  "name": "Housing and Maintenance Offices"
+}
+{
+  "id": 120,
+  "name": "Bulk Water Dams"
+}
+{
+  "id": 150,
+  "name": "LFTEA Areas"
+}
+{
+  "id": 122,
+  "name": "April 20"
+}
+{
+  "id": 155,
+  "name": "Old Age Homes"
+}
+{
+  "id": 157,
+  "name": "December 20"
+}
+{
+  "id": 158,
+  "name": "Tree Canopies"
+}
+{
+  "id": 160,
+  "name": "February 22"
+}
+{
+  "id": 161,
+  "name": "Ground Level Map 2m Contours"
+}
+{
+  "id": 163,
+  "name": "July 22"
+}
+{
+  "id": 164,
+  "name": "City Owned ECD Centres"
+}
+{
+  "id": 130,
+  "name": "September 22"
+}
+{
+  "id": 173,
+  "name": "Home Owners Association (GV 2009)"
+}
+{
+  "id": 172,
+  "name": "Home Owner Association (GV 2015)"
+}
+{
+  "id": 174,
+  "name": "Home Owners Associations (GV 2018)"
+}
+{
+  "id": 171,
+  "name": "Home Owners Association (GV 2021)"
+}
+{
+  "id": 170,
+  "name": "Public Service Infrastructure National Roads"
+}
+{
+  "id": 169,
+  "name": "Aerial Photography Grid 1 Km X 1 Km"
+}
+{
+  "id": 168,
+  "name": "Aerial Photography Grid 5 Km X 5 Km"
+}
+{
+  "id": 167,
+  "name": "Aerial Photography Grid 10 Km X 10 Km"
+}
+{
+  "id": 175,
+  "name": "February 23"
+}
+{
+  "id": 176,
+  "name": "Smart Facilities Energy"
+}
+{
+  "id": 177,
+  "name": "Smart Facilities Solar"
+}
+{
+  "id": 178,
+  "name": "Smart Facilities Water"
+}
+{
+  "id": 181,
+  "name": "April 23"
+}
+{
+  "id": 182,
+  "name": "Polyphagous Shot Hole Borer Beetle (PSHB) Sightings"
+}
+{
+  "id": 183,
+  "name": "Servitudes"
+}
+{
+  "id": 197,
+  "name": "September 23"
+}
+{
+  "id": 188,
+  "name": "Submitted BDM Cases"
+}
+{
+  "id": 187,
+  "name": "Submitted Land Use Cases"
+}
+{
+  "id": 189,
+  "name": "Historic Cape Town Scheme: Special Areas"
+}
+{
+  "id": 190,
+  "name": "Line indicating different heights on same property"
+}
+{
+  "id": 191,
+  "name": "Koeberg Radii Planning"
+}
+{
+  "id": 193,
+  "name": "North Evacuation Direction"
+}
+{
+  "id": 194,
+  "name": "Protective Action Zone Boundary"
+}
+{
+  "id": 195,
+  "name": "South Evacuation Direction"
+}
+{
+  "id": 196,
+  "name": "East Evacuation Direction"
+}
+{
+  "id": 209,
+  "name": "December 23"
+}
+{
+  "id": 219,
+  "name": "Nodes"
+}
+{
+  "id": 218,
+  "name": "Urban Development Edge"
+}
+{
+  "id": 217,
+  "name": "New Development Areas"
+}
+{
+  "id": 216,
+  "name": "Mixed Use Intensification Areas"
+}
+{
+  "id": 215,
+  "name": "Development Corridors"
+}
+{
+  "id": 214,
+  "name": "Development Focus Areas"
+}
+{
+  "id": 213,
+  "name": "Urban Support Focus Areas"
+}
+{
+  "id": 212,
+  "name": "Environmental Focus Areas"
+}
+{
+  "id": 211,
+  "name": "Areas of Agricultural Significance"
+}
+{
+  "id": 210,
+  "name": "Spatial Transformation Areas"
+}
+{
+  "id": 222,
+  "name": "April 24"
+}
+{
+  "id": 223,
+  "name": "Routine Inland Water Quality Monitoring"
+}
+{
+  "id": 226,
+  "name": "May 24"
+}
+{
+  "id": 227,
+  "name": "Local Area Overlay Zones"
+}
+{
+  "id": 231,
+  "name": "November 24"
+}
+{
+  "id": 233,
+  "name": "Railway Lines"
+}
+{
+  "id": 235,
+  "name": "Rail Station"
+}
+{
+  "id": 236,
+  "name": "Speed Bump"
+}
+{
+  "id": 237,
+  "name": "Raised Intersection"
+}
+{
+  "id": 234,
+  "name": "Pedestrian Crossing"
+}
+{
+  "id": 238,
+  "name": "January 25"
+}
+{
+  "id": 239,
+  "name": "2D Building Footprints Low Detail"
+}

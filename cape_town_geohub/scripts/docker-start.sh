@@ -11,13 +11,13 @@ if ! docker info > /dev/null 2>&1; then
 fi
 
 echo "🚀 Building and starting containers..."
-docker-compose up --build -d
+docker compose up --build -d
 
 if [ $? -eq 0 ]; then
     echo "✅ Containers started successfully!"
     echo "   - Frontend: http://localhost:3000"
     echo "   - Backend API: http://localhost:8000/api/docs"
-    echo "   - Logs: 'docker-compose logs -f'"
+    echo "   - Logs: 'docker compose logs -f'"
 else
     echo "❌ Failed to start containers."
 fi

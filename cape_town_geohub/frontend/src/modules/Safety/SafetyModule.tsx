@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Shield, Calendar, MapPin, AlertCircle, TrendingDown, TrendingUp } from 'lucide-react';
+import { Shield, Calendar, MapPin } from 'lucide-react';
 import EthicalDisclaimer from './components/EthicalDisclaimer';
 import {
     useSafetyAnalysis,
@@ -15,8 +15,8 @@ import {
 } from './hooks/useSafetyAnalysis';
 
 interface SafetyModuleProps {
-    onLayerUpdate?: (layerData: any) => void;
-    onPrecinctSelect?: (precinct: PrecinctFeature) => void;
+    onLayerUpdate?: (_layerData: any) => void;
+    onPrecinctSelect?: (_precinct: PrecinctFeature) => void;
 }
 
 const SafetyModule: React.FC<SafetyModuleProps> = ({

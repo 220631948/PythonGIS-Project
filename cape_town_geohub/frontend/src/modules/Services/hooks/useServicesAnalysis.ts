@@ -13,7 +13,7 @@ import {
 } from '../../../lib/spatial/analysis';
 import { useGeoData } from '../../../hooks/useGeoData';
 import { API_ENDPOINTS } from '../../../lib/api';
-import type { FeatureCollection, Feature, Geometry } from 'geojson';
+import type { FeatureCollection, Feature } from 'geojson';
 
 // Types
 export interface SettlementProperties {

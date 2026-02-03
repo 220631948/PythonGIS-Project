@@ -16,6 +16,10 @@ from datetime import datetime
 import json
 import sys
 import os
+from unittest.mock import patch, MagicMock
+import geopandas as gpd
+from shapely.geometry import Point, Polygon
+import pandas as pd
 
 # Add the project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -183,8 +187,15 @@ class TestExportAPI:
         assert "csv" in format_ids
         assert "geojson" in format_ids
 
-    def test_export_data_geojson(self):
+    @patch("app.core.data_loader.DataLoader.get_gdf")
+    def test_export_data_geojson(self, mock_get_gdf):
         """Test exporting data as GeoJSON"""
+        # Mock the GDF
+        mock_gdf = gpd.GeoDataFrame(
+            {"col1": [1, 2], "geometry": [Point(0, 0), Point(1, 1)]}, crs="EPSG:4326"
+        )
+        mock_get_gdf.return_value = mock_gdf
+
         request = {
             "dataset": "suburbs",
             "format": "geojson"
@@ -196,8 +207,15 @@ class TestExportAPI:
         assert "download_url" in data
         assert data["format"] == "geojson"
 
-    def test_export_data_csv(self):
+    @patch("app.core.data_loader.DataLoader.get_gdf")
+    def test_export_data_csv(self, mock_get_gdf):
         """Test exporting data as CSV"""
+        # Mock the GDF
+        mock_gdf = gpd.GeoDataFrame(
+            {"col1": [1, 2], "geometry": [Point(0, 0), Point(1, 1)]}, crs="EPSG:4326"
+        )
+        mock_get_gdf.return_value = mock_gdf
+
         request = {
             "dataset": "suburbs",
             "format": "csv"
@@ -207,8 +225,19 @@ class TestExportAPI:
         data = response.json()
         assert data["format"] == "csv"
 
-    def test_export_analysis(self):
+    @patch("app.core.data_loader.DataLoader.get_gdf")
+    def test_export_analysis(self, mock_get_gdf):
         """Test exporting analysis results"""
+        # Mock the GDF
+        mock_gdf = gpd.GeoDataFrame(
+            {
+                "suitability": [0.8, 0.5],
+                "geometry": [Point(18.4, -33.9), Point(18.5, -33.95)],
+            },
+            crs="EPSG:4326",
+        )
+        mock_get_gdf.return_value = mock_gdf
+
         request = {
             "analysis_type": "suitability",
             "format": "geojson",
@@ -218,13 +247,24 @@ class TestExportAPI:
                 "development_type": "residential"
             }
         }
+        # Note: Suitability analysis might not call get_gdf directly but generate its own result.
+        # If it does call get_gdf (e.g. for base layers), this mock handles it.
+        # If it calls something else, we might need more mocks.
+        # For now, let's try running it.
         response = client.post("/api/export/analysis", json=request)
         assert response.status_code == 200
         data = response.json()
         assert "file_id" in data
 
-    def test_download_export(self):
+    @patch("app.core.data_loader.DataLoader.get_gdf")
+    def test_download_export(self, mock_get_gdf):
         """Test downloading an export"""
+        # Mock the GDF
+        mock_gdf = gpd.GeoDataFrame(
+            {"col1": [1, 2], "geometry": [Point(0, 0), Point(1, 1)]}, crs="EPSG:4326"
+        )
+        mock_get_gdf.return_value = mock_gdf
+
         # First create an export
         request = {"dataset": "suburbs", "format": "geojson"}
         export_response = client.post("/api/export/data", json=request)

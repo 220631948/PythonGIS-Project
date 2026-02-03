@@ -175,7 +175,7 @@ export const getCrimeLevel = (index: number): string => {
 };
 
 export const useSafetyAnalysis = () => {
-    const [data, setData] = useState<FeatureCollection<Polygon, PrecinctProperties>>(MOCK_PRECINCTS);
+    const [data, _setData] = useState<FeatureCollection<Polygon, PrecinctProperties>>(MOCK_PRECINCTS);
     const [selectedPrecinct, setSelectedPrecinct] = useState<PrecinctFeature | null>(null);
     const [timeRange, setTimeRange] = useState<TimeRange>('Q4_2024');
     const [loading, setLoading] = useState(false);

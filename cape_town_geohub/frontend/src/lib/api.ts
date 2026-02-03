@@ -84,39 +84,39 @@ export async function fetchData<T = any>(
 export const API_ENDPOINTS = {
     // Services Module
     services: {
-        settlements: '/api/data/informal_settlements',
-        water: '/api/data/water_facilities',
-        clinics: '/api/data/clinics',
-        schools: '/api/data/schools',
-        parks: '/api/data/parks',
-        sports: '/api/data/sports_grounds',
-        pools: '/api/data/swimming_pools',
+        settlements: 'informal_settlements',
+        water: 'water_facilities',
+        clinics: 'clinics',
+        schools: 'schools',
+        parks: 'parks',
+        sports: 'sports_grounds',
+        pools: 'swimming_pools',
     },
 
     // Transport Module
     transport: {
-        myciti_stops: '/api/data/myciti_stops',
-        myciti_routes: '/api/data/myciti_routes',
-        rail_stations: '/api/data/rail_stations',
+        myciti_stops: 'myciti_stops',
+        myciti_routes: 'myciti_routes',
+        rail_stations: 'rail_stations',
     },
 
     // Environment Module
     environment: {
-        flood_zones: '/api/data/flood_zones',
-        open_spaces: '/api/data/open_spaces',
+        flood_zones: 'flood_zones',
+        open_spaces: 'open_spaces',
     },
 
     // Land Use Module
     landuse: {
-        zoning: '/api/data/zoning',
-        suburbs: '/api/data/suburbs',
+        zoning: 'zoning',
+        suburbs: 'suburbs',
     },
 
     // Utilities Module
     utilities: {
-        electricity: '/api/data/electricity_facilities',
-        waste: '/api/data/waste_collection',
-        recycling: '/api/data/recycling_facilities',
+        electricity: 'electricity_facilities',
+        waste: 'waste_collection',
+        recycling: 'recycling_facilities',
     },
 
     // Safety Module (placeholder - aggregated data)

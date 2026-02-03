@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import type { FeatureCollection, Polygon } from 'geojson';
+// geojson types not directly used in this file
 
 export interface WasteZoneProperties {
     id: number;
