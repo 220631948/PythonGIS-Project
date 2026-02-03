@@ -299,10 +299,45 @@ class DataLoader:
         with open(raw_path, "w") as f:
             json.dump(data, f)
 
-        gdf = gpd.read_file(raw_path)
-        self._log_retrieval(
-            dataset_name, True, f"Downloaded {len(gdf)} features from open data source"
-        )
+        # Try standard geopandas read first, but fall back to a direct
+        # GeoJSON parser to avoid issues with Fiona in some container
+        # environments (e.g. "module 'fiona' has no attribute 'path'").
+        try:
+            gdf = gpd.read_file(raw_path)
+            self._log_retrieval(
+                dataset_name, True, f"Downloaded {len(gdf)} features from open data source (via geopandas)"
+            )
+        except Exception as e:
+            logger.warning(
+                f"gpd.read_file failed for {dataset_name}: {e}. Attempting GeoJSON fallback parser."
+            )
+            try:
+                from shapely.geometry import shape
+
+                features = data.get("features", []) if isinstance(data, dict) else []
+                rows = []
+                for feat in features:
+                    geom = None
+                    if feat.get("geometry"):
+                        try:
+                            geom = shape(feat["geometry"])
+                        except Exception:
+                            geom = None
+                    props = feat.get("properties", {}) if isinstance(feat.get("properties"), dict) else {}
+                    props["geometry"] = geom
+                    rows.append(props)
+
+                gdf = gpd.GeoDataFrame(rows, crs="EPSG:4326")
+                self._log_retrieval(
+                    dataset_name,
+                    True,
+                    f"Downloaded {len(gdf)} features from open data source (via fallback parser)",
+                )
+            except Exception as e2:
+                self._log_retrieval(dataset_name, False, f"GeoJSON fallback parse failed: {e2}")
+                raise DataNotFoundError(
+                    f"Failed to parse GeoJSON for {dataset_name}: {e2}"
+                )
 
         return self._process_gdf(gdf, dataset_name, url)
 

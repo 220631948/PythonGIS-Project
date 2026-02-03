@@ -22,12 +22,12 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 # Runtime Stage
 FROM python:3.11-slim-bullseye AS runtime
 
-# Install runtime dependencies
+# Install runtime dependencies (use package names without strict version suffixes)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gdal-bin \
-    libgdal30 \
+    libgdal28 \
     libgeos-c1v5 \
-    libproj22 \
+    libproj19 \
     postgresql-client \
     curl \
     && rm -rf /var/lib/apt/lists/*
