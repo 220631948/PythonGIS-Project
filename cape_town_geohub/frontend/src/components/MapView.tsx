@@ -690,10 +690,17 @@ const MapView = ({
   const routeOrigin = toLatLng(routeData?.origin);
   const routeDestination = toLatLng(routeData?.destination);
   const isochroneGeojson = isochroneData?.isochrone_geojson ?? isochroneData;
+  const fetchingLayers = useRef(new Set<string>());
+
+  // Stabilize onLayerLoading to prevent infinite loops if passed as unstable prop
+  const onLayerLoadingRef = useRef(onLayerLoading);
+  useEffect(() => {
+    onLayerLoadingRef.current = onLayerLoading;
+  }, [onLayerLoading]);
 
   // Define fetch functions BEFORE useEffect that uses them
   const fetchLayerData = useCallback(async (id: string) => {
-    if (onLayerLoading) onLayerLoading(id, true);
+    if (onLayerLoadingRef.current) onLayerLoadingRef.current(id, true);
 
     try {
       const response = await fetch(`/api/portal/datasets/${id}/geojson`);
@@ -705,12 +712,12 @@ const MapView = ({
     } catch (error) {
       console.error(`Error fetching layer ${id}:`, error);
     } finally {
-      if (onLayerLoading) onLayerLoading(id, false);
+      if (onLayerLoadingRef.current) onLayerLoadingRef.current(id, false);
     }
-  }, [onLayerLoading]);
+  }, []);
 
   const fetchFilteredLayerData = useCallback(async (id: string, filterData: any) => {
-    if (onLayerLoading) onLayerLoading(id, true);
+    if (onLayerLoadingRef.current) onLayerLoadingRef.current(id, true);
     try {
       const response = await fetch('/api/filter/query', {
         method: 'POST',
@@ -729,27 +736,41 @@ const MapView = ({
     } catch (error) {
       console.error(`Error fetching filtered layer ${id}:`, error);
     } finally {
-      if (onLayerLoading) onLayerLoading(id, false);
+      if (onLayerLoadingRef.current) onLayerLoadingRef.current(id, false);
     }
-  }, [onLayerLoading]);
+  }, []);
 
-  // Fetch layer data - now uses the functions defined above
+  // Fetch standard layers
   useEffect(() => {
     layers.forEach(layerId => {
+      // Skip if this layer has active filters (handled by separate effect)
       if (activeFilters && activeFilters[layerId]) {
-        fetchFilteredLayerData(layerId, activeFilters[layerId]);
-      } else {
-        // Use functional update to check geoData without adding it to dependencies
-        setGeoData(prev => {
-          if (!prev[layerId]) {
-            fetchLayerData(layerId);
-          }
-          return prev;
+        return;
+      }
+
+      // If we don't have data and aren't already fetching it
+      if (!geoData[layerId] && !fetchingLayers.current.has(layerId)) {
+        fetchingLayers.current.add(layerId);
+        fetchLayerData(layerId).finally(() => {
+          fetchingLayers.current.delete(layerId);
         });
       }
     });
+  }, [layers, activeFilters, geoData, fetchLayerData]);
 
-    // Cleanup inactive layers
+  // Fetch filtered layers
+  useEffect(() => {
+    layers.forEach(layerId => {
+      if (activeFilters && activeFilters[layerId]) {
+        // For filtered layers, we might want to refetch if filters change,
+        // which is handled by activeFilters dependency.
+        fetchFilteredLayerData(layerId, activeFilters[layerId]);
+      }
+    });
+  }, [layers, activeFilters, fetchFilteredLayerData]);
+
+  // Cleanup inactive layers
+  useEffect(() => {
     setGeoData(prev => {
       const next = { ...prev };
       let changed = false;
@@ -761,7 +782,7 @@ const MapView = ({
       });
       return changed ? next : prev;
     });
-  }, [layers, activeFilters, fetchFilteredLayerData, fetchLayerData]);
+  }, [layers]);
 
   const handleMapClick = useCallback((latlng: LatLng) => {
     const normalized = toLatLng(latlng);
