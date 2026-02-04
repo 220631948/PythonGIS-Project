@@ -117,6 +117,9 @@ class DataLoader:
         except Exception as e:
             logger.error(f"Failed to save {dataset_name} to PostGIS: {e}")
 
+        # Return the GeoDataFrame so callers can use the loaded data
+        return gdf
+
     def load_csv(self, dataset_name: str) -> pd.DataFrame:
         """Load tabular data (CSV/Excel) from configured source."""
         if dataset_name not in self.data_urls:
@@ -214,6 +217,20 @@ class DataLoader:
     def _update_metadata(self, name: str, count: int, layer_type: str):
         try:
             with engine.connect() as conn:
+                # Ensure the metadata table exists (helps first-run and test environments)
+                conn.execute(
+                    text("""
+                    CREATE TABLE IF NOT EXISTS spatial_layers (
+                        id SERIAL PRIMARY KEY,
+                        name TEXT UNIQUE,
+                        layer_type TEXT,
+                        source_url TEXT,
+                        record_count INTEGER,
+                        last_updated TIMESTAMP
+                    )
+                    """)
+                )
+
                 check = conn.execute(
                     text("SELECT id FROM spatial_layers WHERE name = :name"),
                     {"name": name},

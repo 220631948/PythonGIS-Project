@@ -9,6 +9,8 @@ import OfflineDataManager from './components/OfflineDataManager';
 import DataStatusPanel from './components/DataStatusPanel';
 import { InstallBanner, InstallModal } from './components/InstallPrompt';
 import { SkipLink, LiveRegion, useKeyboardShortcuts, announce } from './components/Accessibility';
+import GuidedTour, { useTour, HelpButton } from './components/GuidedTour';
+import { KeyboardShortcutsHelp, useKeyboardShortcuts as useHelpOverlay } from './components/KeyboardShortcutsHelp';
 import { ToastProvider } from './components/Common';
 import { useOnlineStatus } from './hooks/useOfflineData';
 import { useUrlState, UrlState } from './hooks/useUrlState';
@@ -47,6 +49,10 @@ function MainApp() {
     const [moduleLayerData, setModuleLayerData] = useState<any>(null);
     const [isDataLoading] = useState(false); // Will be connected to data hooks later
     const isOnline = useOnlineStatus();
+
+    // New Features: Tour and Help Overlay
+    const { isActive: isTourActive, startTour, endTour } = useTour();
+    const { showHelp, openHelp, closeHelp } = useHelpOverlay();
 
     // Load collaboration markers
     useEffect(() => {
@@ -156,7 +162,7 @@ function MainApp() {
         't': () => setIsDarkMode(prev => !prev),
         'm': () => setIsOfflineManagerOpen(prev => !prev),
         's': () => setIsDataStatusOpen(prev => !prev),
-        '?': () => addNotification('Available shortcuts: H (sidebar), D (dashboard), F (search), T (theme), M (offline data), S (data status)'),
+        '?': () => openHelp(),
     });
 
     return (
@@ -243,6 +249,20 @@ function MainApp() {
                 notifications={notifications}
                 onRemove={(id: string | number) => setNotifications(prev => prev.filter(n => n.id !== id))}
             />
+
+            {/* New Feature Components */}
+            <GuidedTour
+                isActive={isTourActive}
+                onComplete={endTour}
+                onSkip={endTour}
+            />
+            <KeyboardShortcutsHelp
+                isOpen={showHelp}
+                onClose={closeHelp}
+            />
+            {!isTourActive && !showHelp && (
+                <HelpButton onClick={startTour} />
+            )}
 
             <InstallBanner />
             <InstallModal isOpen={isInstallModalOpen} onClose={() => setIsInstallModalOpen(false)} />

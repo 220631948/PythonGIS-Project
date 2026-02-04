@@ -1,4 +1,4 @@
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useState, lazy } from 'react';
 import {
   Info, Github, ExternalLink,
   Building2, Bus, Shield, TreePine, Map as MapIcon, Trash2, Database,
@@ -6,7 +6,8 @@ import {
 } from 'lucide-react';
 
 // Common Components
-import { ModuleErrorBoundary, ModuleSkeleton, DataStatusFooter } from './Common';
+import { ModuleSkeleton, DataStatusFooter } from './Common';
+import LoadingBoundary from './LoadingBoundary';
 import OpsStatus from './OpsStatus';
 
 // Lazy-loaded Module Components (Code Splitting)
@@ -80,10 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'data', icon: Database, label: 'Data', color: '#6366f1' }
   ];
 
-  const getModuleName = () => {
-    const tab = tabs.find(t => t.id === activeTab);
-    return tab ? tab.label : 'Module';
-  };
+
 
   const renderContent = () => {
     switch (activeTab) {
@@ -160,11 +158,13 @@ const Sidebar: React.FC<SidebarProps> = ({
           <OpsStatus />
 
           <div style={{ flex: 1 }}>
-            <ModuleErrorBoundary moduleName={getModuleName()} key={activeTab}>
-              <Suspense fallback={<ModuleSkeleton />}>
-                {renderContent()}
-              </Suspense>
-            </ModuleErrorBoundary>
+            <LoadingBoundary
+              key={activeTab}
+              fallback={<ModuleSkeleton />}
+              variant="compact"
+            >
+              {renderContent()}
+            </LoadingBoundary>
           </div>
 
           <div className="sidebar-section about" style={{ padding: '12px 16px', borderTop: '1px solid #e5e7eb', marginTop: 'auto' }}>

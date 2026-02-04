@@ -2,7 +2,8 @@
  * ToastContext - Simple toast notification system
  * No external dependencies, just React Context
  */
-/* eslint-disable react-refresh/only-export-components */import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { X, CheckCircle, AlertTriangle, Info, XCircle } from 'lucide-react';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';

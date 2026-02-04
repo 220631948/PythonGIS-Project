@@ -8,6 +8,7 @@
       <excludeFolder url="file://$MODULE_DIR$/cape_town_geohub/.venv/lib" />
       <excludeFolder url="file://$MODULE_DIR$/cape_town_geohub/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/cape_town_geohub/.vscode" />
+      <excludeFolder url="file://$MODULE_DIR$/cape_town_geohub/postgres_data" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.13 (PythonGIS Project)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
