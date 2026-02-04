@@ -9,22 +9,35 @@ This guide explains how to use the custom GitHub Copilot agents tailored for Cap
 3. Configure workspace settings to reference `.github/copilot/instructions`
 
 ## Using Custom Agents
-Invoke agents using `@` mentions if configured, or by copy-pasting the context/instructions from the agent file into your chat.
+Invoke agents using `@` mentions if your Copilot setup supports it (Spec Kit/VS Code Agents), or paste the agent instructions into chat.
 
 ### Available Agents
-- **Spatial Data Specialist**: `agents/spatial/geojson-expert.yml` - For GeoJSON and spatial data.
-- **GeoPandas Expert**: `agents/spatial/geopandas-expert.yml` - For spatial analysis in Python.
-- **FastAPI Expert**: `agents/backend/fastapi-expert.yml` - For backend API development.
-- **React Expert**: `agents/frontend/react-expert.yml` - For frontend components.
-- **Testing Agent**: `agents/testing/test-generator.yml` - For generating tests.
+- **GeoJSON Expert** (`agents/spatial/geojson-expert.yml`): GeoJSON creation/validation/CRS transforms.
+- **GeoPandas Expert** (`agents/spatial/geopandas-expert.yml`): Python spatial ops and performance.
+- **FastAPI Expert** (`agents/backend/fastapi-expert.yml`): API routes, Pydantic schemas, OpenAPI docs.
+- **React Expert** (`agents/frontend/react-expert.yml`): TSX components, accessibility, map UI.
+- **Testing Agent** (`agents/testing/test-generator.yml`): Pytest, Vitest, Playwright.
+- **Alembic Expert** (`agents/database/alembic-expert.yml`): PostGIS migrations and indices.
+- **Docker & DevOps Expert** (`agents/devops/docker-expert.yml`): Dockerfiles, Compose, CI builds.
+
+## Prompt Templates (pick and paste)
+- **API design**: `prompts/api-design/create-endpoint.md`, `prompts/api-design/pagination.md`
+- **Components**: `prompts/component/create-feature-component.md`, `prompts/component/map-layer-toggle.md`
+- **GeoJSON/Spatial**: `prompts/geojson/generate-feature.md`, `prompts/geojson/validate-collection.md`, `prompts/spatial-analysis/buffer-operation.md`, `prompts/spatial-analysis/transform-crs.md`
+- **Testing**: `prompts/testing/pytest-unit.md`, `prompts/testing/vitest-component.md`, `prompts/testing/playwright-e2e.md`
+- **Documentation**: `prompts/documentation/api-doc.md`, `prompts/documentation/changelog-entry.md`
 
 ## Best Practices
-- Start with specific context ("I am working on `app/services/new_service.py`...")
-- Reference relevant files in the prompt
-- Iterate on responses if the first one isn't perfect
-- Validate generated code against project standards
+- Start with specific context ("Working on `app/api/portal_api.py`, need pagination")
+- Reference relevant files and CRS expectations (4326 storage, 32734 metrics)
+- Iterate; ask the agent to refine rather than rewriting from scratch
+- Validate generated code against TypeScript/Python coding standards and spatial patterns
 
 ## Common Workflows
-- **New API Endpoint**: Use `prompts/api-design/create-endpoint.md`
-- **React Component**: Use `prompts/component/create-feature-component.md`
-- **Spatial Operation**: Use `prompts/spatial-analysis/buffer-operation.md`
+- **New API Endpoint**: `prompts/api-design/create-endpoint.md`
+- **Add Pagination**: `prompts/api-design/pagination.md`
+- **React Component**: `prompts/component/create-feature-component.md`
+- **Layer Toggle UI**: `prompts/component/map-layer-toggle.md`
+- **Spatial Operation**: `prompts/spatial-analysis/buffer-operation.md` or `transform-crs.md`
+- **Testing**: `prompts/testing/pytest-unit.md` (backend), `vitest-component.md` (frontend), `playwright-e2e.md` (E2E)
+- **Docs/Changelog**: `prompts/documentation/api-doc.md`, `changelog-entry.md`

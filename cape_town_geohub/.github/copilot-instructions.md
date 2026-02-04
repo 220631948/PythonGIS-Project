@@ -1,95 +1,113 @@
-# Cape Town GeoHub Copilot Instructions
+# GitHub Copilot Instructions - Cape Town GeoHub
 
-## 🔭 Project Overview
+You are working on **Cape Town GeoHub**, a geospatial decision-support platform combining FastAPI, React + Leaflet, and municipal open data.
 
-Cape Town GeoHub is a geospatial decision-support platform blending open data, spatial analysis, and a modern web UI.
+## Big Picture Architecture
 
-- **Backend:** FastAPI, GeoPandas, Shapely (Spatial Analysis), PostGIS (Optional).
-- **Frontend:** React 19, Vite, Leaflet, Recharts.
-- **Infrastructure:** Docker Compose, Nginx.
+The app is a **Map-First Dashboard** with three layers:
+1. **Frontend** (`frontend/src/`): React 19 + Vite, Leaflet for maps, module-based feature organization
+2. **Backend** (`app/`): FastAPI serving GeoJSON via `/api`, using GeoPandas for spatial ops
+3. **Data Pipeline** (`data/`, `scripts/`): ArcGIS Open Data → local cache → API
 
-## 🏗 Architecture & Core Patterns
+**Key Spatial Contract**: All external data flows through `EPSG:4326` (WGS84). Internal analysis may use `EPSG:32734` (UTM 34S for Cape Town). The frontend sends lat/lng, backend returns GeoJSON.
 
-### Backend (`app/`)
+## Component Organization
 
-- **Entry Point:** `app/main.py`. Mounts API routers and serves static frontend build in prod.
-- **API Structure:** Routes are modularized in `app/api/`. New endpoints must be added to `app/api/__init__.py` and `app/main.py`.
-- **Data Loading:** **CRITICAL**. Do not fetch external data directly in routes. Use `app/core/data_loader.py` which handles caching, CRS normalization (EPSG:4326), and error handling.
-  ```python
-  from app.core.data_loader import data_loader
-  gdf = data_loader.get_gdf("dataset_key") # Returns GeoDataFrame
-  ```
-- **Spatial Operations:**
-  - Input/Output: **EPSG:4326** (WGS84).
-  - Analysis/Metrics: **EPSG:32734** (UTM Zone 34S) for accurate meters.
-  - Geometry Engine: Shapely & GeoPandas.
-  - Heavy logic: Place in `app/spatial_analysis/` modules, not in route handlers.
+Frontend follows a **module-per-feature** pattern:
+- `src/modules/services/` → Informal Settlements + Water/Energy access
+- `src/modules/transport/` → MyCiTi, routing, isochrones
+- `src/modules/safety/` → Crime stats (aggregated by precinct)
+- `src/components/Common/` → Reusable UI (buttons, modals, toasts)
 
-### Frontend (`frontend/`)
+**Example**: Adding a new "Housing" module? Create `src/modules/housing/HousingModule.jsx` + matching backend route in `app/api/housing.py`.
 
-- **Structure:**
-  - `src/components`: Reusable UI bricks.
-  - `src/modules`: Domain-specific features (e.g., `RoutePanel`, `MapView`).
-  - `src/styles`: CSS organization (Project currently uses standard CSS/CSS Modules, **NOT** Tailwind yet).
-  - `src/api-client.js`: Centralized Axios/fetch wrapper.
-- **Map Interaction:**
-  - Use `react-leaflet` components.
-  - State management for map layers often resides in `MapView.jsx` or specialized contexts.
-  - **Performance:** For large datasets (>1k points), use clustering or simplified GeoJSON.
+## Critical Developer Workflows
 
-## 🎨 Frontend Polishing & UX Expectations
-
-- **Visual System:** Keep the color palette and spacing defined via CSS variables in `frontend/src/styles/variables.css` (and its imports). Avoid one-off inline styles; reuse `App.css`/`index.css` tokens so the “Cape Town GeoHub” identity stays consistent across `MapView.jsx`, `Sidebar.jsx`, and `RoutePanel.jsx`.
-- **Layout posture:** The main map should occupy the primary visual plane. Use `main` and `section` wrappers in `App.jsx`/`App.css` to enforce a map-to-panel split while applying modern glassmorphism styles for `Sidebar` cards (`frontend/src/components/Card`). Any new responsive tweaks should be tested via `npm run dev` with `MapView` and `Sidebar` simultaneously open to ensure mobile controls stay touch-friendly.
-- **UX Feedback:** Build skeleton components (`frontend/src/components/SkeletonLoader.jsx`) around `MapView` data hooks and `RoutePanel`. Tie spatial query loading states to the existing `useMapData` hook so the UI shows both loaders and “Processing…” indicators before GeoJSON layers render.
-- **Empty States & Layer Toggles:** Mirror the existing layer control patterns in `MapView.jsx` by keeping toggle logic in the same module; encourage minimal toggles per click with accessible buttons (see `frontend/src/components/LayerToggleButton.jsx`). Provide empty-state cards when APIs return no features (refer to `frontend/src/modules/Dashboard.jsx` empty-state structure as a template).
-- **Accessibility Checklist:**
-  - Prefer `<button>` or `<a>` with `aria-label` for icons in `MapView` and `Sidebar`. If a component renders a Leaflet marker (`frontend/src/components/MarkerWithLabel.jsx`), ensure it exposes `aria-label` via props.
-  - Maintain keyboard focus outlines (the global focus style is defined in `index.css`). Any focus removal must be replaced with an equivalent outline so `Tab` navigation across map controls, filters, and dialogs works consistently.
-  - Validate text contrast using the palette defined in `frontend/src/styles/variables.css`; maintain a minimum ratio of 4.5:1 for body text and 3:1 for large headings.
-  - Use semantic wrappers such as `<main>`, `<nav>`, and `<section>` when structuring `App.jsx`, `MapView.jsx`, and `Sidebar.jsx`. Replace non-semantic `div` clusters only when it improves screen reader grouping.
-
-## 🕸 Workflow Signals & Integration Notes
-
-## 🛠 Developer Workflow
-
-### Environment & Startup
-
-- **Docker (Preferred):** `docker-compose up --build`. Frontend at `:3000`, API at `:8000`.
-- **Local Split:**
-  - Backend: `uvicorn app.main:app --reload` (Port 8000).
-  - Frontend: `npm run dev` (Port 5173).
-  - **Diff:** Frontend dev server proxies `/api` to localhost:8000 (check `vite.config.js`).
-
-### Testing & Quality
-
-- **Backend:** `pytest` (Run from root).
-- **Frontend:** `npm run lint` (ESLint) and `npm run test:e2e` (Playwright).
-- **Conventions:**
-  - Python: Follow PEP 8 (enforced by Black/Isort if configured).
-  - JS: ESLint + Prettier.
-
-### Key Commands
-
+### Local Dev (Vite + FastAPI)
 ```bash
-# Refresh cached spatial data
-python scripts/update_data.py
+# Backend (from project root)
+.venv/bin/uvicorn app.main:app --reload --port 8000
 
-# Run full backend test suite
-pytest
-
-# Docker deployment
-docker-compose -f docker-compose.prod.yml up -d
+# Frontend (from frontend/)
+npm run dev  # Runs on :5173
 ```
 
-## 🚨 Critical Implementation Details
+### Linting & Type Checking
+```bash
+# Frontend - MUST pass before commit
+npm run lint   # ESLint (enforces TypeScript strict mode)
+npm run build  # Vite build validation
 
-1. **Error Handling:** Use `app.core.exceptions.GeoHubException` for predictable API errors.
-2. **Async:** FastAPI routes are `async`. Use `await` for I/O (although GeoPandas is synchronous, so wrap heavy spatial ops if blocking the event loop is a concern).
-3. **Data Proxy:** The generic endpoint `GET /api/data/{dataset_key}` uses "Domain Intelligence" (`proxy_data` in `main.py`). When adding new data workflows, consider if they belong here or in a dedicated endpoint.
-4. **PWA:** Frontend is PWA-enabled (`vite-plugin-pwa`). Ensure `manifest.json` handles changes to app capabilities.
+# Backend
+pytest  # Runs spatial logic tests
+```
 
-## 🤝 Integration Points
+### Data Refresh
+```bash
+python scripts/update_data.py  # Pulls latest from City of Cape Town ArcGIS
+```
 
-- **Dataset Keys:** Defined in `app/config.py` (`DATA_URLS`). Added keys here automatically become available to the `data_loader`.
-- **Frontend-Backend Contract:** API returns standard GeoJSON `FeatureCollection` for spatial data. Frontend expects `properties` dictionary to match specific schema for tooltips/popups.
+## Project-Specific Conventions
+
+### Styling: CSS Variables > Tailwind
+Use `index.css` design tokens (`--accent`, `--surface`, `--text-primary`) instead of inline Tailwind classes. Dark mode is handled via `[data-theme='dark']`.
+
+### State Management: Context + Hooks
+No Redux. Global state lives in:
+- `src/App.jsx` → `MapContext` (map center, zoom, active layers)
+- `src/hooks/useOfflineData.js` → IndexedDB for PWA offline support
+
+### GeoJSON Handling
+Backend always returns:
+```json
+{
+  "type": "FeatureCollection",
+  "features": [...],
+  "crs": { "type": "name", "properties": { "name": "EPSG:4326" } }
+}
+```
+Frontend consumes via `react-leaflet`'s `<GeoJSON>` component.
+
+### API Patterns
+FastAPI routes follow:
+```python
+@router.get("/{module}/layer")
+async def get_layer(simplify: float = 0.001) -> GeoJSONResponse:
+    # Uses geopandas.simplify() for performance
+```
+Simplification is **required** for large datasets (zoning, flood risk).
+
+## Integration Points
+
+### Map ↔ Backend
+`src/api-client.js` wraps all `/api/*` calls. Example:
+```javascript
+await apiClient.fetchLayer('services', 'access')  // → /api/services/access
+```
+
+### Offline Support
+`useOfflineData.js` syncs to IndexedDB. When offline, layers are served from local cache. Background sync queue processes writes when reconnected.
+
+### External Data Sources
+All datasets come from **City of Cape Town Open Data Portal** (ArcGIS REST). Attributions are tracked in `DATA_SOURCES.md`. **Never remove attribution comments** from GeoJSON responses.
+
+## Accessibility Requirements (WCAG 2.1 AA)
+
+- All map controls must be keyboard-navigable (`tabindex`, `onKeyDown`)
+- Icons require `aria-label` (e.g., `<ZoomIn aria-label="Zoom in map" />`)
+- Color contrast: Text must meet 4.5:1 ratio (use CSS vars for compliance)
+- Use semantic HTML: `<nav>`, `<main>`, `<section>` over `<div>`
+
+## Common Gotchas
+
+1. **LatLng Order**: Leaflet uses `[lat, lng]`, GeoJSON uses `[lng, lat]`
+2. **CRS Mismatch**: If map shows Antarctica, you likely passed EPSG:32734 coords to Leaflet (which expects 4326)
+3. **Vite ENV Vars**: Must be prefixed with `VITE_` to be accessible in browser
+4. **React 19 Rules**: The eslint config disables `set-state-in-effect` warnings for data-fetching hooks (intentional)
+
+## Before You Commit
+
+- [ ] Run `npm run lint` (frontend)
+- [ ] Verify map loads without console errors at `http://localhost:5173`
+- [ ] Check that GeoJSON layers render (click a module in sidebar)
+- [ ] Test mobile sidebar toggle (responsive layout)

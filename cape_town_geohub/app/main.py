@@ -8,7 +8,8 @@ import time
 import json
 from collections import defaultdict
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, HTTPException
+from typing import Optional
+from fastapi import FastAPI, Request, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -172,16 +173,48 @@ app.include_router(realtime_api.router, prefix=settings.API_PREFIX)
 app.include_router(data_status_api.router, prefix=settings.API_PREFIX)
 
 # Generic Data Proxy Endpoint (Phase 7.5: System Integration)
+# In-memory cache for responses (simple TTL cache)
+_response_cache: dict = {}
+_cache_timestamps: dict = {}
+CACHE_TTL_SECONDS = 300  # 5 minutes
+
+
+def get_cached_response(cache_key: str) -> Optional[dict]:
+    """Get cached response if not expired"""
+    if cache_key in _response_cache:
+        if time.time() - _cache_timestamps.get(cache_key, 0) < CACHE_TTL_SECONDS:
+            return _response_cache[cache_key]
+        # Expired, remove
+        del _response_cache[cache_key]
+        del _cache_timestamps[cache_key]
+    return None
+
+
+def set_cached_response(cache_key: str, data: dict):
+    """Store response in cache"""
+    _response_cache[cache_key] = data
+    _cache_timestamps[cache_key] = time.time()
 
 
 @app.get("/api/data/{dataset_key}")
-async def proxy_data(dataset_key: str):
+async def proxy_data(
+    dataset_key: str,
+    limit: int = Query(
+        default=1000, ge=1, le=10000, description="Max features to return"
+    ),
+    offset: int = Query(default=0, ge=0, description="Number of features to skip"),
+    use_cache: bool = Query(
+        default=True, description="Use cached response if available"
+    ),
+):
     """
-    Smart Data Proxy & Domain Intelligence Endpoint.
+    Smart Data Proxy & Domain Intelligence Endpoint with Pagination.
 
     1. Fetches data via DataLoader (Handles ZIP, CRS, Caching)
     2. Applies Domain Intelligence (Safety Merging, Transport Optimization)
-    3. Returns optimized GeoJSON
+    3. Returns paginated GeoJSON
+
+    Pagination: Use limit/offset to page through large datasets.
     """
     from app.core.data_loader import data_loader
     from app.spatial_analysis.safety import safety_analyzer
@@ -194,6 +227,19 @@ async def proxy_data(dataset_key: str):
             detail=f"Dataset '{dataset_key}' not found. Available: {list(settings.DATA_URLS.keys())} + ['safety_precincts']",
         )
 
+    # Check cache first
+    cache_key = f"{dataset_key}:{limit}:{offset}"
+    if use_cache:
+        cached = get_cached_response(cache_key)
+        if cached:
+            return JSONResponse(
+                content=cached,
+                headers={
+                    "X-Cache": "HIT",
+                    "Cache-Control": "public, max-age=300",
+                },
+            )
+
     try:
         # Domain Intelligence Logic
 
@@ -201,10 +247,25 @@ async def proxy_data(dataset_key: str):
         if dataset_key == "myciti_routes":
             gdf = data_loader.get_gdf(dataset_key)
             optimized = transport_optimizer.optimize_routes(gdf)
+            # Apply pagination
+            total = len(optimized)
+            paginated = optimized.iloc[offset : offset + limit]
+            result = {
+                "type": "FeatureCollection",
+                "features": json.loads(paginated.to_json())["features"],
+                "metadata": {
+                    "total": total,
+                    "limit": limit,
+                    "offset": offset,
+                    "returned": len(paginated),
+                },
+            }
+            set_cached_response(cache_key, result)
             return JSONResponse(
-                content=json.loads(optimized.to_json()),
+                content=result,
                 headers={
                     "X-Optimization": "TransportOptimizer",
+                    "X-Cache": "MISS",
                     "Cache-Control": "public, max-age=86400",
                 },
             )
@@ -215,26 +276,72 @@ async def proxy_data(dataset_key: str):
                 precincts = data_loader.get_gdf("precincts")
                 stats = data_loader.load_csv("crime_stats")
                 merged = safety_analyzer.merge_stats_with_precincts(precincts, stats)
+                # Apply pagination
+                total = len(merged)
+                paginated = merged.iloc[offset : offset + limit]
+                result = {
+                    "type": "FeatureCollection",
+                    "features": json.loads(paginated.to_json())["features"],
+                    "metadata": {
+                        "total": total,
+                        "limit": limit,
+                        "offset": offset,
+                        "returned": len(paginated),
+                    },
+                }
+                set_cached_response(cache_key, result)
                 return JSONResponse(
-                    content=json.loads(merged.to_json()),
+                    content=result,
                     headers={
                         "X-Merged": "SafetyAnalyzer",
+                        "X-Cache": "MISS",
                         "Cache-Control": "public, max-age=86400",
                     },
                 )
             except Exception as e:
                 logger.error(f"Safety domain error: {e}. Falling back to boundaries.")
                 precincts = data_loader.get_gdf("precincts")
-                return JSONResponse(content=json.loads(precincts.to_json()))
+                total = len(precincts)
+                paginated = precincts.iloc[offset : offset + limit]
+                return JSONResponse(
+                    content={
+                        "type": "FeatureCollection",
+                        "features": json.loads(paginated.to_json())["features"],
+                        "metadata": {
+                            "total": total,
+                            "limit": limit,
+                            "offset": offset,
+                            "returned": len(paginated),
+                        },
+                    }
+                )
 
-        # 3. Default Path - Smart Loader
+        # 3. Default Path - Smart Loader with Pagination
         gdf = data_loader.get_gdf(dataset_key)
+        total = len(gdf)
+        paginated = gdf.iloc[offset : offset + limit]
+
+        result = {
+            "type": "FeatureCollection",
+            "features": json.loads(paginated.to_json())["features"],
+            "metadata": {
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+                "returned": len(paginated),
+                "has_more": offset + limit < total,
+            },
+        }
+        set_cached_response(cache_key, result)
+
         return JSONResponse(
-            content=json.loads(gdf.to_json()),
+            content=result,
             headers={
                 "Cache-Control": f"public, max-age={settings.CACHE_DURATION_DAYS * 86400}",
                 "X-Data-Source": "City of Cape Town",
                 "X-Loader-Version": "v2",
+                "X-Cache": "MISS",
+                "X-Total-Count": str(total),
             },
         )
 
