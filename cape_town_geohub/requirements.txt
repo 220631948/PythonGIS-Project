@@ -4,7 +4,7 @@ geopandas==0.14.2
 shapely==2.0.2
 pyproj==3.6.1
 pandas==2.2.0
-requests==2.31.0
+requests==2.32.5
 rtree==1.2.0
 pydantic==2.5.3
 pydantic-settings==2.1.0
