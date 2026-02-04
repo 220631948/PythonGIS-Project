@@ -14,9 +14,10 @@
 3. Add context requirements
 4. Provide usage examples
 5. Save to `prompts/category/prompt-name.md`
+	- Categories: `api-design`, `component`, `geojson`, `spatial-analysis`, `testing`, `documentation`
 
 ## Updating Instructions
 1. Propose guideline changes to the team
-2. Update relevant markdown in `instructions/`
+2. Update relevant markdown in `instructions/` (coding-standards, spatial-patterns, architecture, performance, security)
 3. Update relevant agents to reference new instructions
 4. Document in changelog
