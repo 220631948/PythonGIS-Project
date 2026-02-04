@@ -5,11 +5,12 @@
  */
 
 import React, { useEffect } from 'react';
-import { RefreshCw, Play, AlertCircle, Building2 } from 'lucide-react';
+import { RefreshCw, Play, Building2 } from 'lucide-react';
 
 // Components
 import ServicesSummary from './components/ServicesSummary';
 import SettlementsTable from './components/SettlementsTable';
+import LoadingBoundary from '../../components/LoadingBoundary';
 
 // Hooks
 import { useServicesAnalysis, type AnalyzedSettlement } from './hooks/useServicesAnalysis';
@@ -105,32 +106,33 @@ const ServicesModule: React.FC<ServicesModuleProps> = ({
                 </button>
             </div>
 
-            {/* Error Display */}
-            {error && (
-                <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-red-500" />
-                    <span className="text-sm text-red-700">{error}</span>
-                </div>
-            )}
+            {/* Content Area */}
+            <div className="flex-1 overflow-auto">
+                <LoadingBoundary
+                    loading={loading}
+                    error={error}
+                    onRetry={runAnalysis}
+                    variant="compact"
+                    skeletonType="list"
+                >
+                    {isAnalyzed && (
+                        <>
+                            <ServicesSummary stats={stats} loading={false} />
 
-            {/* Stats Summary */}
-            {isAnalyzed && <ServicesSummary stats={stats} loading={loading} />}
-
-            {/* Settlements Table */}
-            {isAnalyzed && (
-                <div className="flex-1 overflow-auto">
-                    <div className="px-4 py-2">
-                        <h3 className="text-sm font-semibold text-slate-700 mb-2">
-                            Settlements by Access Level
-                        </h3>
-                    </div>
-                    <SettlementsTable
-                        settlements={data}
-                        onSettlementClick={handleSettlementClick}
-                        selectedId={selectedSettlement?.id}
-                    />
-                </div>
-            )}
+                            <div className="px-4 py-2">
+                                <h3 className="text-sm font-semibold text-slate-700 mb-2">
+                                    Settlements by Access Level
+                                </h3>
+                            </div>
+                            <SettlementsTable
+                                settlements={data}
+                                onSettlementClick={handleSettlementClick}
+                                selectedId={selectedSettlement?.id}
+                            />
+                        </>
+                    )}
+                </LoadingBoundary>
+            </div>
 
             {/* Empty State */}
             {!isAnalyzed && !loading && !error && (

@@ -2,6 +2,7 @@ import { Component, ErrorInfo, ReactNode } from 'react';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
+  variant?: 'full' | 'compact';
 }
 
 interface ErrorBoundaryState {
@@ -48,6 +49,46 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   render() {
     if (this.state.hasError) {
+      const { variant = 'full' } = this.props;
+
+      // Compact Version (for Sidebar, Cards, etc.)
+      if (variant === 'compact') {
+        return (
+          <div className="p-4" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span style={{ fontSize: '20px' }}>⚠️</span>
+              </div>
+              <h3 className="text-sm font-semibold text-red-800 mb-1">
+                Component Error
+              </h3>
+              <p className="text-xs text-red-600 mb-3">
+                Something went wrong here.
+              </p>
+
+              {this.state.error && (
+                <details className="mb-3 text-left">
+                  <summary className="text-xs text-red-500 cursor-pointer hover:underline mb-1">
+                    Details
+                  </summary>
+                  <pre className="p-2 bg-red-100 rounded text-[10px] text-red-700 overflow-auto max-h-20 whitespace-pre-wrap word-break-break-word">
+                    {this.state.error.message}
+                  </pre>
+                </details>
+              )}
+
+              <button
+                onClick={this.handleRetry}
+                className="inline-flex items-center justify-center px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded hover:bg-red-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // Full Page Version (Default)
       return (
         <div style={{
           display: 'flex',

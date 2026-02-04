@@ -2,10 +2,12 @@ services:
   db:
     image: kartoza/postgis:15-3.3
     container_name: geohub_postgis
+    env_file:
+      - ./cape_town_geohub/.env
     environment:
-      - POSTGRES_USER=geohub
-      - POSTGRES_PASS=geohub_password
-      - POSTGRES_DB=geohub_db
+      - POSTGRES_USER=${POSTGRES_USER:-geohub}
+      - POSTGRES_PASS=${POSTGRES_PASSWORD:-geohub_password}
+      - POSTGRES_DB=${POSTGRES_DB:-geohub_db}
       - ALLOW_IP_RANGE=0.0.0.0/0
       - POSTGRES_MULTIPLE_EXTENSIONS=postgis,hstore,postgis_topology
     ports:
@@ -14,7 +16,7 @@ services:
       - ./postgres_data:/var/lib/postgresql
       - ./cape_town_geohub/scripts/init_db:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U geohub -d geohub_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-geohub} -d ${POSTGRES_DB:-geohub_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,15 +30,17 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: geohub_api
+    env_file:
+      - ./cape_town_geohub/.env
     depends_on:
       db:
         condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql+asyncpg://geohub:geohub_password@db:5432/geohub_db
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-geohub}:${POSTGRES_PASSWORD:-geohub_password}@db:5432/${POSTGRES_DB:-geohub_db}
       - PYTHONUNBUFFERED=1
       - API_HOST=0.0.0.0
       - API_PORT=8000
-      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
     ports:
       - "8000:8000"
     volumes:
