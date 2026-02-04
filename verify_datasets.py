@@ -9,7 +9,7 @@ from typing import Dict, List, Any
 # Add the project directory to sys.path to import portal_client
 sys.path.append(os.getcwd())
 
-from cape_town_geohub.app.core.portal_client import portal_client, PORTAL_DATASETS, DatasetCategory
+from app.core.portal_client import portal_client, PORTAL_DATASETS, DatasetCategory
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

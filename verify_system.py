@@ -54,7 +54,7 @@ def check_frontend_dependencies():
     """Check frontend dependencies"""
     print("🎨 Checking frontend dependencies...")
 
-    frontend_dir = Path(__file__).parent / "cape_town_geohub" / "frontend"
+    frontend_dir = Path(__file__).parent / "frontend"
     if not frontend_dir.exists():
         return False, "Frontend directory not found"
 
@@ -98,7 +98,7 @@ def check_api_endpoints():
     print("🔗 Checking API endpoint definitions...")
 
     # Check if main API files exist
-    api_dir = Path(__file__).parent / "cape_town_geohub" / "app" / "api"
+    api_dir = Path(__file__).parent / "app" / "api"
     required_apis = [
         "portal_api.py", "suitability_api.py", "services_api.py",
         "transport_api.py", "environment_api.py", "land_use_api.py"
