@@ -2,7 +2,7 @@ name: Deploy Cape Town GeoHub
 
 on:
   push:
-    branches: ["main"]
+    branches: ["master"]
 
 permissions:
   contents: read
