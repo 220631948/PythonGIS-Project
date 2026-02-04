@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import Dict, Any
 from datetime import datetime, timedelta
 import logging
-import requests
+import httpx
 
 from app.config import settings
 
@@ -83,7 +83,7 @@ for feed_id, config in DEFAULT_FEEDS.items():
     _feed_configs[feed_id] = config
 
 
-def _fetch_traffic_data() -> Dict[str, Any]:
+async def _fetch_traffic_data() -> Dict[str, Any]:
     """
     Fetch real traffic data from City of Cape Town ArcGIS services.
     Uses the Open Data Service FeatureServer.
@@ -97,9 +97,11 @@ def _fetch_traffic_data() -> Dict[str, Any]:
             "f": "json",
             "resultRecordCount": 50
         }
-        response = requests.get(url, params=params, timeout=30)
 
-        if response.ok:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, params=params, timeout=30)
+
+        if response.is_success:
             data = response.json()
             features = data.get("features", [])
             return {
@@ -125,7 +127,7 @@ def _fetch_traffic_data() -> Dict[str, Any]:
         return _create_unavailable_response("traffic", str(e))
 
 
-def _fetch_weather_data() -> Dict[str, Any]:
+async def _fetch_weather_data() -> Dict[str, Any]:
     """
     Fetch weather data. Note: SAWS API may require registration.
     Fallback to basic status until API access is configured.
@@ -150,7 +152,7 @@ def _fetch_weather_data() -> Dict[str, Any]:
         return _create_unavailable_response("weather", str(e))
 
 
-def _fetch_disruptions_data() -> Dict[str, Any]:
+async def _fetch_disruptions_data() -> Dict[str, Any]:
     """
     Fetch service disruption data from City of Cape Town.
     """
@@ -158,10 +160,11 @@ def _fetch_disruptions_data() -> Dict[str, Any]:
         # CCT service alerts - check for planned outages
         url = "https://egis.capetown.gov.za/arcgis/rest/services/Theme_Based/Open_Data_Service/FeatureServer"
 
-        # Try to get metadata about available layers
-        response = requests.get(f"{url}?f=json", timeout=15)
+        async with httpx.AsyncClient() as client:
+            # Try to get metadata about available layers
+            response = await client.get(f"{url}?f=json", timeout=15)
 
-        if response.ok:
+        if response.is_success:
             return {
                 "disruptions": [],
                 "total_active": 0,
@@ -179,16 +182,18 @@ def _fetch_disruptions_data() -> Dict[str, Any]:
         return _create_unavailable_response("disruptions", str(e))
 
 
-def _fetch_transport_data() -> Dict[str, Any]:
+async def _fetch_transport_data() -> Dict[str, Any]:
     """
     Fetch public transport status from MyCiTi and rail services.
     """
     try:
         # Fetch MyCiTi stops as a proxy for service coverage
         url = "https://opendata.arcgis.com/datasets/cct::myciti-bus-stops.geojson"
-        response = requests.get(url, timeout=30)
 
-        if response.ok:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=30)
+
+        if response.is_success:
             data = response.json()
             features = data.get("features", [])
 
@@ -215,7 +220,7 @@ def _fetch_transport_data() -> Dict[str, Any]:
         return _create_unavailable_response("transport", str(e))
 
 
-def _fetch_air_quality_data() -> Dict[str, Any]:
+async def _fetch_air_quality_data() -> Dict[str, Any]:
     """
     Fetch air quality data from SAAQIS (South African Air Quality Information System).
     """
@@ -247,7 +252,7 @@ def _create_unavailable_response(data_type: str, error: str) -> Dict[str, Any]:
     }
 
 
-def _refresh_feed(feed_id: str) -> Dict[str, Any]:
+async def _refresh_feed(feed_id: str) -> Dict[str, Any]:
     """Refresh data for a specific feed from real open data sources."""
     config = _feed_configs.get(feed_id)
     if not config:
@@ -272,7 +277,7 @@ def _refresh_feed(feed_id: str) -> Dict[str, Any]:
             "timestamp": datetime.utcnow().isoformat()
         }
 
-    data = fetcher()
+    data = await fetcher()
     data["_feed_info"] = {
         "feed_id": feed_id,
         "name": config["name"],
@@ -346,7 +351,7 @@ async def get_feed(feed_id: str, force_refresh: bool = Query(False)):
         should_refresh = True
 
     if should_refresh:
-        return _refresh_feed(feed_id)
+        return await _refresh_feed(feed_id)
 
     return cached
 
@@ -357,7 +362,7 @@ async def refresh_feed(feed_id: str):
     if feed_id not in _feed_configs:
         raise HTTPException(status_code=404, detail=f"Feed '{feed_id}' not found")
 
-    return _refresh_feed(feed_id)
+    return await _refresh_feed(feed_id)
 
 
 @router.get("/status")
@@ -448,4 +453,3 @@ async def get_data_sources():
             "attribution_required": True
         }
     }
-
