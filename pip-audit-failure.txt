@@ -1,0 +1,12 @@
+pip-audit attempt failed when auditing requirements.txt
+
+Summary:
+- pip-audit attempted to create a temporary environment and install packages from requirements.txt for dependency collection.
+- The install failed while building pandas from source (no binary wheels available for Python 3.13 on this machine).
+- Error excerpt: "error: metadata-generation-failed ... pandas ... FAILED: [code=1] pandas/_libs/window/aggregations.cpython-313-x86_64-linux-gnu.so.p/meson-generated_pandas__libs_window_aggregations.pyx.cpp.o"
+
+Recommendation:
+- Run pip-audit in CI (where wheels or suitable build toolchain are available) or use Python 3.11 locally to allow wheel availability.
+- Alternatively, provide pre-built wheels or audit environment image to pip-audit.
+
+Full pip-audit output is available in the CI logs; the local run failed on this machine due to pandas build errors.
