@@ -1,0 +1,139 @@
+
+
+[33m[1m+===========================================================================================================================================================================================+[0m
+
+
+[31m[1mDEPRECATED: [0m[33m[1mthis command (`check`) has been DEPRECATED, and will be unsupported beyond 01 June 2024.[0m
+
+
+[32mWe highly encourage switching to the new [0m[32m[1m`scan`[0m[32m command which is easier to use, more powerful, and can be set up to mimic the deprecated command if required.[0m
+
+
+[33m[1m+===========================================================================================================================================================================================+[0m
+
+
++==============================================================================+
+
+                               /$$$$$$            /$$
+                              /$$__  $$          | $$
+           /$$$$$$$  /$$$$$$ | $$  \__//$$$$$$  /$$$$$$   /$$   /$$
+          /$$_____/ |____  $$| $$$$   /$$__  $$|_  $$_/  | $$  | $$
+         |  $$$$$$   /$$$$$$$| $$_/  | $$$$$$$$  | $$    | $$  | $$
+          \____  $$ /$$__  $$| $$    | $$_____/  | $$ /$$| $$  | $$
+          /$$$$$$$/|  $$$$$$$| $$    |  $$$$$$$  |  $$$$/|  $$$$$$$
+         |_______/  \_______/|__/     \_______/   \___/   \____  $$
+                                                          /$$  | $$
+                                                         |  $$$$$$/
+  by safetycli.com                                        \______/
+
++==============================================================================+
+
+ [1mANNOUNCEMENTS[0m 
+
+[33m  * Warning: numpy, sqlalchemy, geoalchemy2, psycopg2-binary, alembic, asyncpg[0m 
+[33m    and greenlet are unpinned. Safety by default does not report on potential[0m 
+[33m    vulnerabilities in unpinned packages. It is recommended to pin your[0m 
+[33m    dependencies unless this is a library meant for distribution. To learn more[0m 
+[33m    about reporting these, specifier range handling, and options for scanning[0m 
+[33m    unpinned packages visit https://docs.pyup.io/docs/safety-range-specs[0m 
+
++==============================================================================+
+
+ [1mREPORT[0m 
+
+  Safety [1mv3.7.0[0m is scanning for [1mVulnerabilities[0m[1m...[0m
+[1m  Scanning dependencies[0m in your [1mfiles:[0m
+
+  -> cape_town_geohub/requirements.txt
+
+  Using [1mopen-source vulnerability database[0m
+[1m  Found and scanned 26 packages[0m
+  Timestamp [1m2026-02-04 12:53:24[0m
+[1m  2[0m[1m vulnerabilities reported[0m
+[1m  11[0m[1m vulnerabilities ignored[0m
+
++==============================================================================+
+ [1mVULNERABILITIES REPORTED[0m 
++==============================================================================+
+
+[33m-> Warning: 8 known vulnerabilities match the numpy versions that could be[0m 
+[33m   installed from your specifier: numpy<2 (unpinned). These vulnerabilities are[0m 
+[33m   not reported by default. To report these vulnerabilities set 'ignore-[0m 
+[33m   unpinned-requirements' to False under 'security' in your policy file. See[0m 
+[33m   https://docs.pyup.io/docs/safety-20-policy-file for more information.[0m 
+[33m   It is recommended to pin your dependencies unless this is a library meant[0m 
+[33m   for distribution. To learn more about reporting these, specifier range[0m 
+[33m   handling, and options for scanning unpinned packages visit[0m 
+[33m   https://docs.pyup.io/docs/safety-range-specs[0m 
+
+-> Vulnerability found in gunicorn version 21.2.0
+[1m   Vulnerability ID: [0m71600
+[32m[1m   This vulnerability is being ignored.[0m
+[1m   For more information about this vulnerability, visit
+   [0mhttps://data.safetycli.com/v/71600/97c[0m
+
+
+-> Vulnerability found in gunicorn version 21.2.0
+[1m   Vulnerability ID: [0m76244
+[32m[1m   This vulnerability is being ignored.[0m
+[1m   For more information about this vulnerability, visit
+   [0mhttps://data.safetycli.com/v/76244/97c[0m
+
+
+-> Vulnerability found in python-multipart version 0.0.9
+[1m   Vulnerability ID: [0m74427
+[32m[1m   This vulnerability is being ignored.[0m
+[1m   For more information about this vulnerability, visit
+   [0mhttps://data.safetycli.com/v/74427/97c[0m
+
+
+[31m-> Vulnerability found in fastapi version 0.109.0[0m
+[1m   Vulnerability ID: [0m65293
+[1m   Affected spec: [0m<=0.109.0
+[1m   ADVISORY: [0mFastapi 0.109.1 updates its minimum version of 'python-
+   multipart' to >=0.0.7 to include a security fix.
+[1m   CVE-2024-24762[0m
+[1m   For more information about this vulnerability, visit
+   [0mhttps://data.safetycli.com/v/65293/97c[0m
+   To ignore this vulnerability, use PyUp vulnerability id 65293 in safety’s
+   ignore command-line argument or add the ignore to your safety policy file.
+
+
+[31m-> Vulnerability found in fastapi version 0.109.0[0m
+[1m   Vulnerability ID: [0m64930
+[1m   Affected spec: [0m<0.109.1
+[1m   ADVISORY: [0mFastAPI 0.109.1 addresses a critical security issue by
+   upgrading its dependency python-multipart to version >=0.0.7. The...
+[1m   PVE-2024-64930[0m
+[1m   For more information about this vulnerability, visit
+   [0mhttps://data.safetycli.com/v/64930/97c[0m
+   To ignore this vulnerability, use PyUp vulnerability id 64930 in safety’s
+   ignore command-line argument or add the ignore to your safety policy file.
+
+
++==============================================================================+
+   [32m[1mREMEDIATIONS[0m
+
+  2 vulnerabilities were reported in 1 package. For detailed remediation & 
+  fix recommendations, upgrade to a commercial license. 
+
++==============================================================================+
+
+ Scan was completed. 2 vulnerabilities were reported. 11 vulnerabilities from 3 
+ packages were ignored. 
+
++==============================================================================+[0m
+
+
+[33m[1m+===========================================================================================================================================================================================+[0m
+
+
+[31m[1mDEPRECATED: [0m[33m[1mthis command (`check`) has been DEPRECATED, and will be unsupported beyond 01 June 2024.[0m
+
+
+[32mWe highly encourage switching to the new [0m[32m[1m`scan`[0m[32m command which is easier to use, more powerful, and can be set up to mimic the deprecated command if required.[0m
+
+
+[33m[1m+===========================================================================================================================================================================================+[0m
+
+

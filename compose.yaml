@@ -2,26 +2,23 @@ services:
   db:
     image: kartoza/postgis:15-3.3
     container_name: geohub_postgis
-    env_file:
-      - ./cape_town_geohub/.env
+    restart: unless-stopped
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-geohub}
-      - POSTGRES_PASS=${POSTGRES_PASSWORD:-geohub_password}
-      - POSTGRES_DB=${POSTGRES_DB:-geohub_db}
-      - ALLOW_IP_RANGE=0.0.0.0/0
+      - POSTGRES_USER=geohub
+      - POSTGRES_PASS=geohub_password
+      - POSTGRES_DBNAME=geohub_db
       - POSTGRES_MULTIPLE_EXTENSIONS=postgis,hstore,postgis_topology
     ports:
       - "5432:5432"
     volumes:
       - ./postgres_data:/var/lib/postgresql
-      - ./cape_town_geohub/scripts/init_db:/docker-entrypoint-initdb.d
+      - ./scripts/init_db:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-geohub} -d ${POSTGRES_DB:-geohub_db}"]
+      test: [ "CMD-SHELL", "pg_isready -U geohub -d geohub_db" ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
-    restart: unless-stopped
     networks:
       - geohub-network
 
@@ -30,61 +27,44 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: geohub_api
-    env_file:
-      - ./cape_town_geohub/.env
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-geohub}:${POSTGRES_PASSWORD:-geohub_password}@db:5432/${POSTGRES_DB:-geohub_db}
+      - DATABASE_URL=postgresql+asyncpg://geohub:geohub_password@db:5432/geohub_db
       - PYTHONUNBUFFERED=1
       - API_HOST=0.0.0.0
       - API_PORT=8000
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      - CORS_ORIGINS=["http://localhost:3000","http://localhost:5173"]
     ports:
       - "8000:8000"
     volumes:
-      - ./cape_town_geohub:/app
-      - ./cape_town_geohub/data/cache:/app/data/cache
+      - ./:/app
+      - ./data/cache:/app/data/cache
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    restart: unless-stopped
     networks:
       - geohub-network
 
   frontend:
     build:
-      context: ./cape_town_geohub/frontend
+      context: ./frontend
       dockerfile: Dockerfile.dev
     container_name: geohub_frontend
+    restart: unless-stopped
     depends_on:
-      api:
-        condition: service_healthy
+      - api
     environment:
-      - VITE_API_URL=http://localhost:3000
-      - API_PROXY_TARGET=http://api:8000
-      - VITE_DEV_PORT=3000
+      - VITE_API_URL=http://localhost:8000
       - VITE_MAP_CENTER=-33.9249,18.4241
       - VITE_MAP_ZOOM=12
     ports:
-      - "3000:3000"
+      - "5173:5173"
     volumes:
-      - ./cape_town_geohub/frontend/src:/app/src
-      - ./cape_town_geohub/frontend/public:/app/public
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
       - /app/node_modules
-    command: npm run dev -- --host 0.0.0.0 --port 3000
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    restart: unless-stopped
+    command: npm run dev -- --host 0.0.0.0 --port 5173
     networks:
       - geohub-network
 

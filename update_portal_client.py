@@ -1,6 +1,6 @@
 import re
 
-path = 'cape_town_geohub/app/core/portal_client.py'
+path = 'app/core/portal_client.py'
 
 with open(path, 'r') as f:
     content = f.read()

@@ -1,8 +1,8 @@
-# Builder Stage
+# Builder stage
 FROM python:3.11-slim-bullseye AS builder
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Update apt packages and install system dependencies
+RUN apt-get update && apt-get install -y \
     gdal-bin \
     libgdal-dev \
     libgeos-dev \
@@ -13,52 +13,52 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /build
 
-# Copy requirements file
-COPY cape_town_geohub/requirements.txt .
+# Copy only requirements.txt first for layer caching
+COPY requirements.txt .
 
-# Install python packages
+# Install python packages using pip install with no-cache-dir and user flags
 RUN pip install --no-cache-dir --user -r requirements.txt
 
-# Runtime Stage
+# Runtime stage
 FROM python:3.11-slim-bullseye AS runtime
 
-# Install runtime dependencies (use package names without strict version suffixes)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install only runtime dependencies
+RUN apt-get update && apt-get install -y \
     gdal-bin \
     libgdal28 \
     libgeos-c1v5 \
     libproj19 \
     postgresql-client \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
+# Create non-root user geohub
 RUN useradd -m -u 1000 geohub
 
-# Create app and data directories
-RUN mkdir -p /app/data/cache && chown -R geohub:geohub /app
+# Create app directory and data slash cache subdirectory
+RUN mkdir -p /app/data/cache
+
+# Set ownership to geohub user
+RUN chown -R geohub:geohub /app
 
 WORKDIR /app
 
-# Copy installed python packages from builder
+# Copy python packages from builder
 COPY --from=builder /root/.local /home/geohub/.local
 
-# Update PATH
+# Update PATH environment variable
 ENV PATH=/home/geohub/.local/bin:$PATH
-ENV PYTHONUNBUFFERED=1
 
-# Copy application code
-COPY --chown=geohub:geohub cape_town_geohub/ .
+# Copy application code setting ownership to geohub
+COPY --chown=geohub:geohub . .
 
-# Switch to non-root user
+# Switch to geohub user
 USER geohub
 
-# Healthcheck
+# Add healthcheck calling python script
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD python -c "import requests; exit(0 if requests.get('http://localhost:8000/health').ok else 1)"
 
-# Expose port
 EXPOSE 8000
 
-# Default command
+# Default CMD runs gunicorn serving app.main:app
 CMD ["gunicorn", "app.main:app", "--bind", "0.0.0.0:8000", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--timeout", "120"]

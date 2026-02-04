@@ -1,0 +1,30 @@
+Restructure analysis – baseline
+Date: 2026-02-04
+Branch: fix/security/npm-audit-frontend-2026-02-04 (remote origin)
+Git root: /home/mr/PycharmProjects/PythonGIS Project
+Nested .git: none (cape_town_geohub/ has no .git)
+
+Key duplicates/overlaps (root vs cape_town_geohub/):
+- Ignore files: .gitignore, .dockerignore at both levels; .vscode at both levels.
+- CI/CD: root .github (deploy.yml, agents/), nested .github (ci.yml, deploy.yml, copilot/ instructions/agents/).
+- Docker/Compose: root Dockerfile + Dockerfile.backup + compose.yaml; nested Dockerfile + compose.yaml + docker-compose.prod.yml + docker-compose.yml.bak.
+- Python deps: root requirements-pinned.txt; nested requirements.txt (main). Also safety audit files at root.
+- Docs: root README.md, README.Docker.md; nested README.md, DATA_SOURCES.md, ETHICS.md, OFFLINE_SETUP.md, TEST_REPORT.md, TYPESCRIPT_MIGRATION.md, CHANGELOG.md, CONTRIBUTING.md.
+- Tooling/config: nested Makefile, pytest.ini, alembic.ini present; none at root.
+- Env: nested .env, .env.example; none at root.
+- Data/logs: nested data/, logs/, postgres_data/; none at root (but should be ignored).
+- Other files at root: app/ (check relevance vs primary app/ under cape_town_geohub/), map_datasets.py, search_arcgis.py, verify_* scripts, node_modules/ (likely misplaced), .junie/ guidelines, .audit-venv/.
+
+Open questions/decisions:
+- Determine whether root-level app/ is legacy/duplicate; primary app/ seems under cape_town_geohub/.
+- Decide which Dockerfile/compose variants to keep (likely inner ones after path updates).
+- Merge README/ETHICS/CONTRIBUTING/CHANGELOG contents; keep canonical versions at new root.
+- Decide whether to keep Dockerfile.backup and docker-compose.yml.bak (likely drop).
+- Handle audit artifacts (npm-audit*.json, safety*.txt/json, pip-audit-help.txt) – likely keep out of final tree or place under docs/reports/.
+
+Next actions (per plan):
+- Create safety branch and archive.
+- Merge ignore files (.gitignore, .dockerignore).
+- Rationalize Docker/compose files.
+- Move inner tree to root and update paths (Docker, compose, scripts, alembic, docs).
+- Validate (tests, npm build, docker-compose build/up) after moves.

@@ -1,2 +1,104 @@
-node_modules
-.dockerignore
+# Python backend
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.so
+venv/
+.venv/
+ENV/
+env/
+.audit-venv/
+.Python
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+
+# Packaging
+build/
+dist/
+*.egg-info/
+*.wheels/
+
+# Node frontend
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+frontend/dist/
+frontend/build/
+.vite/
+*.tsbuildinfo
+coverage/
+frontend/test-results/
+frontend/playwright-report/
+frontend/.eslintcache
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Data and spatial
+postgres_data/
+pgdata/
+data/cache/*
+*.db
+*.sqlite3
+*.parquet
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.geojson
+!test-fixtures/*.geojson
+!frontend/public/*.geojson
+!data/cache/.gitkeep
+!data/raw/.gitkeep
+
+# Env and secrets
+.env
+.env.local
+.env.production
+.env.development
+.env.*.local
+secrets/
+*.pem
+*.key
+*.crt
+id_rsa*
+config/local.yaml
+config/production.yaml
+
+# IDE / OS
+.vscode/
+.idea/
+*.code-workspace
+*.iml
+*.iws
+*.swp
+*.swo
+*~
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.junie/
+
+# Docker / deployment
+volumes/
+docker-data/
+tmp/
+temp/
+*.tmp
+logs/
+
+# Local agent memory
+.agent-memory
+
+# Temporary outputs
+.output.txt
+test_output.txt
