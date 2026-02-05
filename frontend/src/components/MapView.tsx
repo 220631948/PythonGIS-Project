@@ -546,6 +546,15 @@ function EnhancedGeoJSONLayer({
   const map = useMap();
   const layerRef = useRef<L.GeoJSON | null>(null);
 
+  // Optimization: Stable refs for callbacks to prevent layer recreation
+  const onFeatureClickRef = useRef(onFeatureClick);
+  const onFeatureHoverRef = useRef(onFeatureHover);
+
+  useEffect(() => {
+    onFeatureClickRef.current = onFeatureClick;
+    onFeatureHoverRef.current = onFeatureHover;
+  }, [onFeatureClick, onFeatureHover]);
+
   useEffect(() => {
     if (!data || !data.features) return;
 
@@ -569,7 +578,7 @@ function EnhancedGeoJSONLayer({
               fillOpacity: Math.min(opacity + 0.2, 1)
             });
           }
-          if (onFeatureHover) onFeatureHover(feature, true);
+          if (onFeatureHoverRef.current) onFeatureHoverRef.current(feature, true);
         });
 
         layer.on('mouseout', (e: any) => {
@@ -577,11 +586,11 @@ function EnhancedGeoJSONLayer({
           if (targetLayer.setStyle) {
             targetLayer.setStyle(getLayerStyle(layerId, feature, opacity));
           }
-          if (onFeatureHover) onFeatureHover(feature, false);
+          if (onFeatureHoverRef.current) onFeatureHoverRef.current(feature, false);
         });
 
         layer.on('click', (e) => {
-          if (onFeatureClick) onFeatureClick(feature, e);
+          if (onFeatureClickRef.current) onFeatureClickRef.current(feature, e);
         });
       },
       pointToLayer: (_feature, latlng) => {
@@ -613,7 +622,7 @@ function EnhancedGeoJSONLayer({
         map.removeLayer(layerRef.current);
       }
     };
-  }, [data, layerId, datasetInfo, opacity, map, onFeatureClick, onFeatureHover]);
+  }, [data, layerId, datasetInfo, opacity, map]);
 
   return null;
 }
