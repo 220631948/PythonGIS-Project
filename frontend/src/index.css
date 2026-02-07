@@ -1,3 +1,27 @@
+@import "tailwindcss";
+
+/* === Tailwind Theme Extension ===
+ * Maps existing CSS variable design tokens into Tailwind's theme
+ * so utilities like bg-primary, text-accent etc. resolve to our tokens.
+ */
+@theme {
+  --color-primary: #6366f1;
+  --color-secondary: #8b5cf6;
+  --color-accent: #06b6d4;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-bg-primary: #f8fafc;
+  --color-bg-secondary: #f1f5f9;
+
+  --font-family-display: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+}
+
 :root {
   /* === Typography System === */
     --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;

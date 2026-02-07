@@ -6,7 +6,7 @@ export interface UrlState {
   lng?: number;
   zoom?: number;
   layers?: string[];
-  [key: string]: any;
+  [key: string]: string | number | boolean | string[] | undefined;
 }
 
 export function useUrlState<T extends UrlState>(initialState: T): [T, (updater: T | ((prev: T) => T)) => void] {
@@ -22,10 +22,10 @@ export function useUrlState<T extends UrlState>(initialState: T): [T, (updater: 
     const lng = parseFloat(params.lng || '');
     const zoom = parseInt(params.zoom || '');
 
-    if (!isNaN(lat)) (newState as any).lat = lat;
-    if (!isNaN(lng)) (newState as any).lng = lng;
-    if (!isNaN(zoom)) (newState as any).zoom = zoom;
-    if (params.layers) (newState as any).layers = params.layers.split(',').filter(Boolean);
+    if (!isNaN(lat)) (newState as UrlState).lat = lat;
+    if (!isNaN(lng)) (newState as UrlState).lng = lng;
+    if (!isNaN(zoom)) (newState as UrlState).zoom = zoom;
+    if (params.layers) (newState as UrlState).layers = params.layers.split(',').filter(Boolean);
 
     return newState;
   });

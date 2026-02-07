@@ -38,6 +38,10 @@ frontend/.eslintcache
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+static/
+.static/
+static/assets/
+.static/assets/
 
 # Data and spatial
 postgres_data/

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -23,6 +24,7 @@ export default defineConfig({
   },
   base: '/', // Relative path for production
   plugins: [
+    tailwindcss(),
     react(),
     VitePWA({
       registerType: 'autoUpdate',
@@ -102,6 +104,20 @@ export default defineConfig({
     outDir: '../static',
     emptyOutDir: true,
     copyPublicDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor: React runtime
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // Vendor: Leaflet ecosystem
+          'vendor-leaflet': ['leaflet', 'react-leaflet'],
+          // Vendor: Turf.js spatial analysis
+          'vendor-turf': ['@turf/turf'],
+          // Vendor: lucide icons
+          'vendor-icons': ['lucide-react'],
+        },
+      },
+    },
   },
   publicDir: 'public',
   // Dev server configuration with proxy for API calls

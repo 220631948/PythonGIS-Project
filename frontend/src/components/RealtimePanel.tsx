@@ -3,7 +3,7 @@ import {
   Radio, RefreshCw, Clock, X, AlertTriangle,
   CheckCircle, Activity, CloudRain, Car, Train, Wind, LucideIcon
 } from 'lucide-react';
-import apiClient from '../api-client';
+import { apiClient } from '../lib/api';
 
 /*
  * RealtimePanel - Live data feeds with refresh controls

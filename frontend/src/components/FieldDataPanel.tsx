@@ -11,7 +11,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Clipboard, MapPin, Upload, RefreshCw, X, Wifi, WifiOff, List, Plus
 } from 'lucide-react';
-import apiClient from '../api-client';
+import { apiClient } from '../lib/api';
 import { useOnlineStatus } from '../hooks/useOfflineData';
 
 interface FormFieldConfig {
@@ -434,13 +434,12 @@ export default function FieldDataPanel({
 
     setIsSyncing(true);
     try {
-      const result = await apiClient.syncFieldEntries(syncQueue);
+      const result = await apiClient.syncFieldEntries(syncQueue) as { synced: number; failed: number; errors: Array<{ offline_id: string }> };
 
       if (result.synced > 0) {
         // Clear synced entries from queue
-        // @ts-expect-error - Result type inference issue
         const failedIds = result.errors.map(e => e.offline_id);
-        const remainingQueue = syncQueue.filter(e => failedIds.includes(e.offline_id));
+        const remainingQueue = syncQueue.filter(e => e.offline_id != null && failedIds.includes(e.offline_id));
         localStorage.setItem('fieldDataQueue', JSON.stringify(remainingQueue));
         loadSyncQueue();
         loadEntries();
