@@ -1,6 +1,8 @@
 import json
 import logging
 import pandas as pd
+import asyncio
+import httpx
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 import requests
@@ -494,6 +496,59 @@ class DataLoader:
         for dataset_name in self.data_urls:
             results[dataset_name] = self.check_data_source_health(dataset_name)
         return results
+
+    async def check_data_source_health_async(
+        self, dataset_name: str, client: Optional[httpx.AsyncClient] = None
+    ) -> Dict[str, Any]:
+        """Check if a data source is accessible and responding asynchronously."""
+        if dataset_name not in self.data_urls:
+            return {
+                "status": "error",
+                "message": "Dataset not configured",
+                "accessible": False,
+            }
+
+        url = self.data_urls[dataset_name]
+
+        try:
+            if client:
+                response = await client.head(url, timeout=10)
+            else:
+                async with httpx.AsyncClient() as local_client:
+                    response = await local_client.head(url, timeout=10)
+
+            is_ok = response.is_success or response.is_redirect
+
+            return {
+                "status": "ok" if is_ok else "error",
+                "accessible": is_ok,
+                "status_code": response.status_code,
+                "url": url,
+                "checked_at": datetime.utcnow().isoformat(),
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "accessible": False,
+                "error": str(e),
+                "url": url,
+                "checked_at": datetime.utcnow().isoformat(),
+            }
+
+    async def check_all_sources_health_async(self) -> Dict[str, Dict[str, Any]]:
+        """Check health of all configured data sources asynchronously."""
+        async with httpx.AsyncClient() as client:
+            tasks = []
+            keys = list(self.data_urls.keys())
+            for dataset_name in keys:
+                tasks.append(self.check_data_source_health_async(dataset_name, client))
+
+            results_list = await asyncio.gather(*tasks)
+
+            results = {}
+            for i, dataset_name in enumerate(keys):
+                results[dataset_name] = results_list[i]
+            return results
 
 
 # Singleton instance for global use

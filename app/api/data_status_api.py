@@ -26,7 +26,7 @@ async def check_all_sources_health():
     Check the health/accessibility of all configured open data sources.
     Returns status for each data source endpoint.
     """
-    results = data_loader.check_all_sources_health()
+    results = await data_loader.check_all_sources_health_async()
 
     total = len(results)
     accessible = sum(1 for r in results.values() if r.get("accessible", False))
@@ -46,7 +46,7 @@ async def check_all_sources_health():
 @router.get("/health/{dataset_name}")
 async def check_source_health(dataset_name: str):
     """Check health of a specific data source."""
-    result = data_loader.check_data_source_health(dataset_name)
+    result = await data_loader.check_data_source_health_async(dataset_name)
     return result
 
 
@@ -121,7 +121,7 @@ async def get_data_provenance(dataset_name: str):
     url = settings.DATA_URLS[dataset_name]
 
     # Check current health
-    health = data_loader.check_data_source_health(dataset_name)
+    health = await data_loader.check_data_source_health_async(dataset_name)
 
     return {
         "dataset": dataset_name,
