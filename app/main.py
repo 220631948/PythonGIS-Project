@@ -9,7 +9,9 @@ import json
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from typing import Optional
-from fastapi import FastAPI, Request, HTTPException, Query
+
+from cachetools import TTLCache
+from fastapi import FastAPI, Request, HTTPException, Query, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -23,6 +25,14 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.config import settings
 from app.utils.logging_config import setup_logging
 from app.core.exceptions import GeoHubException, geohub_exception_handler
+from app.dependencies import require_admin_key
+from app.models.response_models import (
+    CacheClearResponse,
+    ConfigResponse,
+    DetailedHealthResponse,
+    HealthResponse,
+    StatsResponse,
+)
 from app.api import (
     services_api,
     transport_api,
@@ -173,27 +183,20 @@ app.include_router(realtime_api.router, prefix=settings.API_PREFIX)
 app.include_router(data_status_api.router, prefix=settings.API_PREFIX)
 
 # Generic Data Proxy Endpoint (Phase 7.5: System Integration)
-# In-memory cache for responses (simple TTL cache)
-_response_cache: dict = {}
-_cache_timestamps: dict = {}
+# Bounded in-memory cache with automatic TTL eviction (B5 refactor)
 CACHE_TTL_SECONDS = 300  # 5 minutes
+CACHE_MAX_ENTRIES = 256  # Prevent unbounded memory growth
+_response_cache: TTLCache = TTLCache(maxsize=CACHE_MAX_ENTRIES, ttl=CACHE_TTL_SECONDS)
 
 
 def get_cached_response(cache_key: str) -> Optional[dict]:
-    """Get cached response if not expired"""
-    if cache_key in _response_cache:
-        if time.time() - _cache_timestamps.get(cache_key, 0) < CACHE_TTL_SECONDS:
-            return _response_cache[cache_key]
-        # Expired, remove
-        del _response_cache[cache_key]
-        del _cache_timestamps[cache_key]
-    return None
+    """Get cached response if present (TTLCache handles expiration automatically)."""
+    return _response_cache.get(cache_key)
 
 
-def set_cached_response(cache_key: str, data: dict):
-    """Store response in cache"""
+def set_cached_response(cache_key: str, data: dict) -> None:
+    """Store response in bounded TTL cache (evicts oldest when full)."""
     _response_cache[cache_key] = data
-    _cache_timestamps[cache_key] = time.time()
 
 
 @app.get("/api/data/{dataset_key}")
@@ -216,10 +219,18 @@ async def proxy_data(
 
     Pagination: Use limit/offset to page through large datasets.
     """
+    import re
     from app.core.data_loader import data_loader
     from app.spatial_analysis.safety import safety_analyzer
     from app.spatial_analysis.transport import transport_optimizer
     from app.config import settings
+
+    # Validate dataset_key against injection (alphanumeric + underscores only)
+    if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$", dataset_key):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid dataset key: '{dataset_key}'. Only letters, digits, and underscores allowed.",
+        )
 
     if dataset_key not in settings.DATA_URLS and dataset_key != "safety_precincts":
         raise HTTPException(
@@ -359,7 +370,7 @@ async def proxy_data(
 
 
 # Health check (Enhanced - validates database connectivity)
-@app.get("/health")
+@app.get("/health", response_model=HealthResponse)
 async def health_check_simple():
     from app.core.database import check_db_connection
 
@@ -377,7 +388,7 @@ async def health_check_simple():
 
 
 # Detailed System Health check
-@app.get("/api/health")
+@app.get("/api/health", response_model=DetailedHealthResponse)
 async def health_check():
     import psutil
 
@@ -408,7 +419,7 @@ async def health_check():
 
 
 # System monitoring endpoints
-@app.get("/api/stats")
+@app.get("/api/stats", dependencies=[Depends(require_admin_key)], response_model=StatsResponse)
 async def get_system_stats():
     """Get detailed system statistics"""
     return {
@@ -418,23 +429,26 @@ async def get_system_stats():
     }
 
 
-@app.post("/api/cache/clear")
+@app.post("/api/cache/clear", dependencies=[Depends(require_admin_key)], response_model=CacheClearResponse)
 async def clear_cache():
-    """Clear application cache"""
+    """Clear application caches (response cache + monitoring stats)."""
     try:
-        # Clear request stats
+        cache_size = len(_response_cache)
+        _response_cache.clear()
         request_stats.clear()
         error_stats.clear()
 
-        # Here you could add cache clearing logic for data_loader, etc.
-        logger.info("Cache cleared via API")
-        return {"message": "Cache cleared successfully"}
+        logger.info(f"Cache cleared via API ({cache_size} entries evicted)")
+        return {
+            "message": "Cache cleared successfully",
+            "entries_evicted": cache_size,
+        }
     except Exception as e:
         logger.error(f"Error clearing cache: {e}")
         raise HTTPException(status_code=500, detail="Failed to clear cache")
 
 
-@app.get("/api/config")
+@app.get("/api/config", dependencies=[Depends(require_admin_key)], response_model=ConfigResponse)
 async def get_config():
     """Get application configuration (safe, non-sensitive info)"""
     return {

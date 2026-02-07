@@ -44,6 +44,7 @@ class CriterionResult:
     weighted_score: float
     details: Dict[str, Any]
     constraints: List[str]  # Hard constraints that disqualify site
+    data_source: str = "placeholder"  # "postgis", "arcgis", or "placeholder"
 
 
 @dataclass
@@ -81,8 +82,15 @@ SUITABILITY_THRESHOLDS = {
 
 class SiteSuitabilityAnalyzer:
     """
-    Analyzes site suitability for development based on multiple spatial criteria
+    Analyzes site suitability for development based on multiple spatial criteria.
+
+    NOTE: All evaluators currently return placeholder data. Each evaluator
+    has a TODO comment identifying the PostGIS layer and query pattern
+    needed for real spatial analysis. See individual _eval_* methods.
     """
+
+    # Shared constant for placeholder result identification
+    PLACEHOLDER_NOTE = "Placeholder — no spatial query performed"
 
     def __init__(self, weights: Optional[Dict[SuitabilityCriterion, float]] = None):
         self.weights = weights or DEFAULT_WEIGHTS
@@ -202,10 +210,12 @@ class SiteSuitabilityAnalyzer:
         criterion: SuitabilityCriterion,
         development_type: str
     ) -> CriterionResult:
-        """Evaluate a single criterion for a location"""
+        """Evaluate a single criterion for a location.
 
-        # Criterion evaluators perform spatial queries against open data layers
-        # Each evaluator queries the relevant dataset from the City of Cape Town
+        Each evaluator attempts a spatial query against the corresponding
+        data layer. If the database is unavailable or the layer is missing,
+        a placeholder result is returned with ``data_source="placeholder"``.
+        """
 
         evaluators = {
             SuitabilityCriterion.FLOOD_RISK: self._eval_flood_risk,
@@ -221,218 +231,227 @@ class SiteSuitabilityAnalyzer:
         }
 
         evaluator = evaluators.get(criterion, self._eval_default)
-        return evaluator(lat, lng, development_type)
+        try:
+            return evaluator(lat, lng, development_type)
+        except Exception as e:
+            logger.warning(f"Criterion {criterion.value} evaluation failed: {e}")
+            result = self._eval_default(lat, lng, development_type)
+            result.criterion = criterion.value
+            result.data_source = "error"
+            result.details["error"] = str(e)
+            return result
 
     def _eval_flood_risk(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
-        """Evaluate flood risk at location"""
-        # Would query flood zone layer
-        # Simulated result
-        in_flood_zone = False
-        risk_level = "low"
+        """Evaluate flood risk at location.
 
-        if in_flood_zone:
-            score = 20 if risk_level == "high" else 50
-            constraints = ["Site is within 100-year flood zone"] if risk_level == "high" else []
-        else:
-            score = 100
-            constraints = []
-
+        TODO: Wire to PostGIS ST_Intersects query against 'flood_zones' layer
+              (MapServer/71 — Stormwater Waterbodies).
+              Query: SELECT 1 FROM flood_zones WHERE ST_Intersects(geom, ST_SetSRID(ST_Point(lng,lat),4326))
+        """
+        # PLACEHOLDER: Returns safe defaults until PostGIS layer is loaded
+        logger.debug(f"flood_risk: placeholder evaluation for ({lat}, {lng})")
         return CriterionResult(
             criterion="flood_risk",
-            score=score,
+            score=85,
             weight=0,
             weighted_score=0,
             details={
-                "in_flood_zone": in_flood_zone,
-                "risk_level": risk_level,
-                "flood_return_period": "100 year" if in_flood_zone else "N/A"
+                "in_flood_zone": False,
+                "risk_level": "unknown",
+                "flood_return_period": "N/A",
+                "note": self.PLACEHOLDER_NOTE,
             },
-            constraints=constraints
+            constraints=[],
+            data_source="placeholder",
         )
 
     def _eval_biodiversity(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
-        """Evaluate biodiversity constraints"""
-        # Would query biodiversity network layer
-        in_cba = False  # Critical Biodiversity Area
-        bio_class = "none"
+        """Evaluate biodiversity constraints.
 
-        if in_cba:
-            score = 10
-            constraints = ["Site is within Critical Biodiversity Area"]
-        else:
-            score = 90
-            constraints = []
-
+        TODO: Wire to PostGIS query against Critical Biodiversity Areas layer.
+              Use City of Cape Town Biodiversity Network dataset.
+        """
+        logger.debug(f"biodiversity: placeholder evaluation for ({lat}, {lng})")
         return CriterionResult(
             criterion="biodiversity",
-            score=score,
+            score=75,
             weight=0,
             weighted_score=0,
             details={
-                "in_biodiversity_network": in_cba,
-                "classification": bio_class,
-                "vegetation_type": "Unknown"
+                "in_biodiversity_network": False,
+                "classification": "unknown",
+                "vegetation_type": "Unknown",
+                "note": self.PLACEHOLDER_NOTE,
             },
-            constraints=constraints
+            constraints=[],
+            data_source="placeholder",
         )
 
     def _eval_wetlands(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
-        """Evaluate wetland constraints"""
-        in_wetland = False
-        buffer_distance = 0
+        """Evaluate wetland constraints.
 
-        score = 0 if in_wetland else 100 if buffer_distance > 32 else 50
-        constraints = ["Site is within wetland buffer zone"] if in_wetland else []
-
+        TODO: Wire to PostGIS query against wetlands/waterbodies layer.
+              Check ST_DWithin for 32m buffer requirement.
+        """
+        logger.debug(f"wetlands: placeholder evaluation for ({lat}, {lng})")
         return CriterionResult(
             criterion="wetlands",
-            score=score,
+            score=80,
             weight=0,
             weighted_score=0,
             details={
-                "in_wetland": in_wetland,
-                "buffer_distance_m": buffer_distance,
-                "required_buffer_m": 32
+                "in_wetland": False,
+                "buffer_distance_m": None,
+                "required_buffer_m": 32,
+                "note": self.PLACEHOLDER_NOTE,
             },
-            constraints=constraints
+            constraints=[],
+            data_source="placeholder",
         )
 
     def _eval_protected_areas(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
-        """Evaluate protected area constraints"""
-        in_protected = False
+        """Evaluate protected area constraints.
 
+        TODO: Wire to PostGIS query against 'open_spaces' layer
+              (MapServer/212 — Environmental Focus Areas).
+        """
+        logger.debug(f"protected_areas: placeholder evaluation for ({lat}, {lng})")
         return CriterionResult(
             criterion="protected_areas",
-            score=0 if in_protected else 100,
+            score=90,
             weight=0,
             weighted_score=0,
             details={
-                "in_protected_area": in_protected,
+                "in_protected_area": False,
                 "area_name": None,
-                "protection_type": None
+                "protection_type": None,
+                "note": self.PLACEHOLDER_NOTE,
             },
-            constraints=["Site is within protected area - development prohibited"] if in_protected else []
+            constraints=[],
+            data_source="placeholder",
         )
 
     def _eval_zoning(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
-        """Evaluate zoning compatibility"""
-        # Would query zoning layer and check compatibility
-        current_zone = "Residential 1"
-        compatible = True
+        """Evaluate zoning compatibility.
 
+        TODO: Wire to PostGIS query against 'zoning' layer
+              (MapServer/58 — Zoning). Use ST_Intersects to find
+              current zoning classification, then compare with dev_type.
+        """
+        logger.debug(f"zoning: placeholder evaluation for ({lat}, {lng})")
         return CriterionResult(
             criterion="zoning_compatible",
-            score=100 if compatible else 30,
+            score=70,
             weight=0,
             weighted_score=0,
             details={
-                "current_zoning": current_zone,
+                "current_zoning": "Unknown",
                 "compatible_with": dev_type,
-                "rezoning_required": not compatible
+                "rezoning_required": None,
+                "note": self.PLACEHOLDER_NOTE,
             },
-            constraints=[] if compatible else [f"Current zoning ({current_zone}) not compatible with {dev_type}"]
+            constraints=[],
+            data_source="placeholder",
         )
 
     def _eval_road_access(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
-        """Evaluate road access"""
-        # Would calculate distance to nearest road
-        distance_to_road = 50  # meters
-        road_class = "Local Road"
+        """Evaluate road access.
 
-        if distance_to_road < 100:
-            score = 100
-        elif distance_to_road < 500:
-            score = 70
-        else:
-            score = 30
-
+        TODO: Wire to PostGIS ST_Distance query against road network layer.
+              Calculate distance to nearest classified road.
+        """
+        logger.debug(f"road_access: placeholder evaluation for ({lat}, {lng})")
         return CriterionResult(
             criterion="road_access",
-            score=score,
+            score=75,
             weight=0,
             weighted_score=0,
             details={
-                "distance_to_road_m": distance_to_road,
-                "nearest_road_class": road_class,
-                "access_quality": "Good" if score > 70 else "Moderate" if score > 40 else "Poor"
+                "distance_to_road_m": None,
+                "nearest_road_class": "Unknown",
+                "access_quality": "Unknown",
+                "note": self.PLACEHOLDER_NOTE,
             },
-            constraints=[]
+            constraints=[],
+            data_source="placeholder",
         )
 
     def _eval_transport_access(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
-        """Evaluate public transport access"""
-        # Would calculate distance to nearest transit stop
-        distance_to_transit = 800  # meters
-        transit_type = "MyCiTi Bus"
+        """Evaluate public transport access.
 
-        if distance_to_transit < 400:
-            score = 100
-        elif distance_to_transit < 800:
-            score = 70
-        elif distance_to_transit < 1500:
-            score = 40
-        else:
-            score = 20
-
+        TODO: Wire to PostGIS ST_Distance query against 'myciti_stops' layer
+              (MapServer/96) and 'rail_stations' (MapServer/235).
+        """
+        logger.debug(f"transport_access: placeholder evaluation for ({lat}, {lng})")
         return CriterionResult(
             criterion="transport_access",
-            score=score,
+            score=65,
             weight=0,
             weighted_score=0,
             details={
-                "distance_to_transit_m": distance_to_transit,
-                "nearest_transit_type": transit_type,
-                "walking_time_min": distance_to_transit / 80  # Assuming 80m/min walking
+                "distance_to_transit_m": None,
+                "nearest_transit_type": "Unknown",
+                "walking_time_min": None,
+                "note": self.PLACEHOLDER_NOTE,
             },
-            constraints=[]
+            constraints=[],
+            data_source="placeholder",
         )
 
     def _eval_utilities(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
-        """Evaluate utilities access"""
-        water_available = True
-        electricity_available = True
-        sewer_available = True
+        """Evaluate utilities access.
 
-        score = 100 if all([water_available, electricity_available, sewer_available]) else 50
-
+        TODO: Wire to PostGIS proximity queries against
+              'water_facilities' (MapServer/178) and
+              'electricity_facilities' (MapServer/176).
+        """
+        logger.debug(f"utilities: placeholder evaluation for ({lat}, {lng})")
         return CriterionResult(
             criterion="utilities_access",
-            score=score,
+            score=70,
             weight=0,
             weighted_score=0,
             details={
-                "water_available": water_available,
-                "electricity_available": electricity_available,
-                "sewer_available": sewer_available
+                "water_available": None,
+                "electricity_available": None,
+                "sewer_available": None,
+                "note": self.PLACEHOLDER_NOTE,
             },
-            constraints=[]
+            constraints=[],
+            data_source="placeholder",
         )
 
     def _eval_urban_edge(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
-        """Evaluate urban edge compliance"""
-        within_urban_edge = True
+        """Evaluate urban edge compliance.
 
+        TODO: Wire to PostGIS ST_Intersects query against urban edge boundary.
+              City of Cape Town Urban Edge dataset.
+        """
+        logger.debug(f"urban_edge: placeholder evaluation for ({lat}, {lng})")
         return CriterionResult(
             criterion="urban_edge",
-            score=100 if within_urban_edge else 20,
+            score=80,
             weight=0,
             weighted_score=0,
             details={
-                "within_urban_edge": within_urban_edge,
-                "distance_to_edge_m": 0 if within_urban_edge else 500
+                "within_urban_edge": None,
+                "distance_to_edge_m": None,
+                "note": self.PLACEHOLDER_NOTE,
             },
-            constraints=[] if within_urban_edge else ["Site is outside urban edge - special approval required"]
+            constraints=[],
+            data_source="placeholder",
         )
 
     def _eval_default(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
-        """Default evaluator for unknown criteria"""
+        """Default evaluator for unknown/unimplemented criteria."""
         return CriterionResult(
             criterion="unknown",
             score=50,
             weight=0,
             weighted_score=0,
-            details={},
-            constraints=[]
+            details={"note": "No evaluator implemented for this criterion"},
+            constraints=[],
+            data_source="placeholder",
         )
 
     def _classify_suitability(self, score: float, constraints: List[str]) -> str:
@@ -450,10 +469,20 @@ class SiteSuitabilityAnalyzer:
     def _generate_recommendations(
         self,
         criteria: List[CriterionResult],
-        dev_type: str
+        _dev_type: str
     ) -> List[str]:
         """Generate recommendations based on analysis results"""
         recommendations = []
+
+        # Warn about placeholder data
+        placeholder_count = sum(
+            1 for r in criteria if r.data_source == "placeholder"
+        )
+        if placeholder_count > 0:
+            recommendations.append(
+                f"⚠️ {placeholder_count}/{len(criteria)} criteria used placeholder data. "
+                "Results are indicative only — real spatial analysis requires PostGIS layers."
+            )
 
         for result in criteria:
             if result.score < 40:
@@ -466,7 +495,7 @@ class SiteSuitabilityAnalyzer:
                 elif result.criterion == "transport_access":
                     recommendations.append("Consider transport impact assessment")
 
-        if not recommendations:
+        if len(recommendations) <= 1:
             recommendations.append("Site appears suitable for development pending detailed studies")
 
         return recommendations

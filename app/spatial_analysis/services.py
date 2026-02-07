@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from app.spatial_analysis.base import BaseAnalyzer
 from app.spatial_analysis.spatial_utils import gdf_to_geojson
 from app.config import settings
-from app.core.database import engine
+from app.core.database import require_engine
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class ServicesAnalyzer(BaseAnalyzer):
             # If not, fallback to GeoPandas method (old code)
             # For this implementations, assume DB is populated via load_spatial_data.py
 
-            with engine.connect() as conn:
+            with require_engine().connect() as conn:
                 try:
                     result = conn.execute(text(query))
                     rows = result.fetchall()

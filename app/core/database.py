@@ -3,6 +3,9 @@ PostGIS Database Configuration and Connection Management
 
 Provides async SQLAlchemy engine, session management, and PostGIS utilities
 for the Cape Town GeoHub application with robust retry logic.
+
+Gracefully handles missing DATABASE_URL so that import-time crashes are avoided.
+When the database is unavailable, endpoints that need it will raise at call time.
 """
 
 import asyncio
@@ -12,52 +15,75 @@ import time
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Optional, Any, Dict
 
-from sqlalchemy import text, event
+from sqlalchemy import text, event, create_engine
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
     AsyncSession,
     async_sessionmaker,
     AsyncEngine,
 )
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from sqlalchemy.pool import QueuePool
+
 try:
     from geoalchemy2 import Geometry
     from geoalchemy2.shape import to_shape
 except ImportError:
     Geometry = None
-    def to_shape(x):
-        raise ImportError("geoalchemy2 is required for geometry operations. Please install geoalchemy2.")
+
+    def to_shape(x):  # type: ignore[misc]
+        raise ImportError(
+            "geoalchemy2 is required for geometry operations. "
+            "Please install geoalchemy2."
+        )
+
 from shapely.geometry import mapping
 
 logger = logging.getLogger(__name__)
 
-# Read DATABASE_URL from environment
-DATABASE_URL = os.environ.get("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError(
-        "DATABASE_URL environment variable is required. "
-        "Example: postgresql+asyncpg://geohub:geohub_password@db:5432/geohub_db"
+# ---------------------------------------------------------------------------
+# Database URL resolution (no crash on missing env var)
+# ---------------------------------------------------------------------------
+DATABASE_URL: Optional[str] = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL:
+    # Create synchronous DATABASE_URL for geopandas and sync operations
+    SYNC_DATABASE_URL: Optional[str] = DATABASE_URL.replace(
+        "postgresql+asyncpg://", "postgresql://"
+    )
+else:
+    SYNC_DATABASE_URL = None
+    logger.warning(
+        "DATABASE_URL not set — database features disabled. "
+        "Set DATABASE_URL to enable PostGIS integration, e.g. "
+        "postgresql+asyncpg://geohub:geohub_password@db:5432/geohub_db"
     )
 
-# Create synchronous DATABASE_URL for geopandas and sync operations
-# Convert asyncpg to psycopg2 format if needed
-SYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+# ---------------------------------------------------------------------------
+# Sync engine (lazy: only created when DATABASE_URL is available)
+# ---------------------------------------------------------------------------
+engine: Optional[Any] = None
+SessionLocal: Optional[sessionmaker] = None
 
-# Sync engine for geopandas read_postgis and write_postgis operations
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+if SYNC_DATABASE_URL:
+    engine = create_engine(
+        SYNC_DATABASE_URL,
+        pool_size=10,
+        max_overflow=20,
+        pool_recycle=3600,
+        pool_pre_ping=True,
+        echo=os.environ.get("DEBUG", "").lower() == "true",
+    )
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-engine = create_engine(
-    SYNC_DATABASE_URL,
-    pool_size=10,
-    max_overflow=20,
-    pool_recycle=3600,
-    pool_pre_ping=True,
-    echo=os.environ.get("DEBUG", "").lower() == "true",
-)
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+def require_engine():
+    """Return the sync engine or raise a clear error."""
+    if engine is None:
+        raise DatabaseConnectionError(
+            "No database connection — DATABASE_URL environment variable is not set."
+        )
+    return engine
 
 
 class DatabaseConnectionError(Exception):
@@ -74,17 +100,14 @@ async def create_engine_with_retry(
     """
     Create async SQLAlchemy engine with exponential backoff retry logic.
 
-    Args:
-        max_retries: Maximum number of connection attempts
-        initial_delay: Initial delay between retries in seconds
-        max_delay: Maximum delay between retries in seconds
-
-    Returns:
-        AsyncEngine: Configured SQLAlchemy async engine
-
     Raises:
-        DatabaseConnectionError: If connection fails after all retries
+        DatabaseConnectionError: If DATABASE_URL is missing or connection fails.
     """
+    if not DATABASE_URL:
+        raise DatabaseConnectionError(
+            "DATABASE_URL is not set — cannot create async engine."
+        )
+
     delay = initial_delay
     start_time = time.time()
 
