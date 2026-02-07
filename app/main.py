@@ -26,6 +26,13 @@ from app.config import settings
 from app.utils.logging_config import setup_logging
 from app.core.exceptions import GeoHubException, geohub_exception_handler
 from app.dependencies import require_admin_key
+from app.models.response_models import (
+    CacheClearResponse,
+    ConfigResponse,
+    DetailedHealthResponse,
+    HealthResponse,
+    StatsResponse,
+)
 from app.api import (
     services_api,
     transport_api,
@@ -363,7 +370,7 @@ async def proxy_data(
 
 
 # Health check (Enhanced - validates database connectivity)
-@app.get("/health")
+@app.get("/health", response_model=HealthResponse)
 async def health_check_simple():
     from app.core.database import check_db_connection
 
@@ -381,7 +388,7 @@ async def health_check_simple():
 
 
 # Detailed System Health check
-@app.get("/api/health")
+@app.get("/api/health", response_model=DetailedHealthResponse)
 async def health_check():
     import psutil
 
@@ -412,7 +419,7 @@ async def health_check():
 
 
 # System monitoring endpoints
-@app.get("/api/stats", dependencies=[Depends(require_admin_key)])
+@app.get("/api/stats", dependencies=[Depends(require_admin_key)], response_model=StatsResponse)
 async def get_system_stats():
     """Get detailed system statistics"""
     return {
@@ -422,7 +429,7 @@ async def get_system_stats():
     }
 
 
-@app.post("/api/cache/clear", dependencies=[Depends(require_admin_key)])
+@app.post("/api/cache/clear", dependencies=[Depends(require_admin_key)], response_model=CacheClearResponse)
 async def clear_cache():
     """Clear application caches (response cache + monitoring stats)."""
     try:
@@ -441,7 +448,7 @@ async def clear_cache():
         raise HTTPException(status_code=500, detail="Failed to clear cache")
 
 
-@app.get("/api/config", dependencies=[Depends(require_admin_key)])
+@app.get("/api/config", dependencies=[Depends(require_admin_key)], response_model=ConfigResponse)
 async def get_config():
     """Get application configuration (safe, non-sensitive info)"""
     return {
