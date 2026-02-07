@@ -24,3 +24,4 @@ alembic>=1.13.0
 gunicorn==21.2.0
 asyncpg>=0.29.0
 greenlet>=3.0.0
+cachetools>=5.3.0

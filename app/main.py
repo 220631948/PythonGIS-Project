@@ -9,6 +9,8 @@ import json
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from typing import Optional
+
+from cachetools import TTLCache
 from fastapi import FastAPI, Request, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -173,27 +175,20 @@ app.include_router(realtime_api.router, prefix=settings.API_PREFIX)
 app.include_router(data_status_api.router, prefix=settings.API_PREFIX)
 
 # Generic Data Proxy Endpoint (Phase 7.5: System Integration)
-# In-memory cache for responses (simple TTL cache)
-_response_cache: dict = {}
-_cache_timestamps: dict = {}
+# Bounded in-memory cache with automatic TTL eviction (B5 refactor)
 CACHE_TTL_SECONDS = 300  # 5 minutes
+CACHE_MAX_ENTRIES = 256  # Prevent unbounded memory growth
+_response_cache: TTLCache = TTLCache(maxsize=CACHE_MAX_ENTRIES, ttl=CACHE_TTL_SECONDS)
 
 
 def get_cached_response(cache_key: str) -> Optional[dict]:
-    """Get cached response if not expired"""
-    if cache_key in _response_cache:
-        if time.time() - _cache_timestamps.get(cache_key, 0) < CACHE_TTL_SECONDS:
-            return _response_cache[cache_key]
-        # Expired, remove
-        del _response_cache[cache_key]
-        del _cache_timestamps[cache_key]
-    return None
+    """Get cached response if present (TTLCache handles expiration automatically)."""
+    return _response_cache.get(cache_key)
 
 
-def set_cached_response(cache_key: str, data: dict):
-    """Store response in cache"""
+def set_cached_response(cache_key: str, data: dict) -> None:
+    """Store response in bounded TTL cache (evicts oldest when full)."""
     _response_cache[cache_key] = data
-    _cache_timestamps[cache_key] = time.time()
 
 
 @app.get("/api/data/{dataset_key}")
@@ -428,15 +423,18 @@ async def get_system_stats():
 
 @app.post("/api/cache/clear")
 async def clear_cache():
-    """Clear application cache"""
+    """Clear application caches (response cache + monitoring stats)."""
     try:
-        # Clear request stats
+        cache_size = len(_response_cache)
+        _response_cache.clear()
         request_stats.clear()
         error_stats.clear()
 
-        # Here you could add cache clearing logic for data_loader, etc.
-        logger.info("Cache cleared via API")
-        return {"message": "Cache cleared successfully"}
+        logger.info(f"Cache cleared via API ({cache_size} entries evicted)")
+        return {
+            "message": "Cache cleared successfully",
+            "entries_evicted": cache_size,
+        }
     except Exception as e:
         logger.error(f"Error clearing cache: {e}")
         raise HTTPException(status_code=500, detail="Failed to clear cache")

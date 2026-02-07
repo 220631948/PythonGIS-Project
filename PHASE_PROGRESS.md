@@ -47,10 +47,14 @@
 
 ### Current working state:
 - On branch: refactor/backend-phase-B  
-- Last push: 2a262ca (progress tracker commit)
+- Last push: b5f6f17 (progress tracker commit)
+- Commit history: b5f6f17 (progress tracker) → edc427e (B2) → 4d37115 (B1) → 52c821ff (Phase A merge)
 - Next task: B5 (replace unbounded dict cache in main.py with TTL-bounded LRU cache)
+- B3/B4 skipped for now (lower priority, complex refactor)
 - Then: B6 (auth middleware for admin endpoints), B7 (router consolidation), B8 (suitability cleanup)
 - After all B tasks: create draft PR for review, run semgrep + bandit
+- IMPORTANT: Pause before merging Phase B PR to master. Show burndown summary to user.
+- Repo: 220631948/PythonGIS-Project
 
 ### B5 Implementation Plan (Cache Replacement):
 1. Replace `_response_cache` / `_cache_timestamps` dicts in `app/main.py` (lines ~180-195)
