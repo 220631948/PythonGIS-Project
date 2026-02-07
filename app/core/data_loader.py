@@ -12,7 +12,7 @@ from sqlalchemy import inspect, text
 from app.config import settings
 from app.core.cache_manager import cache_manager
 from app.core.exceptions import DataNotFoundError, DataValidationError
-from app.core.database import engine
+from app.core.database import require_engine
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ class DataLoader:
                 safe_name = _safe_table_name(dataset_name)
 
                 # Get total count using quoted identifier
-                with engine.connect() as conn:
+                with require_engine().connect() as conn:
                     result = conn.execute(
                         text(f"SELECT COUNT(*) FROM {safe_name}")
                     )
@@ -104,7 +104,7 @@ class DataLoader:
                 query = f"SELECT * FROM {safe_name} LIMIT %(limit)s OFFSET %(offset)s"
                 gdf = gpd.read_postgis(
                     query,
-                    engine,
+                    require_engine(),
                     geom_col="geometry",
                     params={"limit": limit, "offset": offset},
                 )
@@ -150,7 +150,7 @@ class DataLoader:
                     # gpd.read_postgis requires str; safety ensured by
                     # _safe_table_name() validation + double-quoting.
                     gdf = gpd.read_postgis(
-                        f"SELECT * FROM {safe_name}", engine, geom_col="geometry"
+                        f"SELECT * FROM {safe_name}", require_engine(), geom_col="geometry"
                     )
                     self._log_retrieval(dataset_name, True, "Loaded from PostGIS")
                     return gdf
@@ -202,7 +202,7 @@ class DataLoader:
             gdf.columns = [
                 c.lower().replace(" ", "_").replace("-", "_") for c in gdf.columns
             ]
-            gdf.to_postgis(dataset_name, engine, if_exists="replace", index=True)
+            gdf.to_postgis(dataset_name, require_engine(), if_exists="replace", index=True)
             self._update_metadata(dataset_name, len(gdf), str(gdf.geom_type.mode()[0]))
         except Exception as e:
             logger.error(f"Failed to save {dataset_name} to PostGIS: {e}")
@@ -301,12 +301,12 @@ class DataLoader:
         return self._retrieval_log.copy()
 
     def _table_exists(self, table_name: str) -> bool:
-        insp = inspect(engine)
+        insp = inspect(require_engine())
         return table_name in insp.get_table_names()
 
     def _update_metadata(self, name: str, count: int, layer_type: str):
         try:
-            with engine.connect() as conn:
+            with require_engine().connect() as conn:
                 # Ensure the metadata table exists (helps first-run and test environments)
                 conn.execute(
                     text("""
