@@ -18,8 +18,8 @@ RUN npm run build
 # Runtime stage
 FROM nginx:alpine AS runtime
 
-# Copy built artifacts
-COPY --from=builder /build/dist /usr/share/nginx/html
+# Copy built artifacts (vite.config.js outDir is ../static relative to /build)
+COPY --from=builder /static /usr/share/nginx/html
 
 # Copy custom Nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf

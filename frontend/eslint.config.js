@@ -33,7 +33,7 @@ export default defineConfig([
         'warn',
         { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_' },
       ],
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-empty-object-type': 'off',
       'react-refresh/only-export-components': [
         'warn',

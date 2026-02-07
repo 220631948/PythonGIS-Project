@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { MessageSquare, MapPin, Plus, Send, X, Trash2 } from 'lucide-react';
-import apiClient from '../api-client';
+import { apiClient } from '../lib/api';
 
 interface Location {
   lat: number;

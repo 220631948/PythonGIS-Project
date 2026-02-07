@@ -41,7 +41,7 @@ export interface OverlayData {
 export interface QueuedAction {
   id: number;
   type: 'SAVE_OVERLAY' | 'ANALYSIS' | string;
-  payload?: any;
+  payload?: unknown;
   endpoint?: string;
   method?: string;
   createdAt: number;
@@ -252,7 +252,7 @@ export function useOfflineData() {
   // Load downloaded datasets info
   const loadDatasets = useCallback(async () => {
     try {
-      const downloaded = await offlineDB.getAll<any>(STORES.datasets);
+      const downloaded = await offlineDB.getAll<{ id: string; downloadedAt?: number; size?: number }>(STORES.datasets);
       const datasetMap = new Map(downloaded.map(d => [d.id, d]));
 
       const enriched = AVAILABLE_DATASETS.map(ds => ({
@@ -338,10 +338,10 @@ export function useOfflineData() {
       await updateStorageInfo();
 
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Download failed:', error);
       setDownloadProgress(prev => ({ ...prev, [datasetId]: -1 }));
-      return { success: false, error: error.message };
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }, [loadDatasets, updateStorageInfo]);
 
@@ -352,15 +352,15 @@ export function useOfflineData() {
       await loadDatasets();
       await updateStorageInfo();
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }, [loadDatasets, updateStorageInfo]);
 
   // Get cached data for a dataset
-  const getCachedData = useCallback(async (datasetId: string): Promise<any | null> => {
+  const getCachedData = useCallback(async (datasetId: string): Promise<unknown> => {
     try {
-      const cached = await offlineDB.get<any>(STORES.datasets, datasetId);
+      const cached = await offlineDB.get<{ data?: unknown }>(STORES.datasets, datasetId);
       return cached?.data || null;
     } catch (e) {
       console.error('Error getting cached data:', e);
@@ -383,8 +383,8 @@ export function useOfflineData() {
       await loadDatasets();
       await updateStorageInfo();
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }, [loadDatasets, updateStorageInfo]);
 
@@ -430,8 +430,8 @@ export function useCustomOverlays() {
       });
       await loadOverlays();
       return { success: true, id };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }, [loadOverlays]);
 
@@ -440,8 +440,8 @@ export function useCustomOverlays() {
       await offlineDB.delete(STORES.overlays, overlayId);
       await loadOverlays();
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }, [loadOverlays]);
 

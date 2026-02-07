@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from 'react'; // React is still needed for hooks
 import { Download, FileText, Printer, Clock, X } from 'lucide-react';
-import apiClient from '../api-client';
+import { apiClient } from '../lib/api';
 // Removed ts-ignore as apiClient is typed
 
 const EXPORT_FORMATS = [
@@ -376,7 +376,7 @@ export default function ExportPanel({
 
   const handleDataExport = async (request: ExportRequest) => {
     try {
-      const result = await apiClient.exportData(request);
+      const result = await apiClient.exportData(request) as { filename: string };
       onNotification?.(`Export ready: ${result.filename}`, 'success');
       loadPendingExports();
     } catch (error: any) {
@@ -386,7 +386,7 @@ export default function ExportPanel({
 
   const handleAnalysisExport = async (request: ExportRequest) => {
     try {
-      const result = await apiClient.exportAnalysis(request);
+      const result = await apiClient.exportAnalysis(request) as { filename: string };
       onNotification?.(`Analysis export ready: ${result.filename}`, 'success');
       loadPendingExports();
     } catch (error: any) {

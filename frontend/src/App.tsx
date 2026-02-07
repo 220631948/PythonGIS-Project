@@ -14,7 +14,7 @@ import { KeyboardShortcutsHelp, useKeyboardShortcuts as useHelpOverlay } from '.
 import { ToastProvider } from './components/Common';
 import { useOnlineStatus } from './hooks/useOfflineData';
 import { useUrlState, UrlState } from './hooks/useUrlState';
-import apiClient from './api-client';
+import { apiClient } from './lib/api';
 import './App.css';
 
 // Phase 5: Spatial Analysis
