@@ -94,14 +94,14 @@ class DataLoader:
                 # Get total count using quoted identifier
                 with require_engine().connect() as conn:
                     result = conn.execute(
-                        text(f"SELECT COUNT(*) FROM {safe_name}")
+                        text(f"SELECT COUNT(*) FROM {safe_name}")  # nosec B608 — safe_name validated by _safe_table_name()
                     )
                     total_count = result.scalar() or 0
 
                 # Get page using quoted identifier + bind params
                 # Note: gpd.read_postgis requires str, not TextClause;
                 # safety is ensured by _safe_table_name() validation + quoting.
-                query = f"SELECT * FROM {safe_name} LIMIT %(limit)s OFFSET %(offset)s"
+                query = f"SELECT * FROM {safe_name} LIMIT %(limit)s OFFSET %(offset)s"  # nosec B608
                 gdf = gpd.read_postgis(
                     query,
                     require_engine(),
@@ -150,7 +150,7 @@ class DataLoader:
                     # gpd.read_postgis requires str; safety ensured by
                     # _safe_table_name() validation + double-quoting.
                     gdf = gpd.read_postgis(
-                        f"SELECT * FROM {safe_name}", require_engine(), geom_col="geometry"
+                        f"SELECT * FROM {safe_name}", require_engine(), geom_col="geometry"  # nosec B608
                     )
                     self._log_retrieval(dataset_name, True, "Loaded from PostGIS")
                     return gdf
