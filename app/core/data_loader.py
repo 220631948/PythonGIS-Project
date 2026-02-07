@@ -2,7 +2,7 @@ import json
 import logging
 import pandas as pd
 from datetime import datetime
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List, Tuple
 import requests
 import geopandas as gpd
 from sqlalchemy import inspect, text
@@ -43,6 +43,57 @@ class DataLoader:
     def __init__(self):
         self.data_urls = settings.DATA_URLS
         self._retrieval_log: List[Dict[str, Any]] = []
+
+    def get_paginated_gdf(
+        self,
+        dataset_name: str,
+        limit: int = 1000,
+        offset: int = 0,
+        force_refresh: bool = False,
+    ) -> Tuple[gpd.GeoDataFrame, int]:
+        """Returns a paginated GeoDataFrame and total count."""
+
+        if dataset_name not in self.data_urls:
+            self._log_retrieval(dataset_name, False, "Dataset not configured")
+            raise DataNotFoundError(
+                f"Dataset '{dataset_name}' not configured in DATA_URLS."
+            )
+
+        # 1. Try PostGIS (Optimized path)
+        if not force_refresh and self._table_exists(dataset_name):
+            try:
+                # Get total count
+                with engine.connect() as conn:
+                    result = conn.execute(text(f"SELECT COUNT(*) FROM {dataset_name}"))
+                    total_count = result.scalar()
+
+                # Get page
+                query = f"SELECT * FROM {dataset_name} LIMIT %(limit)s OFFSET %(offset)s"
+                gdf = gpd.read_postgis(
+                    query,
+                    engine,
+                    geom_col="geometry",
+                    params={"limit": limit, "offset": offset},
+                )
+
+                self._log_retrieval(
+                    dataset_name,
+                    True,
+                    f"Loaded page {offset}-{offset+limit} from PostGIS",
+                )
+                return gdf, total_count
+            except Exception as e:
+                logger.warning(
+                    f"Failed to load paginated {dataset_name} from PostGIS: {e}"
+                )
+
+        # 2. Fallback to full load (via existing get_gdf)
+        full_gdf = self.get_gdf(dataset_name, force_refresh=force_refresh)
+        total_count = len(full_gdf)
+
+        paginated_gdf = full_gdf.iloc[offset : offset + limit]
+
+        return paginated_gdf, total_count
 
     def get_gdf(
         self, dataset_name: str, force_refresh: bool = False
@@ -393,7 +444,7 @@ class DataLoader:
                     logger.info(f"Found GeoJSON: {geojsons[0].name}")
                     gdf = gpd.read_file(geojsons[0])
                 else:
-                    raise ValueError(f"No shapefile or GeoJSON found in ZIP archive")
+                    raise ValueError("No shapefile or GeoJSON found in ZIP archive")
 
             self._log_retrieval(
                 dataset_name, True, f"Extracted and loaded {len(gdf)} features from ZIP"

@@ -317,18 +317,19 @@ async def proxy_data(
                 )
 
         # 3. Default Path - Smart Loader with Pagination
-        gdf = data_loader.get_gdf(dataset_key)
-        total = len(gdf)
-        paginated = gdf.iloc[offset : offset + limit]
+        # Optimized with direct DB pagination
+        gdf, total = data_loader.get_paginated_gdf(
+            dataset_key, limit=limit, offset=offset
+        )
 
         result = {
             "type": "FeatureCollection",
-            "features": json.loads(paginated.to_json())["features"],
+            "features": json.loads(gdf.to_json())["features"],
             "metadata": {
                 "total": total,
                 "limit": limit,
                 "offset": offset,
-                "returned": len(paginated),
+                "returned": len(gdf),
                 "has_more": offset + limit < total,
             },
         }
