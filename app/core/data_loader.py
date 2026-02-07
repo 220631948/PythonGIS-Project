@@ -1,10 +1,11 @@
 import json
 import logging
+import re
 import pandas as pd
 import asyncio
 import httpx
 from datetime import datetime
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Optional, Tuple
 import requests
 import geopandas as gpd
 from sqlalchemy import inspect, text
@@ -14,6 +15,27 @@ from app.core.exceptions import DataNotFoundError, DataValidationError
 from app.core.database import engine
 
 logger = logging.getLogger(__name__)
+
+# Regex for safe SQL identifiers (alphanumeric + underscores, 1-63 chars)
+_SAFE_IDENTIFIER_RE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$")
+
+
+def _safe_table_name(name: str) -> str:
+    """
+    Validate and quote a table name to prevent SQL injection.
+
+    Only allows names that match PostgreSQL identifier rules
+    (letters, digits, underscores) and wraps in double-quotes.
+
+    Raises:
+        ValueError: If the name contains disallowed characters.
+    """
+    if not _SAFE_IDENTIFIER_RE.match(name):
+        raise ValueError(
+            f"Invalid table name: {name!r}. "
+            "Only letters, digits, and underscores are allowed."
+        )
+    return f'"{name}"'
 
 
 class DataValidationResult:
@@ -61,16 +83,25 @@ class DataLoader:
                 f"Dataset '{dataset_name}' not configured in DATA_URLS."
             )
 
+        # Validate table name early to prevent injection in downstream SQL
+        _safe_table_name(dataset_name)
+
         # 1. Try PostGIS (Optimized path)
         if not force_refresh and self._table_exists(dataset_name):
             try:
-                # Get total count
-                with engine.connect() as conn:
-                    result = conn.execute(text(f"SELECT COUNT(*) FROM {dataset_name}"))
-                    total_count = result.scalar()
+                safe_name = _safe_table_name(dataset_name)
 
-                # Get page
-                query = f"SELECT * FROM {dataset_name} LIMIT %(limit)s OFFSET %(offset)s"
+                # Get total count using quoted identifier
+                with engine.connect() as conn:
+                    result = conn.execute(
+                        text(f"SELECT COUNT(*) FROM {safe_name}")
+                    )
+                    total_count = result.scalar() or 0
+
+                # Get page using quoted identifier + bind params
+                # Note: gpd.read_postgis requires str, not TextClause;
+                # safety is ensured by _safe_table_name() validation + quoting.
+                query = f"SELECT * FROM {safe_name} LIMIT %(limit)s OFFSET %(offset)s"
                 gdf = gpd.read_postgis(
                     query,
                     engine,
@@ -107,13 +138,19 @@ class DataLoader:
                 f"Dataset '{dataset_name}' not configured in DATA_URLS."
             )
 
+        # Validate table name early to prevent injection in downstream SQL
+        _safe_table_name(dataset_name)
+
         # Try to load from PostGIS database first
         if not force_refresh:
             try:
                 if self._table_exists(dataset_name):
+                    safe_name = _safe_table_name(dataset_name)
                     logger.info(f"Loading {dataset_name} from PostGIS database.")
+                    # gpd.read_postgis requires str; safety ensured by
+                    # _safe_table_name() validation + double-quoting.
                     gdf = gpd.read_postgis(
-                        f"SELECT * FROM {dataset_name}", engine, geom_col="geometry"
+                        f"SELECT * FROM {safe_name}", engine, geom_col="geometry"
                     )
                     self._log_retrieval(dataset_name, True, "Loaded from PostGIS")
                     return gdf

@@ -216,10 +216,18 @@ async def proxy_data(
 
     Pagination: Use limit/offset to page through large datasets.
     """
+    import re
     from app.core.data_loader import data_loader
     from app.spatial_analysis.safety import safety_analyzer
     from app.spatial_analysis.transport import transport_optimizer
     from app.config import settings
+
+    # Validate dataset_key against injection (alphanumeric + underscores only)
+    if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$", dataset_key):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid dataset key: '{dataset_key}'. Only letters, digits, and underscores allowed.",
+        )
 
     if dataset_key not in settings.DATA_URLS and dataset_key != "safety_precincts":
         raise HTTPException(
