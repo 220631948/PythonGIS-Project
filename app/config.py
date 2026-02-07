@@ -109,6 +109,10 @@ class Settings(BaseSettings):
     PORT: int = 8000
     WORKERS: int = 1
 
+    # Admin Authentication
+    # Set via ADMIN_API_KEY env var or .env file. Empty = admin endpoints unprotected.
+    ADMIN_API_KEY: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )

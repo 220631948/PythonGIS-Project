@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 from cachetools import TTLCache
-from fastapi import FastAPI, Request, HTTPException, Query
+from fastapi import FastAPI, Request, HTTPException, Query, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -25,6 +25,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.config import settings
 from app.utils.logging_config import setup_logging
 from app.core.exceptions import GeoHubException, geohub_exception_handler
+from app.dependencies import require_admin_key
 from app.api import (
     services_api,
     transport_api,
@@ -411,7 +412,7 @@ async def health_check():
 
 
 # System monitoring endpoints
-@app.get("/api/stats")
+@app.get("/api/stats", dependencies=[Depends(require_admin_key)])
 async def get_system_stats():
     """Get detailed system statistics"""
     return {
@@ -421,7 +422,7 @@ async def get_system_stats():
     }
 
 
-@app.post("/api/cache/clear")
+@app.post("/api/cache/clear", dependencies=[Depends(require_admin_key)])
 async def clear_cache():
     """Clear application caches (response cache + monitoring stats)."""
     try:
@@ -440,7 +441,7 @@ async def clear_cache():
         raise HTTPException(status_code=500, detail="Failed to clear cache")
 
 
-@app.get("/api/config")
+@app.get("/api/config", dependencies=[Depends(require_admin_key)])
 async def get_config():
     """Get application configuration (safe, non-sensitive info)"""
     return {
