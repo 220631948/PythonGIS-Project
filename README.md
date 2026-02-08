@@ -125,9 +125,27 @@ This repository includes a minimal Spec Kit scaffold under `.specify/` and light
 
 To use Spec Kit locally (high-level):
 
-1. Install the Specify CLI (see [Spec Kit](https://github.com/github/spec-kit) for the latest install instructions).
-2. Run `specify init .` to bootstrap or edit `.specify/spec.md` and `.specify/plan.md` directly.
-3. Use `.github/prompts/` to generate plan/task files and interact with coding agents (Copilot, Claude, etc.).
+1. Install the Specify CLI (see [Spec Kit](https://github.com/github/spec-kit) for the latest install instructions). Two common methods:
+
+   - Using pip (recommended for CI):
+
+     ```bash
+     python -m venv .venv && source .venv/bin/activate
+     python -m pip install --upgrade pip
+     pip install git+https://github.com/github/spec-kit.git
+     ```
+
+   - Using `uvx` / `uv` (alternative):
+
+     ```bash
+     uvx --from git+https://github.com/github/spec-kit.git specify init .
+     ```
+
+2. Run `specify check` from the repository root to validate the `.specify` artefacts.
+
+3. Run `specify init .` to bootstrap or edit `.specify/spec.md` and `.specify/plan.md` directly.
+
+4. Use `.github/prompts/` to generate plan/task files and interact with coding agents (Copilot, Claude, etc.).
 
 TODO: Add `specify check` to CI once the CLI install approach is validated.
 
