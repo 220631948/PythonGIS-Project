@@ -4,16 +4,19 @@
 Create new feature following project structure.
 
 **Required Components**
-- Feature directory in `src/features`
-- Main component file
+
+- Feature directory in `frontend/src/modules`
+- Main module component file
 - Hook for data fetching
 - Type definitions
-- Styles module
-- Tests file
+- Styles module (if needed)
+- Tests file (Vitest)
 
 **Structure**
-- `features/feature-name/FeatureName.tsx`
-- `features/feature-name/useFeatureData.ts`
-- `features/feature-name/types.ts`
-- `features/feature-name/FeatureName.module.css`
-- `features/feature-name/FeatureName.test.tsx`
+
+- `modules/FeatureName/FeatureNameModule.tsx`
+- `modules/FeatureName/hooks/useFeatureData.ts`
+- `modules/FeatureName/types.ts`
+- `modules/FeatureName/components/`
+- `modules/FeatureName/FeatureName.module.css`
+- `modules/FeatureName/FeatureNameModule.test.tsx`

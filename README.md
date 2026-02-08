@@ -1,134 +1,179 @@
 # Cape Town GeoHub
 
-Cape Town GeoHub is a full-stack geospatial decision-support platform that blends open data, spatial analysis, and a modern web map UI. It provides a FastAPI-powered GIS backend and a React + Leaflet frontend designed for planners, analysts, and community stakeholders.
+Cape Town GeoHub is a full-stack geospatial decision-support platform combining a FastAPI backend, a React + Vite frontend (Leaflet maps), and an ingestion pipeline for City of Cape Town open data. It focuses on spatial analysis, accessibility, and data provenance for municipal planning and community workflows.
 
-## ✨ Highlights
+## Current Stage
 
-- **Interactive Web GIS** with multiple basemaps, layer controls, and analysis tools.
-- **Spatial analytics** (routing, isochrones, suitability, buffering, overlays).
-- **Open data ingestion** from the City of Cape Town Open Data Portal.
-- **Collaboration features** for annotations and shared context.
-- **Offline/PWA-ready UI** for field-friendly workflows.
+**Beta (CI-gated)** — strict linting, type checks, audits and tests are enforced in CI. E2E tests run on `master` and `develop` branches.
 
-## 🧭 Architecture
+## Highlights
 
-```
+- Interactive web GIS (map-first UX) with togglable basemaps and vector layers.
+- Spatial analytics: routing, isochrones, buffering, suitability analyses.
+- Offline/PWA-ready functionality for field workflows.
+- Data provenance and attribution preserved from City of Cape Town Open Data.
+
+## Architecture (high-level)
+
+```text
 frontend/   → React + Vite UI (Leaflet mapping)
 app/        → FastAPI backend (GeoPandas, Shapely, PyProj)
 data/       → raw/processed/cache datasets
 scripts/    → data loading + deployment helpers
 docs/       → technical docs + ethics
+.specify/   → Spec Kit artifacts for spec-driven development
+.github/    → Copilot agents and workflows (spec templates & CI)
 ```
 
-## 🧰 Tech Stack
+## Tech Stack & Requirements
 
-### Frontend
-- **Framework**: React 19 with TypeScript 5
-- **Build Tool**: Vite 6 (Fast HMR, optimized production builds)
-- **Mapping**: Leaflet 1.9, React-Leaflet, Leaflet-Draw, Leaflet-MiniMap
-- **State Management**: React hooks (useState, useEffect, custom hooks)
-- **Utilities**: Turf.js (spatial operations), LocalForage (offline storage)
-- **UI**: Lucide React icons, custom component library
-- **PWA**: Offline-first architecture with service workers
+- Languages: Python 3.11+, TypeScript/JavaScript (React 19)
+- Frontend: Vite, React 19, Tailwind (utilities), Leaflet (react-leaflet)
+- Backend: FastAPI, GeoPandas, SQLAlchemy, GeoAlchemy2
+- Database: PostgreSQL 15 + PostGIS (recommended)
+- Package managers: npm (frontend), pip (backend)
+- Containers: Docker & Docker Compose
 
-### Backend
-- **Framework**: FastAPI (Python 3.11)
-- **Spatial Libraries**: GeoPandas, Shapely, PyProj
-- **Database ORM**: SQLAlchemy 2.0, GeoAlchemy2
-- **Server**: Gunicorn with Uvicorn workers
-- **API**: RESTful endpoints with automatic OpenAPI docs
+Platform dependencies (required to build GeoPandas & spatial stack):
+- Debian/Ubuntu: `sudo apt-get install -y gdal-bin libgdal-dev libgeos-dev libproj-dev`
 
-### Database
-- **Primary**: PostgreSQL 15 with PostGIS 3.3
-- **Spatial Features**: Geometry types, spatial indexes, CRS transformations
-- **Extensions**: PostGIS, PostGIS Topology, hstore
+- macOS: use `brew install gdal geos proj` (adjust as needed)
 
-### Infrastructure
-- **Containerization**: Docker with multi-stage builds
-- **Orchestration**: Docker Compose (v2)
-- **Web Server**: Nginx (production reverse proxy)
-- **Security**: Non-root containers, secrets management, CORS policies
+## Quick Start
 
+### Option A — Docker (recommended)
 
-## 🚀 Quick Start
+This repo contains `compose.yaml` for local development.
 
-### Option A — Docker (Recommended)
 ```bash
-docker-compose up --build
+# from repo root
+docker compose -f compose.yaml up --build
 ```
-- Frontend: http://localhost:3000
-- Backend: http://localhost:8000
-- API Docs: http://localhost:8000/docs
 
-### Option B — Local Development
-**Backend**
+- Frontend (Vite dev server): [http://localhost:5173](http://localhost:5173)
+- Backend (API + docs): [http://localhost:8000](http://localhost:8000) — OpenAPI at [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
+- Postgres: 5432
+
+### Option B — Local Development (manual)
+
+Backend (Linux/macOS):
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
+pip install --upgrade pip
+# install system libs first (see requirements above)
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+# set up .env from .env.example and run DB (docker compose or local Postgres)
+.venv/bin/uvicorn app.main:app --reload --port 8000
 ```
 
-**Frontend**
+Frontend:
+
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev  # serves on :5173 by default
 ```
 
-### Type Checking & Tests
-- Backend tests: `pytest`
-- Frontend lint: `npm run lint`
-- Frontend e2e: `npm run test:e2e`
-- Type check: `npm run type-check`
 
-## ⚙️ Configuration
+## Scripts & Useful Commands
 
-The backend reads environment variables via `.env` (optional). Defaults are defined in `app/config.py`:
+Frontend (from `frontend/`):
 
-- `POSTGRES_*` for PostGIS integrations
-- `API_PREFIX=/api`
-- `TARGET_CRS=EPSG:4326`
-- `PROJECTED_CRS=EPSG:32734` (UTM 34S for Cape Town)
+- `npm run dev` — start Vite dev server
+- `npm run build` — production build
+- `npm run lint` — ESLint
+- `npm run type-check` — TypeScript type check
+- `npm run test:unit` — Vitest unit tests
+- `npm run test:e2e` — Playwright E2E
 
-## 🗺️ Data Sources & Caching
 
-Data is fetched from the City of Cape Town Open Data Portal and cached under `data/cache/`.
-See `DATA_SOURCES.md` and `docs/DATA_SOURCES.md` for curated dataset references.
+Backend:
 
-## 🧪 Testing
+- `.venv/bin/uvicorn app.main:app --reload --port 8000` — development server
+- `pytest` — run backend tests
+- `ruff check app/` — linter
 
-**Backend**
-```bash
-pytest
-```
 
-**Frontend**
-```bash
-cd frontend
-npm run lint
-npm run test:e2e
-```
+Repo-level scripts:
 
-## 🧩 Useful Scripts
-- `scripts/load_spatial_data.py` — download & normalize datasets
-- `scripts/update_data.py` — refresh cached data
-- `scripts/start-all.sh` — helper to start services
+- `scripts/update_data.py` — pull and refresh data caches
+- `scripts/load_spatial_data.py` — load datasets into DB (as implemented)
 
-## 📦 Production Deployment
-```bash
-docker-compose -f docker-compose.prod.yml up --build -d
-```
-Environment variables: see `.env.example` for DB, API, frontend, cache, and rate-limit settings.
+## Environment variables
 
-## 📚 Documentation
-- `OFFLINE_SETUP.md`
-- `TYPESCRIPT_MIGRATION.md`
-- `docs/USER_GUIDE.md`
-- `docs/TECHNICAL_DOCS.md`
-- `docs/OPEN_DATA_WORKFLOW.md`
-- `ETHICS.md`
+Copy `.env.example` → `.env` and set required values. Important variables:
 
-## 🤝 Contributing
+- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_SERVER`
+- `API_PREFIX` (default `/api`)
+- `VITE_API_URL` (frontend dev server points to backend)
+- `TARGET_CRS=EPSG:4326` and `PROJECTED_CRS=EPSG:32734`
 
-Issues and PRs are welcome. Please reference the ethics and data usage guidelines in `ETHICS.md`.
+## Testing & CI (what CI runs)
+
+- Frontend CI: `npm ci`, `npm audit`, `npm run lint`, `npm run type-check`, `npm run build`
+- Backend CI: install system deps (GDAL/GEOS/PROJ), `pip install -r requirements.txt`, `pip-audit --strict`, `ruff check app/`, `pytest` with PostGIS service
+- Docker build: `docker compose build --no-cache`
+- E2E: Playwright tests run in CI on `master`/`develop`
+
+Follow the PR checklist in `AGENTS.md` and `.github/copilot-instructions.md` before merging.
+
+## Spec Kit (Spec-driven development)
+
+This repository includes a minimal Spec Kit scaffold under `.specify/` and lightweight CI verification (`.github/workflows/spec-check.yml`) to enforce presence of the spec artefacts on PRs.
+
+To use Spec Kit locally (high-level):
+
+1. Install the Specify CLI (see [Spec Kit](https://github.com/github/spec-kit) for the latest install instructions). Two common methods:
+
+   - Using pip (recommended for CI):
+
+     ```bash
+     python -m venv .venv && source .venv/bin/activate
+     python -m pip install --upgrade pip
+     pip install git+https://github.com/github/spec-kit.git
+     ```
+
+   - Using `uvx` / `uv` (alternative):
+
+     ```bash
+     uvx --from git+https://github.com/github/spec-kit.git specify init .
+     ```
+
+2. Run `specify check` from the repository root to validate the `.specify` artefacts.
+
+3. Run `specify init .` to bootstrap or edit `.specify/spec.md` and `.specify/plan.md` directly.
+
+4. Use `.github/prompts/` to generate plan/task files and interact with coding agents (Copilot, Claude, etc.).
+
+TODO: Add `specify check` to CI once the CLI install approach is validated.
+
+## Project Structure (short)
+
+- `app/` — FastAPI application, routers, models, core utilities
+- `frontend/` — Vite + React app (src/modules/ for features)
+- `data/` — raw, processed and cached GeoJSON/shapefiles
+- `scripts/` — data and deployment helpers
+- `docs/` — extended documentation and policy guides
+- `.github/agents` & `.github/copilot/` — Copilot agent specs, prompts and instructions
+- `.specify/` — Spec Kit artifacts (spec.md, plan.md, tasks/)
+
+## Data & Attribution
+
+All external datasets come from the City of Cape Town Open Data Portal. Preserve attribution as documented in `DATA_SOURCES.md`.
+
+## License
+
+No license file detected in the repository. Please add a LICENSE (e.g., MIT, Apache-2.0) to make terms clear. TODO: Add LICENSE file.
+
+## Contributing
+
+Please read `CONTRIBUTING.md`, `AGENTS.md`, and `.github/copilot/docs/CONTRIBUTING.md` for contribution guidance and Copilot agent usage.
+
+---
+
+If you'd like, I can now:
+
+- Add `specify` CLI instructions (exact install commands) to this README after verifying the best install method.
+- Add a follow-up CI job to run `specify check` once installation in CI is solved.
