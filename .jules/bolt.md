@@ -1,3 +1,3 @@
-## 2026-02-07 - Async HTTP Requests for Data Status
-**Learning:** Checking multiple external endpoints synchronously is a major bottleneck (50s vs 11s). `httpx` and `asyncio.gather` are extremely effective for I/O-bound tasks. Also, `pytest-asyncio` might not be installed, so `@pytest.mark.anyio` is a good alternative when `anyio` is present.
-**Action:** Always check for sync I/O in loops and replace with async where possible. Check available pytest plugins before writing async tests.
+## 2024-02-08 - [GeoJSON Serialization Optimization]
+**Learning:** `gdf.to_json()` is significantly faster (~2.4x) than manual iteration for converting GeoDataFrames to GeoJSON. However, it requires a custom default handler for `pd.Timestamp` to output ISO strings (standard JSON serializers fail on Timestamp). The `default` argument in `to_json` (passed to `json.dumps`) solves this elegantly.
+**Action:** Prefer `gdf.to_json(default=json_serial, na='null')` over manual iteration for large GeoDataFrames. Always test datetime serialization explicitly.
