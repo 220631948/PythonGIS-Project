@@ -1,0 +1,26 @@
+name: Spec Kit Presence Check
+
+on:
+  pull_request:
+    branches: [master, develop]
+  push:
+    branches: [master, develop]
+
+jobs:
+  spec-check:
+    name: Verify Spec Kit Artefacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for .specify
+        run: |
+          if [ -d ".specify" ] && [ -f ".specify/spec.md" ] && [ -f ".specify/plan.md" ]; then
+            echo "Spec Kit artefacts present"
+          else
+            echo "Spec Kit artefacts missing. Add .specify/spec.md and .specify/plan.md"
+            ls -la . || true
+            exit 1
+          fi
