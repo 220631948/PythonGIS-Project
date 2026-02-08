@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     # Database Settings
     POSTGRES_USER: str = "geohub"
-    POSTGRES_PASSWORD: str = "geohub_password"
+    POSTGRES_PASSWORD: str = ""  # Set via POSTGRES_PASSWORD env var — required for production
     POSTGRES_SERVER: str = "db"
     POSTGRES_PORT: str = "5432"
     POSTGRES_DB: str = "geohub_db"
@@ -97,7 +97,6 @@ class Settings(BaseSettings):
         "http://localhost:4173",  # Vite preview
         "http://localhost:8000",  # Self (for testing)
         "https://*.github.io",  # GitHub Pages
-        "*",  # Fallback (for flexibility)
     ]
     RATE_LIMIT_PER_MINUTE: int = 60
 
