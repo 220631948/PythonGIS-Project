@@ -45,7 +45,9 @@ To unblock the merge quickly I created a new branch and PR with the resolved cha
 - New branch: `chore/e2e-layer-visual-check-resolved` (from `master`)
 - New PR: [#30](https://github.com/220631948/PythonGIS-Project/pull/30) — "test(e2e): add layer visual checks + CI e2e fixes (resolved merge conflicts)"
 
-This PR contains the E2E test additions and CI changes from #26 with merge conflicts resolved. Please review and merge PR #30; after it is merged I will close PR #26.
+This PR contains the E2E test additions and CI changes from #26 with merge conflicts resolved. PR #30 has been merged to master; PR #26 was closed.
+
+Note: The original branch `chore/e2e-layer-visual-check` is intentionally preserved on origin for history and review per the user's request.
 
 ---
 
