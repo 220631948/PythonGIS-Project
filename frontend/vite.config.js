@@ -133,7 +133,7 @@ export default defineConfig({
     // Proxy API requests to the FastAPI backend during development
     proxy: {
       '/api': {
-        target: process.env.API_PROXY_TARGET || 'http://localhost:8001',
+        target: process.env.API_PROXY_TARGET || 'http://127.0.0.1:8001',
         changeOrigin: true,
         secure: false,
       },

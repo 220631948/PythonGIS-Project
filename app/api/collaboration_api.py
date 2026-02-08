@@ -13,12 +13,19 @@ from datetime import datetime
 import uuid
 import json
 import logging
-from pathlib import Path
+
 
 from app.models.collaboration_models import (
-    Annotation, AnnotationCreate, AnnotationUpdate, AnnotationFilter,
-    AnnotationListResponse, AnnotationType, AnnotationStatus,
-    Reply, ReplyCreate, ProjectMarker, GeoLocation
+    Annotation,
+    AnnotationCreate,
+    AnnotationUpdate,
+    AnnotationListResponse,
+    AnnotationType,
+    AnnotationStatus,
+    Reply,
+    ReplyCreate,
+    ProjectMarker,
+    GeoLocation,
 )
 from app.config import settings
 
@@ -37,7 +44,7 @@ MARKERS_FILE = settings.CACHE_DIR / "markers.json"
 
 def _load_data():
     """Load persisted data on startup"""
-    global _annotations, _replies, _markers
+    # globals not needed for mutation
 
     if ANNOTATIONS_FILE.exists():
         try:

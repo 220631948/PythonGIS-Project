@@ -20,7 +20,7 @@ const OpsStatus: React.FC = () => {
     try {
       // In a real scenario, this would hit the /health endpoint
       // For this demo/local mode without backend, we simulate a check
-      const response = await fetch('/api/health', { method: 'GET', signal: AbortSignal.timeout(2000) });
+      const response = await fetch('/api/health', { method: 'GET', signal: AbortSignal.timeout(5000) });
       const end = Date.now();
       
       if (response.ok) {

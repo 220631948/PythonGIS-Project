@@ -109,7 +109,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(SlowAPIMiddleware)
 
 limiter = Limiter(
-    key_func=get_remote_address, default_limits=["200 per day", "50 per hour"]
+    key_func=get_remote_address, default_limits=["10000 per day", "1000 per hour"]
 )
 app.state.limiter = limiter
 
@@ -226,7 +226,7 @@ async def proxy_data(
     from app.config import settings
 
     # Validate dataset_key against injection (alphanumeric + underscores only)
-    if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$", dataset_key):
+    if not re.match(r"^[a-zA-Z]\w{0,62}$", dataset_key):
         raise HTTPException(
             status_code=400,
             detail=f"Invalid dataset key: '{dataset_key}'. Only letters, digits, and underscores allowed.",

@@ -1,0 +1,369 @@
+[
+  {
+    "route": "/",
+    "elements": [
+      {
+        "tagName": "a",
+        "text": "Skip to main content",
+        "id": "",
+        "class": "skip-link",
+        "href": "http://localhost:5174/?lat=-33.9249&lng=18.4241&zoom=11#main-content",
+        "type": "",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "a",
+        "text": "Skip to main content",
+        "id": "",
+        "class": "skip-link",
+        "href": "http://localhost:5174/?lat=-33.9249&lng=18.4241&zoom=11#main-map",
+        "type": "",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "button",
+        "text": "",
+        "id": "",
+        "class": "menu-toggle",
+        "type": "submit",
+        "ariaLabel": "Close sidebar menu"
+      },
+      {
+        "tagName": "input",
+        "text": "",
+        "id": "",
+        "class": "search-input",
+        "type": "text",
+        "ariaLabel": "Search"
+      },
+      {
+        "tagName": "button",
+        "text": "Dashboard",
+        "id": "",
+        "class": "header-btn",
+        "type": "submit",
+        "ariaLabel": "Open analytics dashboard"
+      },
+      {
+        "tagName": "select",
+        "text": "StreetsAerialSatelliteDarkTerrain",
+        "id": "",
+        "class": "basemap-select",
+        "type": "select-one",
+        "ariaLabel": "Select map basemap style. Current: Streets"
+      },
+      {
+        "tagName": "button",
+        "text": "Data",
+        "id": "",
+        "class": "header-btn",
+        "type": "submit",
+        "ariaLabel": "Manage offline data"
+      },
+      {
+        "tagName": "button",
+        "text": "Status",
+        "id": "",
+        "class": "header-btn",
+        "type": "submit",
+        "ariaLabel": "View data source status"
+      },
+      {
+        "tagName": "button",
+        "text": "Share",
+        "id": "",
+        "class": "header-btn",
+        "type": "submit",
+        "ariaLabel": "Share current map view"
+      },
+      {
+        "tagName": "button",
+        "text": "Export",
+        "id": "",
+        "class": "header-btn",
+        "type": "submit",
+        "ariaLabel": "Export map data as report"
+      },
+      {
+        "tagName": "button",
+        "text": "",
+        "id": "",
+        "class": "header-btn theme-toggle",
+        "type": "submit",
+        "ariaLabel": "Switch to dark mode"
+      },
+      {
+        "tagName": "a",
+        "text": "",
+        "id": "",
+        "class": "header-btn",
+        "href": "https://github.com/",
+        "type": "",
+        "ariaLabel": "About Cape Town GeoHub (opens in new tab)"
+      },
+      {
+        "tagName": "button",
+        "text": "Services",
+        "id": "",
+        "class": "tab-btn active",
+        "type": "submit",
+        "ariaLabel": "Services module"
+      },
+      {
+        "tagName": "button",
+        "text": "Transport",
+        "id": "",
+        "class": "tab-btn ",
+        "type": "submit",
+        "ariaLabel": "Transport module"
+      },
+      {
+        "tagName": "button",
+        "text": "Safety",
+        "id": "",
+        "class": "tab-btn ",
+        "type": "submit",
+        "ariaLabel": "Safety module"
+      },
+      {
+        "tagName": "button",
+        "text": "Environment",
+        "id": "",
+        "class": "tab-btn ",
+        "type": "submit",
+        "ariaLabel": "Environment module"
+      },
+      {
+        "tagName": "button",
+        "text": "Land Use",
+        "id": "",
+        "class": "tab-btn ",
+        "type": "submit",
+        "ariaLabel": "Land Use module"
+      },
+      {
+        "tagName": "button",
+        "text": "Utilities",
+        "id": "",
+        "class": "tab-btn ",
+        "type": "submit",
+        "ariaLabel": "Utilities module"
+      },
+      {
+        "tagName": "button",
+        "text": "Data",
+        "id": "",
+        "class": "tab-btn ",
+        "type": "submit",
+        "ariaLabel": "Data module"
+      },
+      {
+        "tagName": "button",
+        "text": "Run Analysis",
+        "id": "",
+        "class": "\n            w-full py-3 px-4 rounded-lg font-medium text-white\n            flex items-center justify-center gap-2 transition-all\n            bg-emerald-600 hover:bg-emerald-700 active:scale-98\n          ",
+        "type": "submit",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "a",
+        "text": " Open Data",
+        "id": "",
+        "class": "",
+        "href": "https://odp.capetown.gov.za/",
+        "type": "",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "a",
+        "text": " Source",
+        "id": "",
+        "class": "",
+        "href": "https://github.com/",
+        "type": "",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "a",
+        "text": "",
+        "id": "",
+        "class": "leaflet-control-layers-toggle",
+        "href": "http://localhost:5174/?lat=-33.9249&lng=18.4241&zoom=11#",
+        "type": "",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "input",
+        "text": "",
+        "id": "",
+        "class": "leaflet-control-layers-selector",
+        "type": "radio",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "input",
+        "text": "",
+        "id": "",
+        "class": "leaflet-control-layers-selector",
+        "type": "radio",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "input",
+        "text": "",
+        "id": "",
+        "class": "leaflet-control-layers-selector",
+        "type": "radio",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "input",
+        "text": "",
+        "id": "",
+        "class": "leaflet-control-layers-selector",
+        "type": "radio",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "input",
+        "text": "",
+        "id": "",
+        "class": "leaflet-control-layers-selector",
+        "type": "radio",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "a",
+        "text": "📍",
+        "id": "",
+        "class": "leaflet-bar-part leaflet-bar-part-single",
+        "href": "http://localhost:5174/?lat=-33.9249&lng=18.4241&zoom=11#",
+        "type": "",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "a",
+        "text": "Draw a polyline",
+        "id": "",
+        "class": "leaflet-draw-draw-polyline",
+        "href": "http://localhost:5174/?lat=-33.9249&lng=18.4241&zoom=11#",
+        "type": "",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "a",
+        "text": "Draw a polygon",
+        "id": "",
+        "class": "leaflet-draw-draw-polygon",
+        "href": "http://localhost:5174/?lat=-33.9249&lng=18.4241&zoom=11#",
+        "type": "",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "a",
+        "text": "Draw a rectangle",
+        "id": "",
+        "class": "leaflet-draw-draw-rectangle",
+        "href": "http://localhost:5174/?lat=-33.9249&lng=18.4241&zoom=11#",
+        "type": "",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "a",
+        "text": "Draw a circle",
+        "id": "",
+        "class": "leaflet-draw-draw-circle",
+        "href": "http://localhost:5174/?lat=-33.9249&lng=18.4241&zoom=11#",
+        "type": "",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "a",
+        "text": "Draw a marker",
+        "id": "",
+        "class": "leaflet-draw-draw-marker",
+        "href": "http://localhost:5174/?lat=-33.9249&lng=18.4241&zoom=11#",
+        "type": "",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "a",
+        "text": "Edit layers",
+        "id": "",
+        "class": "leaflet-draw-edit-edit leaflet-disabled",
+        "href": "http://localhost:5174/?lat=-33.9249&lng=18.4241&zoom=11#",
+        "type": "",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "a",
+        "text": "Delete layers",
+        "id": "",
+        "class": "leaflet-draw-edit-remove leaflet-disabled",
+        "href": "http://localhost:5174/?lat=-33.9249&lng=18.4241&zoom=11#",
+        "type": "",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "a",
+        "text": "",
+        "id": "",
+        "class": "leaflet-control-minimap-toggle-display leaflet-control-minimap-toggle-display-bottomright",
+        "href": "http://localhost:5174/?lat=-33.9249&lng=18.4241&zoom=11#",
+        "type": "",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "a",
+        "text": "+",
+        "id": "",
+        "class": "leaflet-control-zoom-in",
+        "href": "http://localhost:5174/?lat=-33.9249&lng=18.4241&zoom=11#",
+        "type": "",
+        "ariaLabel": "Zoom in"
+      },
+      {
+        "tagName": "a",
+        "text": "−",
+        "id": "",
+        "class": "leaflet-control-zoom-out",
+        "href": "http://localhost:5174/?lat=-33.9249&lng=18.4241&zoom=11#",
+        "type": "",
+        "ariaLabel": "Zoom out"
+      },
+      {
+        "tagName": "a",
+        "text": " Leaflet",
+        "id": "",
+        "class": "",
+        "href": "https://leafletjs.com/",
+        "type": "",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "button",
+        "text": "",
+        "id": "",
+        "class": "close-btn",
+        "type": "submit",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "button",
+        "text": "Next ",
+        "id": "",
+        "class": "btn-next",
+        "type": "submit",
+        "ariaLabel": null
+      },
+      {
+        "tagName": "button",
+        "text": "Skip tour",
+        "id": "",
+        "class": "skip-tour",
+        "type": "submit",
+        "ariaLabel": null
+      }
+    ]
+  }
+]

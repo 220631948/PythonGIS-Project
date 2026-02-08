@@ -149,7 +149,7 @@ export default function Dashboard({ isOpen, onClose }: DashboardProps) {
             >
               <Download size={18} />
             </button>
-            <button className="close-btn" onClick={onClose}>
+            <button className="close-btn" onClick={onClose} aria-label="Close dashboard">
               <X size={20} />
             </button>
           </div>
