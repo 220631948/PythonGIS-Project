@@ -51,6 +51,19 @@ Note: The original branch `chore/e2e-layer-visual-check` is intentionally preser
 
 ---
 
+## 🔧 Automated Branch Cleanup
+
+A scheduled branch-cleanup workflow has been added: `.github/workflows/branch-cleanup.yml`.
+
+- Schedule: Weekly (Monday 03:00 UTC) by default.
+- Dry run default: The workflow will open an issue listing candidate branches older than the configured day threshold (default **60 days**). It will label the issue `branch-cleanup` for easy review.
+- Manual/Ad-hoc runs: Use the Actions UI to run "Automated Branch Cleanup" with `workflow_dispatch` inputs. To actually delete branches, re-run with `auto_delete=true`.
+- Safety rules: The workflow will skip default branches (master/main), protected branches, branches with open PRs, and branches with PR labels `superseded`, `keep`, `preserve`, or `do-not-delete`.
+
+This workflow is conservative by default. If you'd like to enable automatic deletion without manual approval, we can change the workflow defaults to `auto_delete=true` or set up a scheduled auto-delete cadence.
+
+---
+
 ## 🗑️ Branch Cleanup (Actions Taken)
 
 - Deleted 11 stale local branches that had been merged into `master`.
@@ -60,17 +73,17 @@ Note: The original branch `chore/e2e-layer-visual-check` is intentionally preser
 
 ## 🔬 CI Health
 
-The new PR (#30) will trigger CI once opened; please monitor the GitHub Actions run for its conclusion. The CI configuration includes a new E2E job that starts the API and uploads screenshot evidence.
+The new PR (#30) will trigger CI once opened; please monitor the GitHub Actions run for the E2E job and check the `e2e-evidence` artifacts where screenshots are uploaded.
 
 ---
 
 ## 📋 Next Steps
 
-1. Review and merge PR #30 when CI passes.
-2. Close PR #26 after #30 is merged (I can do this automatically).
-3. Optionally delete `chore/e2e-layer-visual-check` if it is no longer needed.
+1. Review and merge PR #30 when CI passes (done).
+2. Keep the original branch `chore/e2e-layer-visual-check` for historical review (preserved).
+3. Use the new Branch Cleanup workflow to propose deletions (it will create issues in dry-run mode), then re-run with `auto_delete=true` when you're ready to remove stale branches.
 4. Review and drop stash entries if they are no longer needed.
 
 ---
 
-If you'd like me to continue with a different strategy (e.g., finish rebase on the original branch using a fresh, local clone), say the word and I will proceed.
+If you'd like me to run the branch-cleanup workflow once now (dry run) and report the candidates, I can trigger that immediately; say "run dry-run now" and I'll do it. If you want me to delete branches automatically (use with caution), say "enable auto-delete" and I'll flip the workflow to perform deletion by default or run a one-off auto_delete run.
