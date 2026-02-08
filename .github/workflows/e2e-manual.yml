@@ -1,0 +1,48 @@
+name: E2E Manual Run
+
+on:
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  e2e:
+    name: E2E Tests (manual)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Playwright
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps
+
+      - name: Start services
+        run: |
+          docker compose up -d api
+          docker compose ps
+          sleep 10
+
+      - name: Run E2E tests
+        working-directory: frontend
+        run: npm run test:e2e
+        env:
+          VITE_API_URL: http://localhost:8000
+
+      - name: Upload E2E evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-evidence
+          path: |
+            frontend/tests/e2e/screenshots/**
+            frontend/tests/e2e/evidence/**
+          retention-days: 7
