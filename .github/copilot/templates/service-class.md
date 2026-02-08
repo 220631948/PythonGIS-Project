@@ -1,20 +1,22 @@
-# Service Class Template
+# Core Utility Module Template
 
 **Purpose**
-Create new service following repository pattern.
+Create a reusable core utility or helper module for shared backend logic.
 
 **Required Components**
-- Service class with typed constructor
-- Repository dependency injection
+
+- Utility class or functions with type hints
+- Explicit dependencies (pass in client/session, avoid globals)
 - Public methods for business operations
 - Private helper methods for logic
 - Error handling with custom exceptions
 - Comprehensive docstrings
 
 **Usage Instructions**
-1. Copy template and replace `ServiceName`
-2. Define repository dependency type
-3. Implement business methods
-4. Add error handling
-5. Write unit tests
-6. Register in dependency injection
+
+1. Copy template and replace `ModuleName`
+2. Place under `app/core` or `app/utils`
+3. Define dependency types (DB session, data loader, HTTP client)
+4. Implement business methods
+5. Add error handling
+6. Write unit tests

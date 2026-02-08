@@ -1,6 +1,7 @@
 # Generate FastAPI Endpoint Following Project Patterns
 
 **Context requirements:**
+
 - Endpoint purpose and HTTP method
 - Request and response schemas
 - Service layer dependencies
@@ -8,7 +9,8 @@
 - Authentication requirements
 
 **Prompt structure:**
-- Define route path with v1 prefix
+
+- Define route path under `/api` (use `settings.API_PREFIX`)
 - Specify Pydantic request model
 - Request service injection using Depends
 - Ask for error handling with custom exceptions
