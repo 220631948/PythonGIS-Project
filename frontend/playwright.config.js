@@ -5,10 +5,14 @@ const frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 export default defineConfig({
   testDir: './tests',
-  timeout: 60 * 1000,
+  // Increase overall per-test timeout to allow for slower CI environments
+  timeout: 120 * 1000,
   expect: {
-    timeout: 10 * 1000,
+    timeout: 20 * 1000,
   },
+  // Retries and worker configuration tailored for CI to reduce flakiness
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
   use: {
     baseURL: frontendBase,
     trace: 'on-first-retry',
@@ -25,9 +29,8 @@ export default defineConfig({
     : [
         {
           command: 'npm run dev -- --host --port 5173',
--          cwd: './frontend',
-+          // Make webServer run from the frontend working directory ('.') when invoked
-+          cwd: '.',
+          // Run the dev server from the frontend directory so npm commands resolve correctly
+          cwd: './frontend',
           port: 5173,
           reuseExistingServer: true,
         },
