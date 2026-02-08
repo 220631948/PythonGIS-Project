@@ -75,21 +75,21 @@
 }
 
 .status-ok {
-  color: #4ade80;
+  color: var(--color-success);
 }
 
 .status-ok .status-indicator {
-  background-color: #4ade80;
-  box-shadow: 0 0 12px rgba(74, 222, 128, 0.6);
+  background-color: var(--color-success);
+  box-shadow: 0 0 12px var(--color-success-soft);
 }
 
 .status-err {
-  color: #f87171;
+  color: var(--color-error);
 }
 
 .status-err .status-indicator {
-  background-color: #f87171;
-  box-shadow: 0 0 12px rgba(248, 113, 113, 0.6);
+  background-color: var(--color-error);
+  box-shadow: 0 0 12px var(--color-error-soft);
 }
 
 .ops-metrics {

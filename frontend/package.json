@@ -18,6 +18,7 @@
     "lint:types": "tsc --noEmit && eslint --ext .ts,.tsx src"
   },
   "dependencies": {
+    "@axe-core/playwright": "^4.11.1",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-query": "^5.90.20",
     "@turf/turf": "^7.3.2",

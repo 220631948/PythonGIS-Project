@@ -113,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div className="sidebar-overlay" onClick={() => onClose && onClose()} />
       )}
 
-      <aside className={`sidebar ${isOpen ? 'open' : ''} ${isLoading ? 'loading' : ''}`} role="navigation" aria-label="Main navigation">
+      <nav id="sidebar-navigation" className={`sidebar ${isOpen ? 'open' : 'closed'} ${isLoading ? 'loading' : ''}`} aria-label="Main navigation">
         <div className="sidebar-tabs" role="tablist" style={{
           display: 'flex',
           flexWrap: 'wrap',
@@ -187,7 +187,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <DataStatusFooter isOnline={isOnline} isLoading={isLoading} />
-      </aside>
+      </nav>
     </>
   );
 };

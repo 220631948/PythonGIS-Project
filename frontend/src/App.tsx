@@ -75,7 +75,7 @@ function MainApp() {
     useEffect(() => {
         const fetchMarkers = async () => {
             try {
-                const markers = await apiClient.getMarkers();
+                const markers = await apiClient.getMarkers() as any[];
                 setCollaborationMarkers(markers);
             } catch (error) {
                 console.error("Failed to fetch collaboration markers:", error);
@@ -199,11 +199,11 @@ function MainApp() {
                 onExport={handleExport}
                 onThemeToggle={() => setIsDarkMode(!isDarkMode)}
                 isDarkMode={isDarkMode}
-                currentBasemap={urlState.basemap}
+                currentBasemap={urlState.basemap as string}
                 isOnline={isOnline}
             />
 
-            <main className="app-main">
+            <main id="main-content" className="app-main">
                 <Sidebar
                     isOpen={isSidebarOpen}
                     onClose={() => setIsSidebarOpen(false)}
@@ -223,7 +223,7 @@ function MainApp() {
                         zoom={urlState.zoom}
                         layers={urlState.layers}
                         moduleLayerData={moduleLayerData} // Passed here
-                        basemap={urlState.basemap}
+                        basemap={urlState.basemap as string}
                         onMapMove={handleMapMove}
                         flyTo={flyTo}
                         onLayerLoading={(id: string, loading: boolean) => {

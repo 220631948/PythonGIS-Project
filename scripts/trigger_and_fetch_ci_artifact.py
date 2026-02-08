@@ -168,6 +168,16 @@ def main():
 
     run = wait_for_run_completion(token, workflow_id)
     run_id = run.get("id")
+    if run_id is None:
+        print("Error: workflow run is missing an 'id' field.")
+        sys.exit(1)
+    try:
+        # Ensure run_id is an int for subsequent API calls
+        run_id = int(run_id)
+    except (TypeError, ValueError):
+        print(f"Error: unexpected run id value: {run_id!r}")
+        sys.exit(1)
+
     conclusion = run.get("conclusion")
 
     if conclusion != "success":
