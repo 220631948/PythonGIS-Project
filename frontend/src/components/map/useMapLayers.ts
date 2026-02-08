@@ -20,6 +20,27 @@ interface UseMapLayersOptions {
   onLayerLoading?: (id: string, loading: boolean) => void;
 }
 
+// Map frontend layer IDs -> backend dataset keys (used by /api/data)
+export const LAYER_TO_DATASET: Record<string, string> = {
+  'zoning-layer': 'zoning',
+  'building-footprints-layer': 'building_footprints',
+  'open-spaces-layer': 'open_spaces',
+
+  'services-layer': 'informal_settlements',
+  'clinics-layer': 'clinics',
+  'housing-offices-layer': 'housing_offices',
+  'courts-layer': 'courts',
+
+  'parks-layer': 'parks',
+  'sports-layer': 'sports_grounds',
+  'swimming-pools-layer': 'swimming_pools',
+
+  'safety-layer': 'precincts', // precincts / crime_stat aggregation
+  'flood-layer': 'flood_zones',
+  'cemeteries-layer': 'cemeteries',
+  'trading-layer': 'trading_locations',
+};
+
 export function useMapLayers({ layers, activeFilters, onLayerLoading }: UseMapLayersOptions) {
   const [geoData, setGeoData] = useState<Record<string, LayerData>>({});
   const fetchingLayers = useRef(new Set<string>());
@@ -33,13 +54,28 @@ export function useMapLayers({ layers, activeFilters, onLayerLoading }: UseMapLa
   const fetchLayerData = useCallback(async (id: string) => {
     onLayerLoadingRef.current?.(id, true);
     try {
-      const response = await fetch(`/api/portal/datasets/${id}/geojson`);
-      if (response.ok) {
+      // Map frontend ID to backend dataset key where possible
+      const datasetKey = LAYER_TO_DATASET[id] ?? id;
+
+      // Prefer the smart /api/data proxy which handles caching, pagination, and transformations
+      // Fallback to portal API if no mapping exists
+      let response: Response | null = null;
+      try {
+        response = await fetch(`/api/data/${datasetKey}?limit=2000`);
+      } catch {
+        // Fallback to portal endpoint if proxy fails or mapping was actually the same ID
+        response = await fetch(`/api/portal/datasets/${id}/geojson`);
+      }
+
+      if (response && response.ok) {
         const data = await response.json();
+        // Normalise responses both from /api/data (FeatureCollection) and /api/portal (wrapper with geojson)
         const normalized: LayerData = data.geojson
           ? data
-          : { geojson: data, dataset: { name: id } };
+          : { geojson: data, dataset: { name: datasetKey } };
         setGeoData((prev) => ({ ...prev, [id]: normalized }));
+      } else if (response) {
+        console.warn(`Fetch for layer ${id} returned HTTP ${response.status}`);
       }
     } catch (error) {
       console.error(`Error fetching layer ${id}:`, error);
@@ -51,11 +87,12 @@ export function useMapLayers({ layers, activeFilters, onLayerLoading }: UseMapLa
   const fetchFilteredLayerData = useCallback(async (id: string, filterData: FilterData) => {
     onLayerLoadingRef.current?.(id, true);
     try {
+      const datasetKey = LAYER_TO_DATASET[id] ?? id;
       const response = await fetch('/api/filter/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          dataset: id,
+          dataset: datasetKey,
           conditions: filterData.conditions ?? [],
           logic: filterData.logic ?? 'and',
         }),
@@ -64,7 +101,7 @@ export function useMapLayers({ layers, activeFilters, onLayerLoading }: UseMapLa
         const data = await response.json();
         setGeoData((prev) => ({
           ...prev,
-          [id]: { geojson: data.geojson, dataset: { name: id } },
+          [id]: { geojson: data.geojson, dataset: { name: datasetKey } },
         }));
       }
     } catch (error) {

@@ -59,7 +59,7 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         url=f"{ARCGIS_REST_BASE}/Imagery/Aerial_2023/MapServer",
         format="MapServer",
         geometry_type="Raster",
-        attribution="City of Cape Town GIS"
+        attribution="City of Cape Town GIS",
     ),
     "aerial_imagery_historical": PortalDataset(
         id="aerial_imagery_historical",
@@ -68,9 +68,8 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.IMAGERY,
         url=f"{ARCGIS_REST_BASE}/Imagery/Historical_Aerials/MapServer",
         format="MapServer",
-        geometry_type="Raster"
+        geometry_type="Raster",
     ),
-
     # ============ BOUNDARIES ============
     "city_boundary": PortalDataset(
         id="city_boundary",
@@ -79,7 +78,7 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.BOUNDARIES,
         url="https://services.arcgis.com/zmLUiqh7X11gGV2d/arcgis/rest/services/City_Boundary/FeatureServer/0",
         format="MapServer",
-        geometry_type="Polygon"
+        geometry_type="Polygon",
     ),
     "suburbs": PortalDataset(
         id="suburbs",
@@ -88,7 +87,7 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.BOUNDARIES,
         url=f"{EGIS_MAP_SERVICE}/75/query?where=1%3D1&outFields=*&f=geojson",
         format="MapServer",
-        geometry_type="Polygon"
+        geometry_type="Polygon",
     ),
     "wards": PortalDataset(
         id="wards",
@@ -97,7 +96,7 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.BOUNDARIES,
         url=f"{EGIS_MAP_SERVICE}/78/query?where=1%3D1&outFields=*&f=geojson",
         format="MapServer",
-        geometry_type="Polygon"
+        geometry_type="Polygon",
     ),
     "subcouncils": PortalDataset(
         id="subcouncils",
@@ -106,9 +105,8 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.BOUNDARIES,
         url=f"{EGIS_MAP_SERVICE}/77/query?where=1%3D1&outFields=*&f=geojson",
         format="MapServer",
-        geometry_type="Polygon"
+        geometry_type="Polygon",
     ),
-
     # ============ INFRASTRUCTURE ============
     "roads": PortalDataset(
         id="roads",
@@ -117,7 +115,7 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.INFRASTRUCTURE,
         url=f"{ARCGIS_REST_BASE}/Infrastructure/Roads/MapServer/0",
         format="MapServer",
-        geometry_type="Line"
+        geometry_type="Line",
     ),
     "buildings": PortalDataset(
         id="buildings",
@@ -126,7 +124,7 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.INFRASTRUCTURE,
         url=f"{ARCGIS_REST_BASE}/Infrastructure/Buildings/MapServer/0",
         format="MapServer",
-        geometry_type="Polygon"
+        geometry_type="Polygon",
     ),
     "railway_lines": PortalDataset(
         id="railway_lines",
@@ -135,7 +133,7 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.INFRASTRUCTURE,
         url=f"{EGIS_MAP_SERVICE}/233/query?where=1%3D1&outFields=*&f=geojson",
         format="MapServer",
-        geometry_type="Line"
+        geometry_type="Line",
     ),
     "railway_stations": PortalDataset(
         id="railway_stations",
@@ -144,9 +142,8 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.INFRASTRUCTURE,
         url=f"{EGIS_MAP_SERVICE}/235/query?where=1%3D1&outFields=*&f=geojson",
         format="MapServer",
-        geometry_type="Point"
+        geometry_type="Point",
     ),
-
     # ============ ENVIRONMENT ============
     "wetlands": PortalDataset(
         id="wetlands",
@@ -155,7 +152,7 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.ENVIRONMENT,
         url=f"{EGIS_MAP_SERVICE}/70/query?where=1%3D1&outFields=*&f=geojson",
         format="MapServer",
-        geometry_type="Polygon"
+        geometry_type="Polygon",
     ),
     "biodiversity_network": PortalDataset(
         id="biodiversity_network",
@@ -164,7 +161,7 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.ENVIRONMENT,
         url=f"{EGIS_MAP_SERVICE}/133/query?where=1%3D1&outFields=*&f=geojson",
         format="MapServer",
-        geometry_type="Polygon"
+        geometry_type="Polygon",
     ),
     "protected_areas": PortalDataset(
         id="protected_areas",
@@ -173,7 +170,7 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.ENVIRONMENT,
         url=f"{EGIS_MAP_SERVICE}/24/query?where=1%3D1&outFields=*&f=geojson",
         format="MapServer",
-        geometry_type="Polygon"
+        geometry_type="Polygon",
     ),
     "flood_zones": PortalDataset(
         id="flood_zones",
@@ -182,9 +179,8 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.ENVIRONMENT,
         url=f"{EGIS_MAP_SERVICE}/71/query?where=1%3D1&outFields=*&f=geojson",
         format="MapServer",
-        geometry_type="Polygon"
+        geometry_type="Polygon",
     ),
-
     # ============ PLANNING ============
     "zoning": PortalDataset(
         id="zoning",
@@ -193,7 +189,7 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.PLANNING,
         url=f"{EGIS_MAP_SERVICE}/58/query?where=1%3D1&outFields=*&f=geojson",
         format="MapServer",
-        geometry_type="Polygon"
+        geometry_type="Polygon",
     ),
     "development_applications": PortalDataset(
         id="development_applications",
@@ -202,7 +198,7 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.PLANNING,
         url=f"{EGIS_MAP_SERVICE}/25/query?where=1%3D1&outFields=*&f=geojson",
         format="MapServer",
-        geometry_type="Point"
+        geometry_type="Point",
     ),
     "urban_edge": PortalDataset(
         id="urban_edge",
@@ -211,27 +207,26 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         category=DatasetCategory.PLANNING,
         url=f"{EGIS_MAP_SERVICE}/26/query?where=1%3D1&outFields=*&f=geojson",
         format="MapServer",
-        geometry_type="Polygon"
+        geometry_type="Polygon",
     ),
-
     # ============ TRANSPORT ============
-    "myciiti_routes": PortalDataset(
-        id="myciiti_routes",
+    "myciti_routes": PortalDataset(
+        id="myciti_routes",
         name="MyCiTi Bus Routes",
         description="MyCiTi integrated rapid transit routes",
         category=DatasetCategory.TRANSPORT,
         url=f"{EGIS_MAP_SERVICE}/95/query?where=1%3D1&outFields=*&f=geojson",
-        format="MapServer",
-        geometry_type="Line"
+        format="FeatureServer",
+        geometry_type="Line",
     ),
-    "myciiti_stops": PortalDataset(
-        id="myciiti_stops",
+    "myciti_stops": PortalDataset(
+        id="myciti_stops",
         name="MyCiTi Bus Stops",
         description="MyCiTi bus stop locations",
         category=DatasetCategory.TRANSPORT,
         url=f"{EGIS_MAP_SERVICE}/96/query?where=1%3D1&outFields=*&f=geojson",
-        format="MapServer",
-        geometry_type="Point"
+        format="FeatureServer",
+        geometry_type="Point",
     ),
     "taxi_ranks": PortalDataset(
         id="taxi_ranks",
@@ -239,10 +234,9 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         description="Licensed taxi rank locations",
         category=DatasetCategory.TRANSPORT,
         url=f"{EGIS_MAP_SERVICE}/97/query?where=1%3D1&outFields=*&f=geojson",
-        format="MapServer",
-        geometry_type="Point"
+        format="FeatureServer",
+        geometry_type="Point",
     ),
-
     # ============ SERVICES ============
     "health_facilities": PortalDataset(
         id="health_facilities",
@@ -250,8 +244,8 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         description="Hospitals, clinics, and health centers",
         category=DatasetCategory.SERVICES,
         url=f"{EGIS_MAP_SERVICE}/44/query?where=1%3D1&outFields=*&f=geojson",
-        format="MapServer",
-        geometry_type="Point"
+        format="FeatureServer",
+        geometry_type="Point",
     ),
     "schools": PortalDataset(
         id="schools",
@@ -259,8 +253,8 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         description="Primary and secondary schools",
         category=DatasetCategory.SERVICES,
         url=f"{EGIS_MAP_SERVICE}/26/query?where=1%3D1&outFields=*&f=geojson",
-        format="MapServer",
-        geometry_type="Point"
+        format="FeatureServer",
+        geometry_type="Point",
     ),
     "libraries": PortalDataset(
         id="libraries",
@@ -268,10 +262,18 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         description="Public library locations",
         category=DatasetCategory.SERVICES,
         url=f"{EGIS_MAP_SERVICE}/22/query?where=1%3D1&outFields=*&f=geojson",
-        format="MapServer",
-        geometry_type="Point"
+        format="FeatureServer",
+        geometry_type="Point",
     ),
-
+    "water_facilities": PortalDataset(
+        id="water_facilities",
+        name="Water Facilities",
+        description="Public water access points (Smart Facilities)",
+        category=DatasetCategory.SERVICES,
+        url=f"{EGIS_MAP_SERVICE}/178/query?where=1%3D1&outFields=*&f=geojson",
+        format="FeatureServer",
+        geometry_type="Point",
+    ),
     # ============ SAFETY ============
     "police_stations": PortalDataset(
         id="police_stations",
@@ -279,8 +281,8 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         description="South African Police Service stations",
         category=DatasetCategory.SAFETY,
         url=f"{EGIS_MAP_SERVICE}/82/query?where=1%3D1&outFields=*&f=geojson",
-        format="MapServer",
-        geometry_type="Point"
+        format="FeatureServer",
+        geometry_type="Point",
     ),
     "fire_stations": PortalDataset(
         id="fire_stations",
@@ -288,8 +290,8 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         description="Fire and rescue service stations",
         category=DatasetCategory.SAFETY,
         url=f"{EGIS_MAP_SERVICE}/81/query?where=1%3D1&outFields=*&f=geojson",
-        format="MapServer",
-        geometry_type="Point"
+        format="FeatureServer",
+        geometry_type="Point",
     ),
     "crime_precincts": PortalDataset(
         id="crime_precincts",
@@ -297,10 +299,9 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         description="Police precinct boundaries for crime statistics",
         category=DatasetCategory.SAFETY,
         url=f"{EGIS_MAP_SERVICE}/31/query?where=1%3D1&outFields=*&f=geojson",
-        format="MapServer",
-        geometry_type="Polygon"
+        format="FeatureServer",
+        geometry_type="Polygon",
     ),
-
     # ============ UTILITIES ============
     "water_points": PortalDataset(
         id="water_points",
@@ -308,8 +309,8 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         description="Public water access points and fountains",
         category=DatasetCategory.SERVICES,
         url=f"{EGIS_MAP_SERVICE}/178/query?where=1%3D1&outFields=*&f=geojson",
-        format="MapServer",
-        geometry_type="Point"
+        format="FeatureServer",
+        geometry_type="Point",
     ),
     "sanitation_facilities": PortalDataset(
         id="sanitation_facilities",
@@ -317,8 +318,8 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         description="Public toilet and sanitation facilities",
         category=DatasetCategory.SERVICES,
         url=f"{EGIS_MAP_SERVICE}/32/query?where=1%3D1&outFields=*&f=geojson",
-        format="MapServer",
-        geometry_type="Point"
+        format="FeatureServer",
+        geometry_type="Point",
     ),
     "waste_collection_zones": PortalDataset(
         id="waste_collection_zones",
@@ -326,8 +327,8 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         description="Waste collection service areas",
         category=DatasetCategory.SERVICES,
         url=f"{EGIS_MAP_SERVICE}/136/query?where=1%3D1&outFields=*&f=geojson",
-        format="MapServer",
-        geometry_type="Polygon"
+        format="FeatureServer",
+        geometry_type="Polygon",
     ),
     "recycling_facilities": PortalDataset(
         id="recycling_facilities",
@@ -335,9 +336,9 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         description="Recycling drop-off points and facilities",
         category=DatasetCategory.SERVICES,
         url=f"{EGIS_MAP_SERVICE}/101/query?where=1%3D1&outFields=*&f=geojson",
-        format="MapServer",
-        geometry_type="Point"
-    )
+        format="FeatureServer",
+        geometry_type="Point",
+    ),
 }
 
 
@@ -387,8 +388,16 @@ class PortalClient:
         return results
 
     def get_dataset(self, dataset_id: str) -> Optional[PortalDataset]:
-        """Get dataset metadata by ID"""
-        return PORTAL_DATASETS.get(dataset_id)
+        """Get dataset metadata by ID, handling -layer suffix and snake_case conversion"""
+        # Direct match
+        if dataset_id in PORTAL_DATASETS:
+            return PORTAL_DATASETS[dataset_id]
+
+        # Strip -layer suffix and convert hyphens to underscores
+        # e.g., 'myciti-stops-layer' -> 'myciti_stops'
+        normalized = dataset_id.replace("-layer", "").replace("-", "_")
+
+        return PORTAL_DATASETS.get(normalized)
 
     def fetch_geojson(self, dataset_id: str, bbox: Optional[List[float]] = None) -> Optional[Dict]:
         """
@@ -412,6 +421,9 @@ class PortalClient:
             elif dataset.format == "FeatureServer":
                 return self._fetch_from_feature_server(dataset.url, bbox)
             elif dataset.format == "MapServer":
+                # If the dataset URL already includes a query that returns GeoJSON, try it.
+                if '/query' in dataset.url or 'f=geojson' in dataset.url:
+                    return self._fetch_from_feature_server(dataset.url, bbox)
                 logger.warning(f"MapServer layers cannot be fetched as GeoJSON: {dataset_id}")
                 return None
             else:

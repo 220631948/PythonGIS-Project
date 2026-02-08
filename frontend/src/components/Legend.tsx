@@ -14,6 +14,8 @@ import {
   Home,
   Leaf,
   Stethoscope,
+  Bus,
+  Train,
   LucideIcon
 } from 'lucide-react';
 
@@ -127,6 +129,30 @@ const LAYER_CONFIG: Record<string, LayerConfigItem> = {
     description: 'Public open spaces and greens',
     icon: Leaf,
     colors: [{ color: '#166534', label: 'Open Space' }]
+  },
+  'myciti-stops-layer': {
+    name: 'MyCiTi Stops',
+    description: 'MyCiTi bus stops',
+    icon: Bus,
+    colors: [{ color: '#dc2626', label: 'Bus Stop' }]
+  },
+  'myciti-routes-layer': {
+    name: 'MyCiTi Routes',
+    description: 'MyCiTi bus routes',
+    icon: Layers, // Placeholder
+    colors: [{ color: '#dc2626', label: 'Bus Route' }]
+  },
+  'railway-stations-layer': {
+    name: 'Rail Stations',
+    description: 'Metrorail stations',
+    icon: Train,
+    colors: [{ color: '#2563eb', label: 'Station' }]
+  },
+  'water-facilities-layer': {
+    name: 'Water Facilities',
+    description: 'Public water taps and facilities',
+    icon: Droplets,
+    colors: [{ color: '#0ea5e9', label: 'Water Access' }]
   }
 };
 

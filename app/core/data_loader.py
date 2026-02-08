@@ -12,7 +12,7 @@ from sqlalchemy import inspect, text
 from app.config import settings
 from app.core.cache_manager import cache_manager
 from app.core.exceptions import DataNotFoundError, DataValidationError
-from app.core.database import require_engine
+from app.core.database import require_engine, DatabaseConnectionError
 
 logger = logging.getLogger(__name__)
 
@@ -242,7 +242,7 @@ class DataLoader:
 
         # Check if empty
         if gdf.empty:
-            result.add_error(
+            result.add_warning(
                 "Dataset is empty - no features returned from open data source"
             )
             return result
@@ -301,8 +301,14 @@ class DataLoader:
         return self._retrieval_log.copy()
 
     def _table_exists(self, table_name: str) -> bool:
-        insp = inspect(require_engine())
-        return table_name in insp.get_table_names()
+        try:
+            insp = inspect(require_engine())
+            return table_name in insp.get_table_names()
+        except DatabaseConnectionError:
+            return False
+        except Exception as e:
+            logger.warning(f"Error checking table existence: {e}")
+            return False
 
     def _update_metadata(self, name: str, count: int, layer_type: str):
         try:
@@ -422,19 +428,29 @@ class DataLoader:
                 from shapely.geometry import shape
 
                 features = data.get("features", []) if isinstance(data, dict) else []
-                rows = []
-                for feat in features:
-                    geom = None
-                    if feat.get("geometry"):
-                        try:
-                            geom = shape(feat["geometry"])
-                        except Exception:
-                            geom = None
-                    props = feat.get("properties", {}) if isinstance(feat.get("properties"), dict) else {}
-                    props["geometry"] = geom
-                    rows.append(props)
 
-                gdf = gpd.GeoDataFrame(rows, crs="EPSG:4326")
+                if not features:
+                    logger.warning(f"No features found in GeoJSON for {dataset_name}")
+                    gdf = gpd.GeoDataFrame(columns=["geometry"], crs="EPSG:4326")
+                else:
+                    rows = []
+                    for feat in features:
+                        geom = None
+                        if feat.get("geometry"):
+                            try:
+                                geom = shape(feat["geometry"])
+                            except Exception:
+                                geom = None
+                        props = (
+                            feat.get("properties", {})
+                            if isinstance(feat.get("properties"), dict)
+                            else {}
+                        )
+                        props["geometry"] = geom
+                        rows.append(props)
+
+                    gdf = gpd.GeoDataFrame(rows, crs="EPSG:4326")
+
                 self._log_retrieval(
                     dataset_name,
                     True,
@@ -442,9 +458,11 @@ class DataLoader:
                 )
             except Exception as e2:
                 self._log_retrieval(dataset_name, False, f"GeoJSON fallback parse failed: {e2}")
-                raise DataNotFoundError(
-                    f"Failed to parse GeoJSON for {dataset_name}: {e2}"
+                # Return empty GDF instead of raising to allow partial system info
+                logger.error(
+                    f"Failed to parse GeoJSON for {dataset_name}: {e2}. Returning empty dataset."
                 )
+                return gpd.GeoDataFrame(columns=["geometry"], crs="EPSG:4326")
 
         return self._process_gdf(gdf, dataset_name, url)
 
@@ -503,6 +521,10 @@ class DataLoader:
         """Process and clean the GeoDataFrame."""
         # Clean the GDF
         gdf = self._clean_gdf(gdf)
+
+        if gdf.empty:
+            logger.warning(f"Dataset {dataset_name} is empty. Skipping CRS processing.")
+            return gdf
 
         # Handle CRS - many CCT datasets use Hartebeesthoek94 (EPSG:2048) or WGS84
         if gdf.crs is None:
