@@ -117,8 +117,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div className="sidebar-tabs" role="tablist" style={{
           display: 'flex',
           flexWrap: 'wrap',
-          borderBottom: '1px solid #e5e7eb',
-          backgroundColor: '#f9fafb'
+          borderBottom: '1px solid var(--color-border)',
+          backgroundColor: 'var(--color-bg-secondary)'
         }}>
           {tabs.map(tab => (
             <button
@@ -135,7 +135,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 minWidth: '42px',
                 padding: '10px 6px',
                 border: 'none',
-                backgroundColor: activeTab === tab.id ? '#fff' : 'transparent',
+                backgroundColor: activeTab === tab.id ? 'var(--color-surface)' : 'transparent',
                 borderBottom: activeTab === tab.id ? `2px solid ${tab.color}` : '2px solid transparent',
                 cursor: 'pointer',
                 display: 'flex',
@@ -145,8 +145,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                 transition: 'all 0.2s'
               }}
             >
-              <tab.icon size={18} style={{ color: activeTab === tab.id ? tab.color : '#6b7280' }} aria-hidden="true" />
-              <span style={{ fontSize: '10px', color: activeTab === tab.id ? tab.color : '#6b7280', fontWeight: activeTab === tab.id ? '600' : '400' }}>
+              <tab.icon size={18} style={{ color: activeTab === tab.id ? tab.color : 'var(--color-text-muted)' }} aria-hidden="true" />
+              <span style={{ fontSize: '10px', color: activeTab === tab.id ? tab.color : 'var(--color-text-muted)', fontWeight: activeTab === tab.id ? '600' : '400' }}>
                 {tab.label}
               </span>
             </button>
@@ -167,20 +167,20 @@ const Sidebar: React.FC<SidebarProps> = ({
             </LoadingBoundary>
           </div>
 
-          <div className="sidebar-section about" style={{ padding: '12px 16px', borderTop: '1px solid #e5e7eb', marginTop: 'auto' }}>
+          <div className="sidebar-section about" style={{ padding: '12px 16px', borderTop: '1px solid var(--color-border)', marginTop: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <Info size={14} style={{ color: '#6b7280' }} />
-              <span style={{ fontSize: '12px', fontWeight: '500' }}>About</span>
+              <Info size={14} style={{ color: 'var(--color-text-muted)' }} />
+              <span style={{ fontSize: '12px', fontWeight: '500', color: 'var(--color-text-primary)' }}>About</span>
             </div>
             <div style={{ display: 'flex', gap: '12px' }}>
-              <a href="https://odp.capetown.gov.za/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <a href="https://odp.capetown.gov.za/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <ExternalLink size={12} /> Open Data
               </a>
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Github size={12} /> Source
               </a>
             </div>
-            <p style={{ fontSize: '10px', color: '#9ca3af', marginTop: '8px' }}>
+            <p style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '8px' }}>
               v1.3.0-vibecoding • 100% Real Open Data
             </p>
           </div>

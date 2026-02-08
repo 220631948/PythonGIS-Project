@@ -61,20 +61,20 @@ const TransportModule: React.FC<TransportModuleProps> = ({
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="p-4 border-b border-slate-200 bg-white">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                 <div className="flex items-center gap-2 mb-1">
                     <Bus className="w-5 h-5 text-emerald-600" />
-                    <h2 className="text-lg font-semibold text-slate-800">
+                    <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
                         Transport Accessibility
                     </h2>
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                     Analyze walking distance to MyCiTi stops
                 </p>
             </div>
 
             {/* Toggle Button */}
-            <div className="p-4 bg-slate-50 border-b border-slate-200">
+            <div className="p-4 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                 <button
                     onClick={handleToggle}
                     className={`
@@ -82,7 +82,7 @@ const TransportModule: React.FC<TransportModuleProps> = ({
             flex items-center justify-center gap-2 transition-all
             ${isActive
                             ? 'bg-emerald-600 text-white'
-                            : 'bg-white border-2 border-slate-200 text-slate-700 hover:border-emerald-500'
+                            : 'bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-emerald-500'
                         }
           `}
                 >
@@ -100,7 +100,7 @@ const TransportModule: React.FC<TransportModuleProps> = ({
                 </button>
 
                 {isActive && (
-                    <p className="text-xs text-emerald-700 text-center mt-2 flex items-center justify-center gap-1">
+                    <p className="text-xs text-emerald-700 dark:text-emerald-400 text-center mt-2 flex items-center justify-center gap-1">
                         <MapPin className="w-3 h-3" />
                         Click anywhere on the map
                     </p>
@@ -111,7 +111,7 @@ const TransportModule: React.FC<TransportModuleProps> = ({
             {loading && (
                 <div className="p-8 text-center">
                     <div className="animate-spin w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto mb-2" />
-                    <p className="text-sm text-slate-500">Analyzing accessibility...</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Analyzing accessibility...</p>
                 </div>
             )}
 
@@ -119,9 +119,9 @@ const TransportModule: React.FC<TransportModuleProps> = ({
             {result && !loading && (
                 <div className="flex-1 overflow-auto p-4 space-y-4">
                     {/* Summary Card */}
-                    <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+                    <div className="bg-emerald-50 dark:bg-emerald-900/30 rounded-lg p-4 border border-emerald-200 dark:border-emerald-800">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-emerald-800">Total Stops Accessible</span>
+                            <span className="text-sm font-medium text-emerald-800 dark:text-emerald-300">Total Stops Accessible</span>
                             <span className={`text-2xl font-bold ${getAccessibilityLevel(result.totalStops).color}`}>
                                 {result.totalStops}
                             </span>
@@ -133,7 +133,7 @@ const TransportModule: React.FC<TransportModuleProps> = ({
 
                     {/* Buffer Breakdown */}
                     <div className="space-y-3">
-                        <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                             <Clock className="w-4 h-4" />
                             Walking Distance Breakdown
                         </h3>
@@ -145,7 +145,7 @@ const TransportModule: React.FC<TransportModuleProps> = ({
                         ].map((buffer) => (
                             <div
                                 key={buffer.min}
-                                className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200"
+                                className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
                             >
                                 <div className="flex items-center gap-3">
                                     <div
@@ -156,10 +156,10 @@ const TransportModule: React.FC<TransportModuleProps> = ({
                                         }}
                                     />
                                     <div>
-                                        <div className="text-sm font-medium text-slate-700">
+                                        <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
                                             {buffer.min} min walk
                                         </div>
-                                        <div className="text-xs text-slate-400">
+                                        <div className="text-xs text-slate-400 dark:text-slate-500">
                                             {buffer.meters}m radius
                                         </div>
                                     </div>
@@ -168,7 +168,7 @@ const TransportModule: React.FC<TransportModuleProps> = ({
                                     <div className="text-lg font-bold text-blue-600">
                                         {buffer.count}
                                     </div>
-                                    <div className="text-xs text-slate-400">stops</div>
+                                    <div className="text-xs text-slate-400 dark:text-slate-500">stops</div>
                                 </div>
                             </div>
                         ))}
@@ -180,7 +180,7 @@ const TransportModule: React.FC<TransportModuleProps> = ({
                             clearAnalysis();
                             onBuffersUpdate?.(null);
                         }}
-                        className="w-full py-2 px-4 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-2"
+                        className="w-full py-2 px-4 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-center gap-2"
                     >
                         <X className="w-4 h-4" />
                         Clear Analysis
@@ -192,11 +192,11 @@ const TransportModule: React.FC<TransportModuleProps> = ({
             {!result && !loading && (
                 <div className="flex-1 flex items-center justify-center p-8">
                     <div className="text-center">
-                        <Bus className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                        <p className="text-sm text-slate-500 mb-1">
+                        <Bus className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
                             {isActive ? 'Click on the map to analyze' : 'Enable map click mode'}
                         </p>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-slate-400 dark:text-slate-500">
                             See MyCiTi stops within walking distance
                         </p>
                     </div>
@@ -204,7 +204,7 @@ const TransportModule: React.FC<TransportModuleProps> = ({
             )}
 
             {/* Footer */}
-            <div className="p-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-400 text-center">
+            <div className="p-3 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-400 dark:text-slate-500 text-center">
                 Walking speed: 1.2 m/s • Buffer radii: 800m / 1600m / 2400m
             </div>
         </div>

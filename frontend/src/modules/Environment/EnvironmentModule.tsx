@@ -89,24 +89,24 @@ const EnvironmentModule: React.FC<EnvironmentModuleProps> = ({
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="p-4 border-b border-slate-200 bg-white">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                 <div className="flex items-center gap-2 mb-1">
                     <TreePine className="w-5 h-5 text-emerald-600" />
-                    <h2 className="text-lg font-semibold text-slate-800">
+                    <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
                         Environment & Risk
                     </h2>
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                     Flood zones, wetlands, and green space access
                 </p>
             </div>
 
             {/* Layer Toggles */}
-            <div className="p-4 space-y-3 bg-slate-50 border-b border-slate-200">
+            <div className="p-4 space-y-3 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Waves className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm font-medium text-slate-700">Flood Zones</span>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Flood Zones</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input
@@ -122,7 +122,7 @@ const EnvironmentModule: React.FC<EnvironmentModuleProps> = ({
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <TreePine className="w-4 h-4 text-emerald-600" />
-                        <span className="text-sm font-medium text-slate-700">Parks & Green Space</span>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Parks & Green Space</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input
@@ -138,22 +138,22 @@ const EnvironmentModule: React.FC<EnvironmentModuleProps> = ({
 
             {/* Green Space Analysis Card */}
             <div className="p-4">
-                <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4">
+                <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 rounded-lg p-4">
                     <div className="flex items-start gap-3">
-                        <div className="bg-emerald-100 p-2 rounded-full">
-                            <MapPin className="w-5 h-5 text-emerald-600" />
+                        <div className="bg-emerald-100 dark:bg-emerald-800 p-2 rounded-full">
+                            <MapPin className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                         </div>
                         <div>
-                            <h4 className="text-sm font-bold text-emerald-900">Green Space Access</h4>
+                            <h4 className="text-sm font-bold text-emerald-900 dark:text-emerald-200">Green Space Access</h4>
                             {nearestParkDist !== null ? (
                                 <div className="mt-1">
-                                    <div className="text-2xl font-bold text-emerald-700">
+                                    <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
                                         {nearestParkDist}m
                                     </div>
-                                    <p className="text-xs text-emerald-600">to nearest park from clicked point</p>
+                                    <p className="text-xs text-emerald-600 dark:text-emerald-500">to nearest park from clicked point</p>
                                 </div>
                             ) : (
-                                <p className="text-xs text-emerald-600 mt-1">
+                                <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-1">
                                     Click anywhere on the map to calculate distance to the nearest park.
                                 </p>
                             )}
@@ -164,7 +164,7 @@ const EnvironmentModule: React.FC<EnvironmentModuleProps> = ({
 
             {/* Info Section */}
             <div className="p-4 pt-0">
-                <div className="flex items-start gap-2 text-xs text-slate-500 bg-white p-3 rounded border border-slate-100">
+                <div className="flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 p-3 rounded border border-slate-100 dark:border-slate-700">
                     <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <p>
                         Flood lines indicate 1:50 and 1:100 year risks.

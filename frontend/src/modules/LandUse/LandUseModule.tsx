@@ -68,24 +68,24 @@ const LandUseModule: React.FC<LandUseModuleProps> = ({ onLayerUpdate }) => {
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="p-4 border-b border-slate-200 bg-white">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                 <div className="flex items-center gap-2 mb-1">
                     <Map className="w-5 h-5 text-purple-600" />
-                    <h2 className="text-lg font-semibold text-slate-800">
+                    <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
                         Land Use & Zoning
                     </h2>
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                     Zoning regulations and development rights
                 </p>
             </div>
 
             {/* Layer Control */}
-            <div className="p-4 bg-slate-50 border-b border-slate-200">
+            <div className="p-4 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Layers className="w-4 h-4 text-purple-600" />
-                        <span className="text-sm font-medium text-slate-700">Zoning Map</span>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Zoning Map</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input
@@ -101,38 +101,38 @@ const LandUseModule: React.FC<LandUseModuleProps> = ({ onLayerUpdate }) => {
 
             {/* Legend */}
             <div className="p-4">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase mb-3">Zoning Types</h3>
+                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-3">Zoning Types</h3>
                 <div className="space-y-2">
                     {zoningData.features.map((feature: { properties: { id: number; code: string; description: string; max_height: string; coverage: string; color: string } }) => (
                         <div key={feature.properties.id} className="flex items-center gap-2">
                             <div
-                                className="w-8 h-4 rounded border border-slate-200"
+                                className="w-8 h-4 rounded border border-slate-200 dark:border-slate-600"
                                 style={{ backgroundColor: feature.properties.color }}
                             />
                             <div className="flex-1">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold text-slate-700">{feature.properties.code}</span>
-                                    <span className="text-[10px] text-slate-400">{feature.properties.max_height}</span>
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{feature.properties.code}</span>
+                                    <span className="text-[10px] text-slate-400 dark:text-slate-500">{feature.properties.max_height}</span>
                                 </div>
-                                <div className="text-xs text-slate-500">{feature.properties.description}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400">{feature.properties.description}</div>
                             </div>
                         </div>
                     ))}
-                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100">
-                        <div className="w-8 h-4 bg-slate-100 rounded border border-slate-200"></div>
-                        <span className="text-xs text-slate-400 italic">Other zones (not shown)</span>
+                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                        <div className="w-8 h-4 bg-slate-100 dark:bg-slate-700 rounded border border-slate-200 dark:border-slate-600"></div>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 italic">Other zones (not shown)</span>
                     </div>
                 </div>
             </div>
 
             {/* Info Card */}
             <div className="p-4 pt-0 mt-auto">
-                <div className="bg-purple-50 rounded-lg p-3 border border-purple-100">
+                <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3 border border-purple-100 dark:border-purple-800">
                     <div className="flex items-start gap-2">
-                        <Building className="w-4 h-4 text-purple-600 mt-1" />
+                        <Building className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-1" />
                         <div>
-                            <h4 className="text-xs font-bold text-purple-800">Development Application?</h4>
-                            <p className="text-xs text-purple-700 mt-1">
+                            <h4 className="text-xs font-bold text-purple-800 dark:text-purple-300">Development Application?</h4>
+                            <p className="text-xs text-purple-700 dark:text-purple-400 mt-1">
                                 Check zoning overlays before submitting building plans.
                                 Use the "Export" Tool to get a generate a zoning report.
                             </p>
