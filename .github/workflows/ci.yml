@@ -154,7 +154,9 @@ jobs:
 
       - name: Start services
         run: |
-          docker compose up -d db
+          # Start the API (db will be started as a dependency)
+          docker compose up -d api
+          docker compose ps
           sleep 10
 
       - name: Run E2E tests
@@ -162,3 +164,9 @@ jobs:
         run: npm run test:e2e
         env:
           VITE_API_URL: http://localhost:8000
+
+      - name: Upload E2E evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-evidence
+          path: frontend/tests/e2e/screenshots/**
