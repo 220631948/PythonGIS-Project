@@ -1,0 +1,42 @@
+name: Spec Kit Verification (specify check)
+
+on:
+  pull_request:
+    branches: [master, develop]
+  push:
+    branches: [master, develop]
+
+jobs:
+  specify-check:
+    name: Run `specify check`
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Specify CLI
+        run: |
+          python -m pip install --upgrade pip
+          # Install Specify from the official repository. This installs the 'specify' console script.
+          pip install git+https://github.com/github/spec-kit.git
+
+      - name: Run specify check
+        run: |
+          echo "Running specify check..."
+          specify check
+
+      - name: Upload specify-check log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: specify-check-log
+          path: |
+            .specify/spec.md
+            .specify/plan.md
+            .specify/tasks/*
