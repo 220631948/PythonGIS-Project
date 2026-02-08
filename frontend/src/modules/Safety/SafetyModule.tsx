@@ -59,14 +59,14 @@ const SafetyModule: React.FC<SafetyModuleProps> = ({
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="p-4 border-b border-slate-200 bg-white">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                 <div className="flex items-center gap-2 mb-1">
-                    <Shield className="w-5 h-5 text-red-600" />
-                    <h2 className="text-lg font-semibold text-slate-800">
+                    <Shield className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
                         Safety Analysis
                     </h2>
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                     Precinct-level crime patterns (aggregated)
                 </p>
             </div>
@@ -76,7 +76,7 @@ const SafetyModule: React.FC<SafetyModuleProps> = ({
 
             {/* Time Range Filter */}
             <div className="p-4 space-y-2">
-                <div className="flex items-center gap-2 text-sm text-slate-600">
+                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                     <Calendar className="w-4 h-4" />
                     <span className="font-medium">Time Period</span>
                 </div>
@@ -88,8 +88,8 @@ const SafetyModule: React.FC<SafetyModuleProps> = ({
                             className={`
                 px-3 py-1.5 rounded-lg text-xs font-medium transition-all
                 ${timeRange === range.value
-                                    ? 'bg-red-100 text-red-700 border-2 border-red-300'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-2 border-transparent'
+                                    ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-2 border-red-300 dark:border-red-700'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border-2 border-transparent'
                                 }
               `}
                         >
@@ -102,25 +102,25 @@ const SafetyModule: React.FC<SafetyModuleProps> = ({
             {/* Stats Summary */}
             <div className="px-4 pb-4">
                 <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-green-50 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-green-700">{stats.lowRisk}</div>
-                        <div className="text-xs text-green-600">Low</div>
+                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-green-700 dark:text-green-400">{stats.lowRisk}</div>
+                        <div className="text-xs text-green-600 dark:text-green-500">Low</div>
                     </div>
-                    <div className="bg-amber-50 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-amber-700">{stats.mediumRisk}</div>
-                        <div className="text-xs text-amber-600">Moderate</div>
+                    <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-amber-700 dark:text-amber-400">{stats.mediumRisk}</div>
+                        <div className="text-xs text-amber-600 dark:text-amber-500">Moderate</div>
                     </div>
-                    <div className="bg-red-50 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-red-700">{stats.highRisk}</div>
-                        <div className="text-xs text-red-600">Elevated+</div>
+                    <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-red-700 dark:text-red-400">{stats.highRisk}</div>
+                        <div className="text-xs text-red-600 dark:text-red-500">Elevated+</div>
                     </div>
                 </div>
             </div>
 
             {/* Precinct List */}
-            <div className="flex-1 overflow-auto border-t border-slate-200">
-                <div className="p-3 bg-slate-50 border-b border-slate-100">
-                    <h3 className="text-sm font-semibold text-slate-700">
+            <div className="flex-1 overflow-auto border-t border-slate-200 dark:border-slate-700">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700">
+                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                         Precincts ({stats.totalPrecincts})
                     </h3>
                 </div>
@@ -130,7 +130,7 @@ const SafetyModule: React.FC<SafetyModuleProps> = ({
                         <div className="animate-spin w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full mx-auto" />
                     </div>
                 ) : (
-                    <div className="divide-y divide-slate-100">
+                    <div className="divide-y divide-slate-100 dark:divide-slate-700">
                         {data.features
                             .sort((a, b) => b.properties.crime_index - a.properties.crime_index)
                             .map(precinct => (
@@ -138,8 +138,8 @@ const SafetyModule: React.FC<SafetyModuleProps> = ({
                                     key={precinct.properties.id}
                                     onClick={() => handlePrecinctClick(precinct)}
                                     className={`
-                    p-3 cursor-pointer transition-colors hover:bg-slate-50
-                    ${selectedPrecinct?.properties.id === precinct.properties.id ? 'bg-red-50' : ''}
+                    p-3 cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800
+                    ${selectedPrecinct?.properties.id === precinct.properties.id ? 'bg-red-50 dark:bg-red-900/20' : ''}
                   `}
                                     style={{
                                         borderLeft: `4px solid ${getCrimeColor(precinct.properties.crime_index)}`
@@ -147,8 +147,8 @@ const SafetyModule: React.FC<SafetyModuleProps> = ({
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <MapPin className="w-4 h-4 text-slate-400" />
-                                            <span className="text-sm font-medium text-slate-700">
+                                            <MapPin className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                                            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
                                                 {precinct.properties.name}
                                             </span>
                                         </div>
@@ -162,7 +162,7 @@ const SafetyModule: React.FC<SafetyModuleProps> = ({
                                             {getCrimeLevel(precinct.properties.crime_index)}
                                         </span>
                                     </div>
-                                    <div className="mt-1 flex items-center gap-4 text-xs text-slate-500">
+                                    <div className="mt-1 flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
                                         <span>Index: {precinct.properties.crime_index}</span>
                                         <span>Pop: {precinct.properties.population.toLocaleString()}</span>
                                     </div>
@@ -173,8 +173,8 @@ const SafetyModule: React.FC<SafetyModuleProps> = ({
             </div>
 
             {/* Legend */}
-            <div className="p-3 bg-slate-50 border-t border-slate-200">
-                <div className="text-xs text-slate-500 mb-2">Crime Index Legend</div>
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700">
+                <div className="text-xs text-slate-500 dark:text-slate-400 mb-2">Crime Index Legend</div>
                 <div className="flex gap-2">
                     {[
                         { label: '0-35', color: '#22c55e' },
@@ -187,7 +187,7 @@ const SafetyModule: React.FC<SafetyModuleProps> = ({
                                 className="w-3 h-3 rounded"
                                 style={{ backgroundColor: item.color }}
                             />
-                            <span className="text-xs text-slate-500">{item.label}</span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">{item.label}</span>
                         </div>
                     ))}
                 </div>

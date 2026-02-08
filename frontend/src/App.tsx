@@ -32,7 +32,24 @@ function MainApp() {
     const [urlState, setUrlState] = useUrlState(DEFAULT_STATE);
     const [metadata] = useState<any>({});
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [isDarkMode, setIsDarkMode] = useState(false);
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+        const saved = localStorage.getItem('theme');
+        if (saved) return saved === 'dark';
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    });
+
+    // Sync Dark Mode with DOM root for Tailwind v4 and CSS variables
+    useEffect(() => {
+        const root = document.documentElement;
+        if (isDarkMode) {
+            root.classList.add('dark');
+            root.setAttribute('data-theme', 'dark');
+        } else {
+            root.classList.remove('dark');
+            root.setAttribute('data-theme', 'light');
+        }
+        localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+    }, [isDarkMode]);
     const [loadingLayers, setLoadingLayers] = useState<string[]>([]);
     const [flyTo, setFlyTo] = useState<any>(null);
     const [clickedLocation, setClickedLocation] = useState<any>(null);

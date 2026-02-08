@@ -74,24 +74,24 @@ const UtilitiesModule: React.FC<UtilitiesModuleProps> = ({
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="p-4 border-b border-slate-200 bg-white">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                 <div className="flex items-center gap-2 mb-1">
                     <Trash2 className="w-5 h-5 text-amber-600" />
-                    <h2 className="text-lg font-semibold text-slate-800">
+                    <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
                         Utilities & Waste
                     </h2>
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                     Collection schedules and service reporting
                 </p>
             </div>
 
             {/* Layer Control */}
-            <div className="p-4 bg-slate-50 border-b border-slate-200">
+            <div className="p-4 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Truck className="w-4 h-4 text-amber-600" />
-                        <span className="text-sm font-medium text-slate-700">Collection Zones</span>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Collection Zones</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input
@@ -107,34 +107,34 @@ const UtilitiesModule: React.FC<UtilitiesModuleProps> = ({
 
             {/* Report Issue Actions */}
             <div className="p-4">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase mb-3">Report Service Issue</h3>
+                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-3">Report Service Issue</h3>
                 <div className="grid grid-cols-2 gap-3">
                     <button
                         onClick={() => handleReportIssue('Missed Collection')}
-                        className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                        className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                     >
                         <Trash2 className="w-5 h-5 text-red-500 mb-1" />
-                        <span className="text-xs font-medium text-slate-700">Missed Collection</span>
+                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Missed Collection</span>
                     </button>
 
                     <button
                         onClick={() => handleReportIssue('Illegal Dumping')}
-                        className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                        className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                     >
                         <AlertTriangle className="w-5 h-5 text-amber-500 mb-1" />
-                        <span className="text-xs font-medium text-slate-700">Illegal Dumping</span>
+                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Illegal Dumping</span>
                     </button>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-2 text-center">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 text-center">
                     * Reports are logged to console (demo mode)
                 </p>
             </div>
 
             {/* Schedule Info */}
             <div className="p-4 pt-0 mt-auto">
-                <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
-                    <h4 className="text-xs font-bold text-amber-800 mb-1">Holiday Schedule</h4>
-                    <div className="flex justify-between items-center text-xs text-amber-700">
+                <div className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-3 border border-amber-100 dark:border-amber-800">
+                    <h4 className="text-xs font-bold text-amber-800 dark:text-amber-300 mb-1">Holiday Schedule</h4>
+                    <div className="flex justify-between items-center text-xs text-amber-700 dark:text-amber-400">
                         <span>Human Rights Day</span>
                         <span className="font-semibold">No Collection</span>
                     </div>

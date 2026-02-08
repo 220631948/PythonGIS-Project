@@ -306,8 +306,18 @@
     color: var(--color-text-primary);
     background-color: var(--color-bg-primary);
   }
-    * {
-      box-sizing: border-box;
+        :root {
+          font-family: var(--font-body);
+          line-height: 1.6;
+          font-weight: 400;
+        }
+    
+        body {
+          margin: 0;
+          min-width: 320px;
+          min-height: 100vh;
+          background: var(--surface-raised);
+          color: var(--text-primary);
     }
   
     a {
@@ -315,31 +325,23 @@
       text-decoration: none;
     }
 
-a:hover {
-  color: var(--accent-strong);
-}
+        a:hover {
+          color: var(--accent-strong);
+        }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background: var(--surface-raised);
-  color: var(--text-primary);
-}
-
-button {
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  padding: 0.55em 1.1em;
-  font-size: 1em;
-  font-weight: var(--font-weight-medium);
-  font-family: inherit;
-  cursor: pointer;
-  background-color: var(--surface);
-  color: var(--text-primary);
-  transition: all var(--transition-base);
+        button {
+          border-radius: var(--radius-md);
+          border: 1px solid transparent;
+          padding: 0.55em 1.1em;
+          font-size: 1em;
+          font-weight: var(--font-weight-medium);
+          font-family: inherit;
+          cursor: pointer;
+          background-color: var(--surface);
+          color: var(--text-primary);
+          transition: all var(--transition-base);
   }
-  
+
   /* Keyboard Focus Indicators (WCAG 2.1 AA) */
   button:focus-visible,
   a:focus-visible,
@@ -349,13 +351,13 @@ button {
     outline: var(--focus-ring);
     outline-offset: var(--focus-ring-offset);
   }
-  
+
   /* Remove default outline for mouse users */
   button:focus:not(:focus-visible),
   a:focus:not(:focus-visible) {
     outline: none;
   }
-  
+
   h1,
   h2,
   h3,
@@ -364,7 +366,7 @@ button {
   h6 {
     color: var(--text-primary);
   }
-  
+
   p {
     color: var(--text-secondary);
   }
@@ -441,4 +443,28 @@ button {
     /* light mode specific overrides */
     --color-bg-primary: #f5f6f8;
   }
+}
+/* === Tailwind v4 Regression Fixes (Manual Overrides) === */
+.bg-emerald-600 {
+  background-color: #059669 !important;
+}
+
+.bg-emerald-500 {
+  background-color: #10b981 !important;
+}
+
+.bg-emerald-700:hover {
+  background-color: #047857 !important;
+}
+
+.text-white {
+  color: #ffffff !important;
+}
+
+.bg-red-500 {
+  background-color: #ef4444 !important;
+}
+
+.bg-slate-400 {
+  background-color: #94a3b8 !important;
 }
