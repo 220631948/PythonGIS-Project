@@ -93,10 +93,10 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-cov ruff
 
-      - name: Run pip-audit
+      - name: Run pip-audit (blocking)
         run: |
           pip install pip-audit
-          pip-audit --format json --output pip-audit.json || (cat pip-audit.json && exit 1)
+          pip-audit --strict
 
       - name: Run Ruff linter
         run: ruff check app/
