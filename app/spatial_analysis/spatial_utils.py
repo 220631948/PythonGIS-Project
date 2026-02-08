@@ -8,46 +8,31 @@ def point_in_polygon(point: Point, polygon: Polygon) -> bool:
     return polygon.contains(point)
 
 
-def gdf_to_geojson(gdf: gpd.GeoDataFrame) -> Dict[str, Any]:
-    """
-    Safely convert GeoDataFrame to GeoJSON dict.
-    Works around numpy 2.0 compatibility issues with geopandas.
-    """
-    features = []
-    for idx, row in gdf.iterrows():
-        geom = row.geometry
-        properties = {}
-        for col in gdf.columns:
-            if col != 'geometry':
-                val = row[col]
-                # Handle numpy types
-                if hasattr(val, 'item'):
-                    try:
-                        val = val.item()
-                    except (ValueError, AttributeError):
-                        val = str(val)
-                # Handle NaN
-                if isinstance(val, float) and (val != val):  # NaN check
-                    val = None
-                properties[col] = val
-
-        feature = {
-            "type": "Feature",
-            "id": str(idx),
-            "properties": properties,
-            "geometry": mapping(geom) if geom is not None else None
-        }
-        features.append(feature)
-
-    return {
-        "type": "FeatureCollection",
-        "features": features
-    }
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code"""
+    if hasattr(obj, 'isoformat'):
+        return obj.isoformat()
+    return str(obj)
 
 
 def gdf_to_geojson_str(gdf: gpd.GeoDataFrame) -> str:
     """Convert GeoDataFrame to GeoJSON string."""
-    return json.dumps(gdf_to_geojson(gdf))
+    # Use native geopandas serialization which is much faster (C-optimized)
+    # na='null' handles NaNs correctly
+    # default=json_serial handles Timestamp and other non-JSON types
+    return gdf.to_json(default=json_serial, na="null")
+
+
+def gdf_to_geojson(gdf: gpd.GeoDataFrame) -> Dict[str, Any]:
+    """
+    Safely convert GeoDataFrame to GeoJSON dict.
+    Uses optimized string serialization and re-parsing for performance.
+    """
+    if gdf.empty:
+        return {"type": "FeatureCollection", "features": []}
+
+    return json.loads(gdf_to_geojson_str(gdf))
+
 
 def create_buffer(geometry, distance_meters: float, crs: str = settings.TARGET_CRS):
     """Creates a buffer around a geometry, handling projections."""
