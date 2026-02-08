@@ -135,7 +135,10 @@ async def get_dataset_geojson(
     if not dataset:
         raise HTTPException(status_code=404, detail=f"Dataset not found: {dataset_id}")
 
-    if dataset.format == "MapServer":
+    # MapServer layers are usually tiles/raster and not exportable as GeoJSON.
+    # However, some curated entries already contain a pre-built query URL returning GeoJSON
+    # (e.g., .../query?where=1%3D1&outFields=*&f=geojson). Allow those through.
+    if dataset.format == "MapServer" and ('/query' not in dataset.url and 'f=geojson' not in dataset.url):
         raise HTTPException(
             status_code=400,
             detail="MapServer raster layers cannot be exported as GeoJSON. Use the tile URL instead."

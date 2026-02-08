@@ -3584,3 +3584,133 @@ textarea:focus-visible {
     color: var(--color-primary);
     border-color: var(--color-primary);
 }
+/* === LEAFLET THEME OVERRIDES === */
+/* Ensure Leaflet controls match the app theme in both Light and Dark modes */
+
+.leaflet-bar {
+    box-shadow: var(--shadow-md) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+}
+
+.leaflet-bar a {
+    background-color: var(--surface) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border) !important;
+    width: 34px !important;
+    height: 34px !important;
+    line-height: 34px !important;
+    transition: all 0.2s ease;
+}
+
+.leaflet-bar a:hover {
+    background-color: var(--bg-secondary) !important;
+    color: var(--accent) !important;
+}
+
+.leaflet-bar a:last-child {
+    border-bottom: none !important;
+}
+
+.leaflet-bar a.leaflet-disabled {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-disabled) !important;
+}
+
+/* Drawing Toolbar Specifics */
+.leaflet-draw-toolbar a {
+    background-image: none !important; /* Remove default sprites if possible, or filter them */
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+/* We need to handle the sprites. Leaflet Draw uses background-image sprites. 
+   In Dark Mode, black icons on dark background are invisible.
+   We can invert the filter for dark mode if we can't replace the icons easily.
+*/
+[data-theme='dark'] .leaflet-draw-toolbar a {
+    filter: invert(1) hue-rotate(180deg); 
+}
+
+/* However, filter invert inverts the background too (white -> black). 
+   If we set bg to dark, it becomes light.
+   Better approach: Keep background white in dark mode? No, that's jarring.
+   
+   If we set background to dark, and invert, the background becomes light.
+   
+   Let's try to override the background-image or just accept that for sprites we might need a specific fix.
+   Actually, Leaflet Draw icons are dark.
+   In Dark Mode:
+   Background: var(--surface) -> Dark
+   Icon: Dark
+   Result: Low contrast.
+   
+   Fix: Invert the *icon* but not the background? tough with sprites on <a>.
+   
+   Alternative: Use filter on the <a> but set background to *white* so it inverts to dark?
+   
+   Let's stick to standard buttons for now and just polish the container borders. 
+   BUT standard buttons are white.
+   User wants "color background to text ratio improvements". 
+   
+   If I just set .leaflet-bar a background to var(--surface), the black icons will be invisible in dark mode.
+   So for Dark Mode, I MUST invert the icons.
+*/
+
+[data-theme='dark'] .leaflet-bar a {
+    /* If we invert, the customized dark background becomes light. */
+    /* So we should set the background to LIGHT in CSS, so that the Invert makes it DARK? */
+    /* No, that confuses hover states. */
+}
+
+/* Better Dark Mode Fix for Sprites */
+[data-theme='dark'] .leaflet-draw-toolbar .leaflet-draw-draw-polygon,
+[data-theme='dark'] .leaflet-draw-toolbar .leaflet-draw-draw-polyline,
+[data-theme='dark'] .leaflet-draw-toolbar .leaflet-draw-draw-rectangle,
+[data-theme='dark'] .leaflet-draw-toolbar .leaflet-draw-draw-circle,
+[data-theme='dark'] .leaflet-draw-toolbar .leaflet-draw-draw-marker,
+[data-theme='dark'] .leaflet-draw-toolbar .leaflet-draw-edit-edit,
+[data-theme='dark'] .leaflet-draw-toolbar .leaflet-draw-edit-remove {
+    filter: invert(1);
+}
+
+/* Tooltip and popup text contrast */
+.leaflet-tooltip {
+    background-color: var(--surface) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+    background-color: var(--surface) !important;
+    color: var(--text-primary) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+/* Layer Control Contrast */
+.leaflet-control-layers {
+    background: var(--surface) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+}
+
+/* Layer Card Contrast Polish */
+.layer-card {
+    border-color: var(--border-strong); /* Slightly stronger border */
+}
+
+.layer-icon-wrapper {
+    /* Improve contrast for icons */
+    /* Ensure the background is not too light in dark mode */
+    background-color: var(--surface-raised);
+    border: 1px solid var(--border);
+}
+
+[data-theme='dark'] .layer-icon-wrapper {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--accent); /* Ensure icon pops */
+}

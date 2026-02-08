@@ -51,5 +51,6 @@
     "github.copilot.chat.useResponsesApiTruncation": true,
     "github.copilot.chat.tools.defaultToolsGrouped": true,
     "github.copilot.chat.switchAgent.enabled": true,
-    "github.copilot.chat.review.intent": true
+    "github.copilot.chat.review.intent": true,
+    "makefile.configureOnOpen": false
 }

@@ -131,7 +131,8 @@ const LayerPanel: React.FC<LayerPanelProps> = ({
 }) => {
   const categories: Record<string, string[]> = {
     'Urban Planning': ['zoning-layer', 'building-footprints-layer', 'open-spaces-layer'],
-    'Public Services': ['services-layer', 'clinics-layer', 'housing-offices-layer', 'courts-layer'],
+    'Transport': ['myciti-stops-layer', 'myciti-routes-layer', 'railway-stations-layer'],
+    'Public Services': ['services-layer', 'water-facilities-layer', 'clinics-layer', 'housing-offices-layer', 'courts-layer'],
     'Recreation': ['parks-layer', 'sports-layer', 'swimming-pools-layer'],
     'Safety & Risk': ['safety-layer', 'flood-layer', 'cemeteries-layer', 'trading-layer']
   };
