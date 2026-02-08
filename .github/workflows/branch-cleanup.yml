@@ -1,0 +1,61 @@
+name: Branch Cleanup
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (true to list candidates, false to delete)'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+        - 'true'
+        - 'false'
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Cleanup branches
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "false" ]; then
+            echo "Deleting merged branches..."
+            # Get branches that are merged to master and not master or main
+            MERGED_BRANCHES=$(gh api repos/${{ github.repository }}/pulls?state=closed&base=master --jq '.[] | select(.merged_at != null) | .head.ref' | sort | uniq)
+            for branch in $MERGED_BRANCHES; do
+              if [ "$branch" != "master" ] && [ "$branch" != "main" ]; then
+                echo "Deleting branch: $branch"
+                gh branch delete $branch --force || echo "Failed to delete $branch"
+              fi
+            done
+          else
+            echo "Dry run: Candidate branches for deletion (merged to master, not master/main):"
+            MERGED_BRANCHES=$(gh api repos/${{ github.repository }}/pulls?state=closed&base=master --jq '.[] | select(.merged_at != null) | .head.ref' | sort | uniq)
+            CANDIDATES=""
+            for branch in $MERGED_BRANCHES; do
+              if [ "$branch" != "master" ] && [ "$branch" != "main" ]; then
+                CANDIDATES="$CANDIDATES $branch"
+              fi
+            done
+            if [ -z "$CANDIDATES" ]; then
+              echo "No candidate branches found."
+            else
+              echo "Candidates:$CANDIDATES"
+            fi
+          fi
