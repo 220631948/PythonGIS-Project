@@ -1,0 +1,126 @@
+name: Automated Branch Cleanup
+
+on:
+  schedule:
+    - cron: '0 3 * * 1' # Weekly on Monday at 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Number of days of inactivity to consider branch stale'
+        required: false
+        default: '60'
+      auto_delete:
+        description: 'Set to "true" to delete stale branches automatically. Default "false" (dry run.)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure issue label exists
+        uses: peter-evans/create-or-update-label@v1
+        with:
+          name: branch-cleanup
+          color: f9d0c4
+          description: 'Branches proposed for cleanup' 
+
+      - name: Find stale branches and act
+        uses: actions/github-script@v6
+        with:
+          days: ${{ inputs.days }}
+          auto_delete: ${{ inputs.auto_delete }}
+          script: |
+            const days = parseInt(core.getInput('days') || '60', 10);
+            const autoDelete = (core.getInput('auto_delete') || 'false') === 'true';
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Branch name patterns to skip
+            const skipRegex = /^(main|master|develop|release\/|dependabot|renovate|staging)$/i;
+            // PR labels that will cause a branch to be preserved
+            const preserveLabels = ['superseded','keep','preserve','do-not-delete','do not delete'];
+
+            const defaultBranch = (await github.repos.get({owner, repo})).data.default_branch;
+            const branches = await github.paginate(github.repos.listBranches, {owner, repo, per_page: 100});
+            const now = new Date();
+            const stale = [];
+
+            for (const b of branches) {
+              const name = b.name;
+
+              if (name === defaultBranch) { core.info(`Skipping default branch ${name}`); continue; }
+              if (skipRegex.test(name)) { core.info(`Skipping pattern-matched branch ${name}`); continue; }
+
+              try {
+                const commit = await github.repos.getCommit({owner, repo, ref: b.commit.sha});
+                const commitDateRaw = commit.data.commit.author ? commit.data.commit.author.date : commit.data.commit.committer.date;
+                if (!commitDateRaw) { core.warning(`No commit date for ${name}, skipping`); continue; }
+
+                const commitDate = new Date(commitDateRaw);
+                const ageDays = Math.floor((now - commitDate) / (1000*60*60*24));
+                if (ageDays < days) continue;
+
+                // Skip protected branches
+                let protectedBranch = false;
+                try {
+                  await github.repos.getBranchProtection({owner, repo, branch: name});
+                  protectedBranch = true;
+                } catch (err) {
+                  if (err.status !== 404) core.warning(`Error checking protection for ${name}: ${err}`);
+                }
+                if (protectedBranch) { core.info(`Skipping protected branch ${name}`); continue; }
+
+                // Check for associated PRs (open or closed)
+                const prs = await github.pulls.list({owner, repo, head: `${owner}:${name}`, state: 'all', per_page: 100});
+                let hasOpenPR = false;
+                let preserve = false;
+                for (const pr of prs.data) {
+                  if (pr.state === 'open') { hasOpenPR = true; break; }
+                  const labels = (pr.labels || []).map(l => (l.name || '').toLowerCase());
+                  if (labels.some(l => preserveLabels.includes(l))) { preserve = true; break; }
+                }
+                if (hasOpenPR) { core.info(`Skipping branch with open PR: ${name}`); continue; }
+                if (preserve) { core.info(`Skipping branch preserved by PR label: ${name}`); continue; }
+
+                stale.push({name, ageDays, lastCommit: commitDate.toISOString(), prs: prs.data.map(p => ({number: p.number, state: p.state, labels: p.labels.map(l => l.name)}))});
+
+              } catch (err) {
+                core.warning(`Error processing ${name}: ${err.message || err}`);
+              }
+            }
+
+            if (stale.length === 0) {
+              core.info('No stale branches found.');
+              return;
+            }
+
+            const tableHeader = '| Branch | Age (days) | Last Commit | Associated PRs |\n|---|---:|---|---|\n';
+            const rows = stale.map(s => `| ${s.name} | ${s.ageDays} | ${s.lastCommit} | ${s.prs.length ? s.prs.map(p => `#${p.number}(${p.state})`).join(', ') : ''} |`).join('\n');
+            const body = `Branch cleanup report: ${stale.length} candidate branches older than ${days} days.\n\n${tableHeader}${rows}\n\n${autoDelete ? 'Branches listed below were deleted automatically.' : 'This is a dry run. To delete these branches re-run this workflow with input `auto_delete=true`.'}\n\nIf a branch should be preserved, add a PR label named 'superseded', 'keep', or 'preserve' to any PR referencing it.`;
+
+            if (!autoDelete) {
+              const issue = await github.issues.create({owner, repo, title: `Branch cleanup candidates (${new Date().toISOString().split('T')[0]})`, body});
+              try { await github.issues.addLabels({owner, repo, issue_number: issue.data.number, labels: ['branch-cleanup']}); } catch (err) { core.warning(`Failed to add label: ${err}`); }
+              core.info(`Created issue #${issue.data.number} for review.`);
+              return;
+            }
+
+            const deleted = [];
+            for (const s of stale) {
+              try {
+                await github.git.deleteRef({owner, repo, ref: `heads/${s.name}`});
+                deleted.push(s.name);
+              } catch (err) {
+                core.warning(`Failed to delete ${s.name}: ${err}`);
+              }
+            }
+
+            const body2 = `Automated branch cleanup run - deleted ${deleted.length} branches older than ${days} days.\n\n${deleted.map(d => `- ${d}`).join('\n')}`;
+            await github.issues.create({owner, repo, title: `Branch cleanup report (${new Date().toISOString().split('T')[0]})`, body: body2});
+            core.info(`Deleted ${deleted.length} branches.`);
