@@ -1,0 +1,17 @@
+title: chore(e2e): Add visual layer checks
+body: |
+  This PR adds a Playwright E2E test that toggles the 14 mapped layers in the Layer Panel and verifies the backend returns 200 OK and that there are no console errors. It also captures screenshots for visual evidence.
+
+  Changes:
+  - Add e2e test: frontend/tests/e2e/layer_visual_check.spec.ts
+  - Adjust Playwright config: use local cwd so the webServer starts reliably when run from frontend
+  - CI: E2E job now starts the API service and uploads evidence screenshots as artifacts
+
+  How to run locally:
+  1. Start the API: docker compose up -d api
+  2. From /frontend: npm ci && npx playwright install --with-deps
+  3. From /frontend: npm run test:e2e
+
+  Artifacts: screenshots are saved to frontend/tests/e2e/screenshots/ and uploaded by the CI E2E job.
+labels:
+  - e2e

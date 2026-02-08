@@ -25,8 +25,8 @@ export default defineConfig({
     : [
         {
           command: 'npm run dev -- --host --port 5173',
-          // Make webServer run from the frontend working directory ('.') when invoked
-          cwd: '.',
+          // Run the dev server from the frontend directory so npm commands resolve correctly
+          cwd: './frontend',
           port: 5173,
           reuseExistingServer: true,
         },

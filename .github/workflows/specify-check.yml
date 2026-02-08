@@ -1,0 +1,49 @@
+name: Spec Kit Verification (specify check)
+
+on:
+  pull_request:
+    branches: [master, develop]
+  push:
+    branches: [master, develop]
+
+jobs:
+  specify-check:
+    name: Run `specify check`
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Spec Kit verification script
+        run: |
+          chmod +x ./scripts/check_spec.sh || true
+          ./scripts/check_spec.sh
+        env:
+          # Set to 'true' to enforce that 'specify' must be runnable in CI
+          SPECIFY_STRICT: 'false'
+
+      - name: Upload specify artifacts and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: specify-artifacts
+          path: |
+            specify-check.log
+            .specify/spec.md
+            .specify/plan.md
+            .specify/tasks/*
+      - name: Upload specify artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: specify-artifacts
+          path: |
+            .specify/spec.md
+            .specify/plan.md
+            .specify/tasks/*

@@ -107,6 +107,10 @@ format:
 type-check:
 	cd frontend && npm run type-check
 
+check-spec:
+	@echo "Running Spec Kit verification (scripts/check_spec.sh)..."
+	./scripts/check_spec.sh
+
 # ============================================================================
 # Docker
 # ============================================================================
