@@ -5,6 +5,8 @@
  * All heavy logic has been extracted into sub-modules under ./map/.
  */
 import { useState, useCallback } from 'react';
+import type { ReactNode } from 'react';
+import type { PathOptions } from 'leaflet';
 import {
   MapContainer,
   TileLayer,
@@ -40,6 +42,30 @@ import { useMapLayers } from './map';
 
 // ── Props ──
 
+interface ModuleLayerBuffer {
+  polygon: GeoJSON.FeatureCollection;
+  color: string;
+  opacity: number;
+}
+
+interface ModuleLayerData {
+  type?: 'FeatureCollection' | 'geojson' | 'choropleth' | 'multi-layer';
+  data?: GeoJSON.FeatureCollection;
+  style?: PathOptions | ((feature?: GeoJSON.Feature) => PathOptions);
+  popup?: (feature: GeoJSON.Feature) => string;
+  colorFn?: (value: unknown) => string;
+  buffers?: ModuleLayerBuffer[];
+  layers?: Array<{
+    data: GeoJSON.FeatureCollection;
+    style: PathOptions;
+    popup?: (feature: GeoJSON.Feature) => string;
+  }>;
+}
+
+type DatasetInfo = {
+  name?: string;
+};
+
 interface MapViewProps {
   center: { lat?: number | string; lng?: number | string; lon?: number | string };
   zoom?: number;
@@ -65,7 +91,7 @@ interface MapViewProps {
   isochroneData?: GeoJSON.FeatureCollection | Record<string, unknown> | null;
   activeFilters?: Record<string, Record<string, unknown>>;
   collaborationMarkers?: Array<Record<string, unknown>>;
-  moduleLayerData?: Record<string, unknown> | null;
+  moduleLayerData?: ModuleLayerData | null;
 }
 
 const MapView = ({
@@ -107,12 +133,16 @@ const MapView = ({
   const routeDestination = toLatLng(routeData?.destination as Record<string, unknown> | null);
   const isochroneGeojson = (isochroneData as Record<string, unknown>)?.isochrone_geojson ?? isochroneData;
 
+  const moduleLayer = moduleLayerData as ModuleLayerData | null;
+
   // Layer data hook
   const { geoData } = useMapLayers({
     layers,
     activeFilters: activeFilters as Record<string, { conditions?: unknown[]; logic?: string }>,
     onLayerLoading,
-  });
+  }) as {
+    geoData: Record<string, { geojson?: GeoJSON.FeatureCollection; dataset?: DatasetInfo | null }>;
+  };
 
   const handleMapClick = useCallback((latlng: LatLng) => {
     const normalized = toLatLng(latlng);
@@ -130,6 +160,26 @@ const MapView = ({
   );
 
   const basemapConfig: BasemapConfig = (BASEMAPS[basemap] ?? BASEMAPS.streets)!;
+
+  const layerIds = Array.isArray(layers) ? layers : [];
+  const dataLayers = layerIds.map((layerId) => {
+    const data = geoData[layerId];
+    if (!data?.geojson) return null;
+    return (
+      <LayersControl.Overlay key={layerId} name={layerId.replace(/-/g, ' ').toUpperCase()} checked={true}>
+        <LayerGroup>
+          <EnhancedGeoJSONLayer
+            data={data.geojson}
+            layerId={layerId}
+            datasetInfo={data.dataset ?? null}
+            opacity={layerOpacity}
+            onFeatureClick={onFeatureClick}
+            onFeatureHover={onFeatureHover}
+          />
+        </LayerGroup>
+      </LayersControl.Overlay>
+    );
+  }) as ReactNode;
 
   // Fallback when coords are not yet available
   if (!normalizedCenter) {
@@ -196,24 +246,7 @@ const MapView = ({
             ))}
 
           {/* Data layers */}
-          {layers.map((layerId) => {
-            const data = geoData[layerId];
-            if (!data?.geojson) return null;
-            return (
-              <LayersControl.Overlay key={layerId} name={layerId.replace(/-/g, ' ').toUpperCase()} checked={true}>
-                <LayerGroup>
-                  <EnhancedGeoJSONLayer
-                    data={data.geojson}
-                    layerId={layerId}
-                    datasetInfo={data.dataset}
-                    opacity={layerOpacity}
-                    onFeatureClick={onFeatureClick}
-                    onFeatureHover={onFeatureHover}
-                  />
-                </LayerGroup>
-              </LayersControl.Overlay>
-            );
-          })}
+          {dataLayers}
 
           {/* Route Layer */}
           {routeOrigin && routeDestination && routeData?.route_geojson && (
@@ -246,21 +279,21 @@ const MapView = ({
           )}
 
           {/* Module Layers */}
-          {moduleLayerData && (
+          {moduleLayer && (
             <LayersControl.Overlay checked name="Module Analysis">
               <LayerGroup>
-                {(moduleLayerData.type === 'FeatureCollection' || moduleLayerData.type === 'geojson') && (
+                {(moduleLayer.type === 'FeatureCollection' || moduleLayer.type === 'geojson') && (
                   <GeoJSON
                     key={`module-geo-${Date.now()}`}
-                    data={((moduleLayerData.data ?? moduleLayerData) as GeoJSON.FeatureCollection)}
+                    data={((moduleLayer.data ?? moduleLayer) as GeoJSON.FeatureCollection)}
                     style={(feature) =>
-                      typeof moduleLayerData.style === 'function'
-                        ? (moduleLayerData.style as (f: GeoJSON.Feature | undefined) => L.PathOptions)(feature)
+                      typeof moduleLayer.style === 'function'
+                        ? (moduleLayer.style as (f: GeoJSON.Feature | undefined) => PathOptions)(feature)
                         : { color: feature?.properties?.color ?? '#3b82f6', weight: 2, opacity: 0.8 }
                     }
                     onEachFeature={(feature, layer) => {
-                      if (typeof moduleLayerData.popup === 'function') {
-                        layer.bindPopup((moduleLayerData.popup as (f: GeoJSON.Feature) => string)(feature));
+                      if (typeof moduleLayer.popup === 'function') {
+                        layer.bindPopup((moduleLayer.popup as (f: GeoJSON.Feature) => string)(feature));
                       } else if (feature.properties?.name) {
                         layer.bindPopup(String(feature.properties.name));
                       }
@@ -268,12 +301,12 @@ const MapView = ({
                   />
                 )}
 
-                {moduleLayerData.type === 'choropleth' && (
+                {moduleLayer.type === 'choropleth' && (
                   <GeoJSON
                     key={`module-choro-${Date.now()}`}
-                    data={moduleLayerData.data as GeoJSON.FeatureCollection}
+                    data={moduleLayer.data as GeoJSON.FeatureCollection}
                     style={(feature) => ({
-                      fillColor: (moduleLayerData.colorFn as (v: unknown) => string)(feature?.properties?.crime_index),
+                      fillColor: (moduleLayer.colorFn as (v: unknown) => string)(feature?.properties?.crime_index),
                       weight: 2,
                       opacity: 1,
                       color: 'white',
@@ -290,8 +323,7 @@ const MapView = ({
                   />
                 )}
 
-                {moduleLayerData.buffers &&
-                  (moduleLayerData.buffers as Array<{ polygon: GeoJSON.FeatureCollection; color: string; opacity: number }>).map(
+                {moduleLayer.buffers?.map(
                     (buffer, idx) => (
                       <GeoJSON
                         key={`transport-buffer-${idx}-${Date.now()}`}
@@ -301,12 +333,8 @@ const MapView = ({
                     ),
                   )}
 
-                {moduleLayerData.type === 'multi-layer' &&
-                  (moduleLayerData.layers as Array<{
-                    data: GeoJSON.FeatureCollection;
-                    style: L.PathOptions;
-                    popup?: (f: GeoJSON.Feature) => string;
-                  }>).map((layerCfg, idx) => (
+                {moduleLayer.type === 'multi-layer' &&
+                  moduleLayer.layers?.map((layerCfg, idx) => (
                     <GeoJSON
                       key={`env-layer-${idx}-${Date.now()}`}
                       data={layerCfg.data}
@@ -324,6 +352,7 @@ const MapView = ({
         {/* Collaboration Markers */}
         {collaborationMarkers.map((marker, idx) => {
           const normalized = toLatLng((marker.location ?? marker) as Record<string, unknown>);
+          const markerTimestamp = marker.timestamp as string | undefined;
           if (!normalized) return null;
           return (
             <Marker key={(marker.id as string) ?? idx} position={[normalized.lat, normalized.lng]} icon={collaborationIcon}>
@@ -331,8 +360,8 @@ const MapView = ({
                 <div className="collaboration-popup">
                   <h4>{String(marker.author ?? 'Contributor')}</h4>
                   <p>{String(marker.text ?? marker.description)}</p>
-                  {marker.timestamp && (
-                    <span className="popup-time">{new Date(marker.timestamp as string).toLocaleString()}</span>
+                  {markerTimestamp && (
+                    <span className="popup-time">{new Date(markerTimestamp).toLocaleString()}</span>
                   )}
                 </div>
               </Popup>
@@ -383,3 +412,4 @@ const MapView = ({
 };
 
 export default MapView;
+
