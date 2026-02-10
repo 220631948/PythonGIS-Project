@@ -103,6 +103,13 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = "INFO"
 
+    # Sentry / Observability (set DSN via environment; keep empty by default to avoid committing secrets)
+    SENTRY_DSN: str = ""
+    SENTRY_ENVIRONMENT: str = "development"
+    SENTRY_RELEASE: str = ""
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.1
+    SENTRY_SEND_DEFAULT_PII: bool = False
+
     # Server Settings
     HOST: str = "0.0.0.0"
     PORT: int = 8000

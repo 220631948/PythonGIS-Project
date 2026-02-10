@@ -10,6 +10,10 @@ from collections import defaultdict
 from contextlib import asynccontextmanager
 from typing import Optional
 
+try:
+    from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+except Exception:  # pragma: no cover - optional dependency
+    SentryAsgiMiddleware = None
 from cachetools import TTLCache
 from fastapi import FastAPI, Request, HTTPException, Query, Depends
 from fastapi.staticfiles import StaticFiles
@@ -24,6 +28,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
 from app.utils.logging_config import setup_logging
+from app.sentry_ import init_sentry
 from app.core.exceptions import GeoHubException, geohub_exception_handler
 from app.dependencies import require_admin_key
 from app.models.response_models import (
@@ -33,36 +38,62 @@ from app.models.response_models import (
     HealthResponse,
     StatsResponse,
 )
-from app.api import (
-    services_api,
-    transport_api,
-    safety_api,
-    environment_api,
-    land_use_api,
-    utilities_api,
-    spatial_tools_api,
-    infrastructure_api,
-    portal_api,
-    suitability_api,
-)
+# Attempt to import API modules; some may require heavy spatial deps (geopandas) that
+# aren't available in lightweight test environments — allow graceful degradation.
+try:
+    from app.api import (
+        services_api,
+        transport_api,
+        safety_api,
+        environment_api,
+        land_use_api,
+        utilities_api,
+        spatial_tools_api,
+        infrastructure_api,
+        portal_api,
+        suitability_api,
+    )
+except Exception as exc:  # pragma: no cover - degrades gracefully when optional deps missing
+    import logging as _logging
+
+    _logging.warning("One or more API modules failed to import: %s", exc)
+    services_api = transport_api = safety_api = environment_api = None
+    land_use_api = utilities_api = spatial_tools_api = infrastructure_api = None
+    portal_api = suitability_api = None
 
 # New enhanced API modules
-from app.api import geocode_api, temporal_api, network_api, reports_api, filter_api
+try:
+    from app.api import geocode_api, temporal_api, network_api, reports_api, filter_api
+except Exception as exc:  # pragma: no cover
+    import logging as _logging
+
+    _logging.warning("Enhanced API imports failed: %s", exc)
+    geocode_api = temporal_api = network_api = reports_api = filter_api = None
 
 # Advanced feature API modules
-from app.api import (
-    collaboration_api,
-    export_api,
-    field_data_api,
-    metadata_api,
-    advanced_analysis_api,
-    realtime_api,
-    data_status_api,
-)
+try:
+    from app.api import (
+        collaboration_api,
+        export_api,
+        field_data_api,
+        metadata_api,
+        advanced_analysis_api,
+        realtime_api,
+        data_status_api,
+    )
+except Exception as exc:  # pragma: no cover
+    import logging as _logging
+
+    _logging.warning("Advanced API imports failed: %s", exc)
+    collaboration_api = export_api = field_data_api = None
+    metadata_api = advanced_analysis_api = realtime_api = data_status_api = None
 
 # Setup logging
 setup_logging()
 logger = logging.getLogger(__name__)
+
+# Initialize Sentry (no-op if DSN is absent)
+init_sentry()
 
 # Application state for tracking metrics
 app_start_time: float = 0.0
@@ -98,6 +129,9 @@ app = FastAPI(
 app.add_exception_handler(GeoHubException, geohub_exception_handler)
 
 # Middleware
+if SentryAsgiMiddleware:
+    app.add_middleware(SentryAsgiMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -154,33 +188,55 @@ async def enhanced_monitoring_middleware(request: Request, call_next):
 # Rate limiting exception handler
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Include API routers
-app.include_router(services_api.router, prefix=settings.API_PREFIX)
-app.include_router(transport_api.router, prefix=settings.API_PREFIX)
-app.include_router(safety_api.router, prefix=settings.API_PREFIX)
-app.include_router(environment_api.router, prefix=settings.API_PREFIX)
-app.include_router(land_use_api.router, prefix=settings.API_PREFIX)
-app.include_router(utilities_api.router, prefix=settings.API_PREFIX)
-app.include_router(spatial_tools_api.router, prefix=settings.API_PREFIX)
-app.include_router(infrastructure_api.router, prefix=settings.API_PREFIX)
-app.include_router(portal_api.router, prefix=settings.API_PREFIX)
-app.include_router(suitability_api.router, prefix=settings.API_PREFIX)
+# Include API routers (only if modules imported successfully)
+if services_api:
+    app.include_router(services_api.router, prefix=settings.API_PREFIX)
+if transport_api:
+    app.include_router(transport_api.router, prefix=settings.API_PREFIX)
+if safety_api:
+    app.include_router(safety_api.router, prefix=settings.API_PREFIX)
+if environment_api:
+    app.include_router(environment_api.router, prefix=settings.API_PREFIX)
+if land_use_api:
+    app.include_router(land_use_api.router, prefix=settings.API_PREFIX)
+if utilities_api:
+    app.include_router(utilities_api.router, prefix=settings.API_PREFIX)
+if spatial_tools_api:
+    app.include_router(spatial_tools_api.router, prefix=settings.API_PREFIX)
+if infrastructure_api:
+    app.include_router(infrastructure_api.router, prefix=settings.API_PREFIX)
+if portal_api:
+    app.include_router(portal_api.router, prefix=settings.API_PREFIX)
+if suitability_api:
+    app.include_router(suitability_api.router, prefix=settings.API_PREFIX)
 
 # New enhanced feature routers
-app.include_router(geocode_api.router, prefix=settings.API_PREFIX)
-app.include_router(temporal_api.router, prefix=settings.API_PREFIX)
-app.include_router(network_api.router, prefix=settings.API_PREFIX)
-app.include_router(reports_api.router, prefix=settings.API_PREFIX)
-app.include_router(filter_api.router, prefix=settings.API_PREFIX)
+if geocode_api:
+    app.include_router(geocode_api.router, prefix=settings.API_PREFIX)
+if temporal_api:
+    app.include_router(temporal_api.router, prefix=settings.API_PREFIX)
+if network_api:
+    app.include_router(network_api.router, prefix=settings.API_PREFIX)
+if reports_api:
+    app.include_router(reports_api.router, prefix=settings.API_PREFIX)
+if filter_api:
+    app.include_router(filter_api.router, prefix=settings.API_PREFIX)
 
 # Advanced feature routers
-app.include_router(collaboration_api.router, prefix=settings.API_PREFIX)
-app.include_router(export_api.router, prefix=settings.API_PREFIX)
-app.include_router(field_data_api.router, prefix=settings.API_PREFIX)
-app.include_router(metadata_api.router, prefix=settings.API_PREFIX)
-app.include_router(advanced_analysis_api.router, prefix=settings.API_PREFIX)
-app.include_router(realtime_api.router, prefix=settings.API_PREFIX)
-app.include_router(data_status_api.router, prefix=settings.API_PREFIX)
+if collaboration_api:
+    app.include_router(collaboration_api.router, prefix=settings.API_PREFIX)
+if export_api:
+    app.include_router(export_api.router, prefix=settings.API_PREFIX)
+if field_data_api:
+    app.include_router(field_data_api.router, prefix=settings.API_PREFIX)
+if metadata_api:
+    app.include_router(metadata_api.router, prefix=settings.API_PREFIX)
+if advanced_analysis_api:
+    app.include_router(advanced_analysis_api.router, prefix=settings.API_PREFIX)
+if realtime_api:
+    app.include_router(realtime_api.router, prefix=settings.API_PREFIX)
+if data_status_api:
+    app.include_router(data_status_api.router, prefix=settings.API_PREFIX)
 
 # Generic Data Proxy Endpoint (Phase 7.5: System Integration)
 # Bounded in-memory cache with automatic TTL eviction (B5 refactor)
@@ -358,6 +414,14 @@ async def proxy_data(
         )
 
     except Exception as e:
+        # Attach geo context to Sentry (if configured)
+        try:
+            from app.utils.sentry_utils import attach_geo_context
+
+            attach_geo_context(dataset_id=dataset_key)
+        except Exception:
+            pass
+
         logger.error(f"Smart proxy error for {dataset_key}: {e}")
         # Improve error messages for known types
         status = 500
@@ -416,6 +480,18 @@ async def health_check():
         },
         "errors": {"total": sum(error_stats.values()), "by_type": dict(error_stats)},
     }
+
+
+# Sentry verification endpoint (development / testing only)
+@app.get("/sentry-debug")
+async def sentry_debug():
+    """Intentionally raise an error to verify Sentry ingestion.
+
+    NOTE: This will generate a real event if SENTRY_DSN is configured. Keep this
+    endpoint enabled only for local testing or behind a protection in production.
+    """
+    # Intentionally trigger an exception
+    raise ZeroDivisionError("Sentry debug - intentional")
 
 
 # System monitoring endpoints

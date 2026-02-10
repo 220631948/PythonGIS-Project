@@ -8,7 +8,7 @@ Provides:
 """
 
 from fastapi import APIRouter, HTTPException, Query
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 from datetime import datetime
 import time
 import logging
@@ -372,7 +372,7 @@ async def search_attributes(query: AttributeSearchQuery):
     """
     try:
         gdf = data_loader.get_gdf(query.dataset)
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=404, detail=f"Dataset not found: {query.dataset}")
 
     if query.attribute not in gdf.columns:

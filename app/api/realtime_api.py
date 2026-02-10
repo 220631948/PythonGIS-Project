@@ -15,7 +15,6 @@ import asyncio
 import logging
 import httpx
 
-from app.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/realtime", tags=["Real-Time Data"])

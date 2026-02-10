@@ -1,9 +1,8 @@
 import logging
 import geopandas as gpd
 from shapely.geometry import LineString, MultiLineString
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from app.spatial_analysis.base import BaseAnalyzer
-from app.core.data_loader import data_loader
 
 logger = logging.getLogger(__name__)
 

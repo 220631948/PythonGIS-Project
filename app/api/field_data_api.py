@@ -9,11 +9,10 @@ Provides:
 """
 
 from fastapi import APIRouter, HTTPException, Query, UploadFile, File, Body
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 from datetime import datetime, timedelta
 import json
 import uuid
-import base64
 import logging
 from pathlib import Path
 
@@ -370,7 +369,7 @@ async def create_offline_package(
 
     # Estimate size
     size_estimate = (
-        sum(len(json.dumps(l)) for l in package_layers) / (1024 * 1024) +
+        sum(len(json.dumps(layer)) for layer in package_layers) / (1024 * 1024) +
         len(package_forms) * 0.01  # Rough estimate
     )
 

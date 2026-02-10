@@ -84,6 +84,15 @@
       "summary": "Site suitability module uses placeholder evaluators with TODOs",
       "detail": "app/spatial_analysis/site_suitability.py contains multiple TODOs indicating missing PostGIS wiring for flood_zones, biodiversity, wetlands, open_spaces, zoning, road network, myciti_stops, urban_edge. These represent key missing features for suitability analysis and should be prioritized with tests and a migration plan.",
       "ttl_days": 365
+    },
+    {
+      "id": "proj-governance-001",
+      "category": "governance",
+      "source": "copilot-instructions.md update",
+      "timestamp": "2026-02-10T12:30:00Z",
+      "summary": "Copilot instructions now reference README.AGENT_ACTIONS and CI workflows for agent mode",
+      "detail": "Updated .github/copilot-instructions.md to direct agent-mode execution to README.AGENT_ACTIONS.md and to consult .github workflows and PR templates for CI/CD alignment, automated checks, and PR drafting.",
+      "ttl_days": 365
     }
   ]
 }

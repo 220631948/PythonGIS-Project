@@ -9,7 +9,6 @@ Provides:
 """
 
 from fastapi import APIRouter, HTTPException, Query
-from typing import Optional, List, Dict, Any
 from datetime import datetime
 import logging
 
@@ -46,6 +45,14 @@ async def check_all_sources_health():
 @router.get("/health/{dataset_name}")
 async def check_source_health(dataset_name: str):
     """Check health of a specific data source."""
+    # Attach geo/data context to Sentry for easier triage
+    try:
+        from app.utils.sentry_utils import attach_geo_context
+
+        attach_geo_context(dataset_id=dataset_name)
+    except Exception:
+        pass
+
     result = await data_loader.check_data_source_health_async(dataset_name)
     return result
 
@@ -131,7 +138,7 @@ async def get_data_provenance(dataset_name: str):
             "license": "City of Cape Town Open Data License",
             "license_url": "https://odp.capetown.gov.za/pages/terms-of-use",
             "attribution_required": True,
-            "attribution_text": f"Data provided by City of Cape Town Open Data Portal"
+            "attribution_text": "Data provided by City of Cape Town Open Data Portal"
         },
         "current_status": health,
         "category": _categorize_dataset(dataset_name),

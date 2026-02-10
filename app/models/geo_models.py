@@ -6,7 +6,7 @@ and spatial analysis results.
 """
 
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import Dict, Any, List, Optional, Union, Tuple
+from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
 from enum import Enum
 

@@ -4,6 +4,17 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { sentryVitePlugin } from '@sentry/vite'
+
+const sentryPlugin = process.env.SENTRY_AUTH_TOKEN
+  ? sentryVitePlugin({
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      release: process.env.SENTRY_RELEASE || process.env.GIT_SHA,
+      include: ['../static'],
+    })
+  : null
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -98,7 +109,8 @@ export default defineConfig({
           }
         ]
       }
-    })
+    }),
+    ...(sentryPlugin ? [sentryPlugin] : []),
   ],
   build: {
     outDir: '../static',

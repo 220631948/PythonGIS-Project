@@ -18,6 +18,11 @@ jobs:
     defaults:
       run:
         working-directory: frontend
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+      SENTRY_RELEASE_WEBHOOK: ${{ secrets.SENTRY_RELEASE_WEBHOOK }}
 
     steps:
       - name: Checkout code
@@ -44,6 +49,25 @@ jobs:
 
       - name: Build production bundle
         run: npm run build
+
+      - name: Upload sourcemaps to Sentry
+        if: ${{ env.SENTRY_AUTH_TOKEN != '' && env.SENTRY_ORG != '' && env.SENTRY_PROJECT != '' }}
+        env:
+          SENTRY_RELEASE: ${{ github.sha }}
+        run: |
+          echo "Uploading sourcemaps for release $SENTRY_RELEASE"
+          npm ci
+          npx @sentry/cli releases -o $SENTRY_ORG -p $SENTRY_PROJECT new $SENTRY_RELEASE || true
+          npx @sentry/cli releases -o $SENTRY_ORG -p $SENTRY_PROJECT files $SENTRY_RELEASE upload-sourcemaps ./dist --url-prefix "~/" --validate
+          npx @sentry/cli releases -o $SENTRY_ORG -p $SENTRY_PROJECT finalize $SENTRY_RELEASE || true
+
+      - name: Create Sentry release (webhook)
+        if: ${{ env.SENTRY_RELEASE_WEBHOOK != '' }}
+        env:
+          SENTRY_RELEASE: ${{ github.sha }}
+        run: |
+          echo "Creating Sentry release $SENTRY_RELEASE via webhook"
+          curl -sSf -X POST "$SENTRY_RELEASE_WEBHOOK" -H 'Content-Type: application/json' -d "{\"version\": \"$SENTRY_RELEASE\"}"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

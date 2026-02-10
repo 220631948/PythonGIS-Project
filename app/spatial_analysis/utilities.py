@@ -1,5 +1,4 @@
 import logging
-import geopandas as gpd
 from typing import Dict, Any, Optional
 from app.spatial_analysis.base import BaseAnalyzer
 from app.spatial_analysis.spatial_utils import gdf_to_geojson

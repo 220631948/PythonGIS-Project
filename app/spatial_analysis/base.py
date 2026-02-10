@@ -1,10 +1,9 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 import geopandas as gpd
 from app.core.data_loader import data_loader
 from app.core.cache_manager import cache_manager
-from app.config import settings
 
 logger = logging.getLogger(__name__)
 

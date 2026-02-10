@@ -1,0 +1,9 @@
+*** Begin Patch
+*** Update File: app/api/advanced_analysis_api.py
+@@
+-from app.core.data_loader import data_loader
+-from app.config import settings
+-from app.spatial_analysis.spatial_utils import gdf_to_geojson
++from app.core.data_loader import data_loader
++from app.spatial_analysis.spatial_utils import gdf_to_geojson
+*** End Patch

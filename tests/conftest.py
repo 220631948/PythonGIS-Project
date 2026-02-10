@@ -10,9 +10,15 @@ Provides reusable fixtures for:
 
 import pytest
 from datetime import datetime, timezone
-from typing import Generator
-import geopandas as gpd
-from shapely.geometry import Point, Polygon, LineString
+from typing import Generator, Any
+try:
+    import geopandas as gpd
+except Exception:  # pragma: no cover - optional heavy dependency for some test suites
+    gpd = None
+try:
+    from shapely.geometry import Point, Polygon, LineString
+except Exception:  # pragma: no cover - optional heavy dependency for some test suites
+    Point = Polygon = LineString = None
 import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from httpx import AsyncClient
@@ -28,13 +34,16 @@ from app.core.database import Base, get_db
 # ============================================================================
 
 @pytest.fixture
-def mock_point_geodataframe() -> gpd.GeoDataFrame:
+def mock_point_geodataframe() -> Any:
     """
     Create a mock GeoDataFrame with point geometries representing facilities.
     
     Returns:
         GeoDataFrame with 10 sample facility points in Cape Town area.
     """
+    if gpd is None:  # Lazy import to avoid requiring geopandas in lightweight test runs
+        import geopandas as gpd
+
     # Cape Town area coordinates (roughly -33.9 to -34.0, 18.4 to 18.5)
     data = {
         'id': range(1, 11),
@@ -69,13 +78,16 @@ def mock_point_geodataframe() -> gpd.GeoDataFrame:
 
 
 @pytest.fixture
-def mock_polygon_geodataframe() -> gpd.GeoDataFrame:
+def mock_polygon_geodataframe() -> Any:
     """
     Create a mock GeoDataFrame with polygon geometries representing districts.
     
     Returns:
         GeoDataFrame with 5 sample district polygons.
     """
+    if gpd is None:  # Lazy import to avoid requiring geopandas in lightweight test runs
+        import geopandas as gpd
+
     data = {
         'id': range(1, 6),
         'district_name': [
@@ -115,13 +127,16 @@ def mock_polygon_geodataframe() -> gpd.GeoDataFrame:
 
 
 @pytest.fixture
-def mock_linestring_geodataframe() -> gpd.GeoDataFrame:
+def mock_linestring_geodataframe() -> Any:
     """
     Create a mock GeoDataFrame with linestring geometries representing routes.
     
     Returns:
         GeoDataFrame with 3 sample route linestrings.
     """
+    if gpd is None:  # Lazy import to avoid requiring geopandas in lightweight test runs
+        import geopandas as gpd
+
     data = {
         'id': range(1, 4),
         'route_name': ['MyCiTi Route 1', 'MyCiTi Route 2', 'Main Road'],

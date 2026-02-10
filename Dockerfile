@@ -22,6 +22,12 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 # Runtime stage
 FROM python:3.11-slim-bullseye AS runtime
 
+# Support passing a release value at build time
+ARG SENTRY_RELEASE=""
+ARG SENTRY_ENVIRONMENT="production"
+ENV SENTRY_RELEASE=${SENTRY_RELEASE}
+ENV SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
+
 # Install only runtime dependencies
 RUN apt-get update && apt-get install -y \
     gdal-bin \

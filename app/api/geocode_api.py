@@ -9,7 +9,7 @@ Provides REST API for:
 
 import logging
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query
 import requests
 from pydantic import BaseModel
 
@@ -106,7 +106,7 @@ async def reverse_geocode(
 
     # Fallback to Nominatim
     try:
-        url = f"https://nominatim.openstreetmap.org/reverse"
+        url = "https://nominatim.openstreetmap.org/reverse"
         params = {
             "lat": lat,
             "lon": lon,
@@ -306,4 +306,4 @@ def _get_matching_landmarks(query: str) -> List[Dict]:
         {"text": "Signal Hill", "type": "landmark", "lat": -33.9244, "lon": 18.3892},
     ]
 
-    return [l for l in landmarks if query in l["text"].lower()]
+    return [landmark for landmark in landmarks if query in landmark["text"].lower()]

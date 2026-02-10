@@ -9,13 +9,12 @@ Provides REST API for:
 """
 
 import logging
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Point, LineString, mapping
-from shapely.ops import nearest_points
 
 from app.config import settings
 from app.core.data_loader import data_loader
@@ -220,7 +219,7 @@ async def calculate_service_area(
         result_wgs = result_gdf.to_crs(settings.TARGET_CRS)
 
         # Calculate coverage area
-        area_sqkm = combined.area / 1_000_000
+        # area_sqkm = combined.area / 1_000_000
 
         return ServiceAreaResponse(
             facilities=len(gdf),
@@ -341,7 +340,7 @@ async def analyze_transit_connectivity(
                     "features": _extract_feature_names(nearby_stops)
                 })
                 connectivity["connectivity_score"] += min(len(nearby_stops) * 10, 40)
-        except:
+        except Exception:
             pass
 
         # Check rail stations
@@ -355,7 +354,7 @@ async def analyze_transit_connectivity(
                     "features": _extract_feature_names(nearby_rail)
                 })
                 connectivity["connectivity_score"] += min(len(nearby_rail) * 20, 40)
-        except:
+        except Exception:
             pass
 
         # Normalize score to 0-100

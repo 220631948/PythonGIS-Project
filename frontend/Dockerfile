@@ -1,6 +1,10 @@
 # Builder stage
 FROM node:20-alpine AS builder
 
+# Allow passing release info at build time
+ARG SENTRY_RELEASE=""
+ENV VITE_SENTRY_RELEASE=${SENTRY_RELEASE}
+
 WORKDIR /build
 
 # Copy dependency definitions
@@ -12,7 +16,7 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build for production
+# Build for production (VITE_* envs are read at build time)
 RUN npm run build
 
 # Runtime stage

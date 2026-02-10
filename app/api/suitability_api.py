@@ -11,7 +11,7 @@ Provides REST API for:
 - Risk assessment integration
 """
 
-from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Query
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from enum import Enum

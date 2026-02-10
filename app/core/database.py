@@ -12,18 +12,16 @@ import asyncio
 import logging
 import os
 import time
-from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Optional, Any, Dict
 
-from sqlalchemy import text, event, create_engine
+from sqlalchemy import text, create_engine
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
     AsyncSession,
     async_sessionmaker,
     AsyncEngine,
 )
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
-from sqlalchemy.pool import QueuePool
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 try:
     from geoalchemy2 import Geometry
@@ -37,7 +35,13 @@ except ImportError:
             "Please install geoalchemy2."
         )
 
-from shapely.geometry import mapping
+try:
+    from shapely.geometry import mapping
+except Exception:  # pragma: no cover - optional system dependency
+    def mapping(x):
+        raise ImportError(
+            "shapely is required for geometry operations. Please install shapely to use mapping functions."
+        )
 
 logger = logging.getLogger(__name__)
 

@@ -9,13 +9,12 @@ Provides REST API for:
 """
 
 import logging
-from typing import Optional, List, Dict, Any, Union
-from fastapi import APIRouter, Query, HTTPException, Body
-from pydantic import BaseModel, Field
+from typing import Optional, List, Union
+from fastapi import APIRouter, Query, HTTPException
+from pydantic import BaseModel
 import pandas as pd
 import geopandas as gpd
 
-from app.config import settings
 from app.core.data_loader import data_loader
 from app.spatial_analysis.spatial_utils import gdf_to_geojson
 
@@ -56,6 +55,14 @@ async def get_filter_schema(dataset_name: str):
     Returns available fields, their types, and possible values for categorical fields.
     """
     try:
+        # Attach dataset context to Sentry
+        try:
+            from app.utils.sentry_utils import attach_geo_context
+
+            attach_geo_context(dataset_id=dataset_name)
+        except Exception:
+            pass
+
         gdf = data_loader.get_gdf(dataset_name)
         if gdf.empty:
             raise HTTPException(status_code=404, detail=f"Dataset {dataset_name} not found")
@@ -101,7 +108,7 @@ async def get_filter_schema(dataset_name: str):
                     dates = pd.to_datetime(gdf[col], errors='coerce')
                     field_info["min_date"] = str(dates.min())
                     field_info["max_date"] = str(dates.max())
-                except:
+                except Exception:
                     pass
 
             schema["fields"].append(field_info)
@@ -123,6 +130,14 @@ async def filter_dataset(request: FilterRequest):
     Supports multiple filter conditions combined with AND/OR logic.
     """
     try:
+        # Attach Sentry context for this dataset
+        try:
+            from app.utils.sentry_utils import attach_geo_context
+
+            attach_geo_context(dataset_id=request.dataset)
+        except Exception:
+            pass
+
         gdf = data_loader.get_gdf(request.dataset)
         if gdf.empty:
             raise HTTPException(status_code=404, detail=f"Dataset {request.dataset} not found")
@@ -130,15 +145,7 @@ async def filter_dataset(request: FilterRequest):
         filtered = gdf.copy()
 
         if request.conditions:
-            if request.logic == "and":
-                for condition in request.conditions:
-                    filtered = _apply_filter(filtered, condition)
-            else:  # or
-                mask = pd.Series([False] * len(filtered), index=filtered.index)
-                for condition in request.conditions:
-                    condition_mask = _get_filter_mask(filtered, condition)
-                    mask = mask | condition_mask
-                filtered = filtered[mask]
+            filtered = _apply_conditions(filtered, request.conditions, request.logic)
 
         # Apply limit
         if request.limit and request.limit > 0:
@@ -162,6 +169,19 @@ async def filter_dataset(request: FilterRequest):
     except Exception as e:
         logger.error(f"Filter query failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def _apply_conditions(filtered, conditions, logic):
+    if logic == 'and':
+        for condition in conditions:
+            filtered = _apply_filter(filtered, condition)
+    else:
+        mask = pd.Series([False] * len(filtered), index=filtered.index)
+        for condition in conditions:
+            condition_mask = _get_filter_mask(filtered, condition)
+            mask = mask | condition_mask
+        filtered = filtered[mask]
+    return filtered
 
 
 @router.post("/facets")
@@ -305,7 +325,7 @@ def _get_field_type(series: pd.Series) -> str:
             if len(sample) > 0:
                 pd.to_datetime(sample)
                 return "datetime"
-        except:
+        except Exception:
             pass
         return "string"
 

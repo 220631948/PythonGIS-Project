@@ -1,0 +1,37 @@
+*** Begin Patch
+*** Update File: verify.sh
+@@
+-if command -v node >/dev/null 2>&1; then
+-  if node -e "require('yaml')" >/dev/null 2>&1; then
+-    if ! node .github/scripts/policy_check.js --quiet; then
+-      echo "Policy checks failed"
+-      error_count=$((error_count+1))
+-      failed_steps+=("policy-check")
+-    fi
+-  else
+-    echo "yaml package not found for policy_check.js; install with 'npm install -g yaml' or 'npm install yaml'"
+-    echo "Skipping policy checks (limited functionality)"
+-  fi
+-else
+-  echo "Node.js not found; skipping policy checks"
+-fi
++if command -v node >/dev/null 2>&1; then
++  if node -e "require('yaml')" >/dev/null 2>&1; then
++    if ! node .github/scripts/policy_check.js --quiet; then
++      echo "Policy checks failed"
++      error_count=$((error_count+1))
++      failed_steps+=("policy-check")
++    fi
++  else
++    echo "yaml package not found for policy_check.js; install with 'npm install -g yaml' or 'npm install yaml'"
++    echo "Attempting fallback: running policy_check.js without YAML parsing support"
++    if ! node .github/scripts/policy_check.js --quiet; then
++      echo "Policy checks failed (limited mode)"
++      error_count=$((error_count+1))
++      failed_steps+=("policy-check-limited")
++    fi
++  fi
++else
++  echo "Node.js not found; skipping policy checks"
++fi
+*** End Patch

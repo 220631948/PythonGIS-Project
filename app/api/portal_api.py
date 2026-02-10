@@ -11,13 +11,10 @@ Provides REST API for:
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional, List
 from pydantic import BaseModel
-from enum import Enum
 
 from app.core.portal_client import (
     portal_client,
-    PortalDataset,
-    DatasetCategory,
-    PORTAL_DATASETS
+    DatasetCategory
 )
 
 router = APIRouter(prefix="/portal", tags=["Open Data Portal"])

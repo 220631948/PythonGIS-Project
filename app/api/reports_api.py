@@ -10,7 +10,6 @@ Provides REST API for:
 
 import logging
 import io
-import csv
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from fastapi import APIRouter, Query, HTTPException
