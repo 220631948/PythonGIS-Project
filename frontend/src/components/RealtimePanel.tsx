@@ -213,8 +213,8 @@ export default function RealtimePanel({ isOpen, onClose, onNotification }: Realt
   const loadFeeds = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await apiClient.getRealtimeFeeds();
-      setFeeds(data.feeds || []);
+      const data = (await apiClient.getRealtimeFeeds()) as { feeds: Feed[] };
+      setFeeds(data.feeds ?? []);
     } catch (error) {
       console.error('Failed to load feeds:', error);
     } finally {
@@ -225,7 +225,7 @@ export default function RealtimePanel({ isOpen, onClose, onNotification }: Realt
   const loadFeedData = useCallback(async (feedId: string, forceRefresh = false) => {
     setRefreshingFeeds(prev => new Set([...prev, feedId]));
     try {
-      const data = await apiClient.getRealtimeFeed(feedId, forceRefresh);
+      const data = (await apiClient.getRealtimeFeed(feedId, forceRefresh)) as FeedData;
       setFeedData(prev => ({ ...prev, [feedId]: data }));
     } catch (error) {
       console.error(`Failed to load feed ${feedId}:`, error);
@@ -240,7 +240,7 @@ export default function RealtimePanel({ isOpen, onClose, onNotification }: Realt
 
   const loadStatus = useCallback(async () => {
     try {
-      const data = await apiClient.getRealtimeStatus();
+      const data = (await apiClient.getRealtimeStatus()) as FeedStatusData;
       setStatus(data);
     } catch (error) {
       console.error('Failed to load status:', error);
@@ -341,3 +341,4 @@ export default function RealtimePanel({ isOpen, onClose, onNotification }: Realt
     </div>
   );
 }
+
