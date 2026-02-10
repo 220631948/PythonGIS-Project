@@ -18,7 +18,6 @@ export const useMapData = <P = Record<string, unknown>>(
     const { data, isLoading, error, refetch } = useGeoData<P>(
         datasetId, // key
         datasetId, // datasetKey
-        { ttl: 3600000 } // Default 1 hour TTL
     );
 
     return {
