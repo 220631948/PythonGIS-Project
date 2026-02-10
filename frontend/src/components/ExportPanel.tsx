@@ -358,8 +358,8 @@ export default function ExportPanel({
 
   const loadDatasets = async () => {
     try {
-      const data = await apiClient.getCatalogDatasets();
-      setDatasets(data || []);
+      const data = (await apiClient.getCatalogDatasets()) as Dataset[];
+      setDatasets(data ?? []);
     } catch (error) {
       console.error('Failed to load datasets:', error);
     }
@@ -367,8 +367,8 @@ export default function ExportPanel({
 
   const loadPendingExports = async () => {
     try {
-      const data = await apiClient.getPendingExports();
-      setPendingExports(data.exports || []);
+      const data = (await apiClient.getPendingExports()) as { exports?: ExportFile[] };
+      setPendingExports(data.exports ?? []);
     } catch (error) {
       console.error('Failed to load pending exports:', error);
     }
@@ -454,3 +454,4 @@ export default function ExportPanel({
     </div>
   );
 }
+
