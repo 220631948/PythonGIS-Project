@@ -1,0 +1,183 @@
+# protected-files.yaml
+# Policy: Define files requiring special approval for modifications
+# Enforced by: BeforeFileWrite hook and pr-reviewer skill
+
+name: protected-files
+version: 1.0.0
+description: Require explicit approval for modifying critical files
+severity: high
+
+protected:
+  # Critical configuration files
+  - pattern: "AGENTS.md"
+    reason: "Core agent instructions"
+    requires_approval_from: ["maintainer", "architect"]
+    
+  - pattern: ".github/copilot-instructions.md"
+    reason: "Copilot configuration"
+    requires_approval_from: ["maintainer"]
+    
+  - pattern: ".github/workflows/*.yml"
+    reason: "CI/CD pipelines"
+    requires_approval_from: ["devops", "maintainer"]
+    auto_test: true
+    
+  - pattern: "docker-compose*.yml"
+    reason: "Container orchestration"
+    requires_approval_from: ["devops"]
+    
+  - pattern: "Dockerfile"
+    reason: "Container build configuration"
+    requires_approval_from: ["devops"]
+    
+  - pattern: "requirements.txt"
+    reason: "Python dependencies"
+    requires_approval_from: ["backend-lead"]
+    requires_skill: "dep-guardian"
+    
+  - pattern: "package.json"
+    reason: "Node.js dependencies"
+    requires_approval_from: ["frontend-lead"]
+    requires_skill: "dep-guardian"
+    
+  - pattern: "alembic/versions/*.py"
+    reason: "Database migrations"
+    requires_approval_from: ["database-admin"]
+    requires: ["rollback-script", "migration-test"]
+    
+  - pattern: "app/config.py"
+    reason: "Application configuration"
+    requires_approval_from: ["backend-lead"]
+    
+  - pattern: ".env.example"
+    reason: "Environment template"
+    requires_approval_from: ["devops", "backend-lead"]
+    
+  - pattern: "DATA_SOURCES.md"
+    reason: "Attribution and data provenance"
+    requires_approval_from: ["data-steward"]
+    auto_verify: true
+
+  # Security-critical files
+  - pattern: ".github/hooks/*.js"
+    reason: "Security hooks"
+    requires_approval_from: ["security-lead", "maintainer"]
+    
+  - pattern: ".github/policies/*.yaml"
+    reason: "Policy definitions"
+    requires_approval_from: ["maintainer"]
+    
+  # License and legal
+  - pattern: "LICENSE"
+    reason: "Legal/licensing terms"
+    requires_approval_from: ["legal", "maintainer"]
+    
+  - pattern: "ETHICS.md"
+    reason: "Ethical guidelines"
+    requires_approval_from: ["ethics-committee", "maintainer"]
+
+review_roles:
+  # Map roles to GitHub teams or individuals
+  maintainer:
+    github_team: "@220631948/cape-town-geohub-maintainers"
+    fallback: ["@220631948"]
+  
+  architect:
+    github_team: "@220631948/architects"
+    fallback: ["@220631948"]
+  
+  devops:
+    github_team: "@220631948/devops"
+    fallback: ["@220631948"]
+  
+  backend-lead:
+    github_team: "@220631948/backend"
+    fallback: ["@220631948"]
+  
+  frontend-lead:
+    github_team: "@220631948/frontend"
+    fallback: ["@220631948"]
+  
+  database-admin:
+    github_team: "@220631948/database"
+    fallback: ["@220631948"]
+  
+  data-steward:
+    github_team: "@220631948/data-team"
+    fallback: ["@220631948"]
+  
+  security-lead:
+    github_team: "@220631948/security"
+    fallback: ["@220631948"]
+
+enforcement:
+  # What happens when protected file is modified
+  on_modification:
+    - add_label: "requires-approval"
+    - request_review_from: "${requires_approval_from}"
+    - post_comment: true
+    - run_skills: "${requires_skill}"
+  
+  # Block merge until requirements met
+  block_merge: true
+  
+  # Required status checks
+  required_checks:
+    - "CI / Backend Tests"
+    - "CI / Frontend Tests"
+    - "Policy Check"
+
+bypass:
+  # Emergency bypass (requires reason)
+  allowed_for:
+    - role: "maintainer"
+      requires: ["reason", "post-incident-review"]
+  
+  label: "emergency-bypass"
+  
+  audit:
+    log_bypass: true
+    notify: ["security-lead", "maintainer"]
+
+remediation:
+  message: |
+    🔒 Protected File Modification Detected
+    
+    You're attempting to modify a protected file: **{file_path}**
+    
+    **Reason**: {reason}
+    
+    **Required Approvals**: {requires_approval_from}
+    
+    **Additional Requirements**:
+    {requirements}
+    
+    **Next Steps**:
+    1. Ensure all automated checks pass
+    2. Request review from required approvers
+    3. Provide clear rationale in PR description
+    4. Wait for approval before merging
+    
+    For emergency changes, add label `emergency-bypass` and include:
+    - Detailed reason for urgency
+    - Rollback plan
+    - Post-incident review commitment
+    
+  template: |
+    ## 🔒 Protected File Review Required
+    
+    The following protected files were modified:
+    
+    {protected_files_table}
+    
+    **Required Approvers**: {approvers_list}
+    
+    **Status Checks**:
+    - [ ] All automated tests pass
+    - [ ] Policy checks pass
+    - [ ] Required skills executed
+    - [ ] Approvals received
+    
+    ---
+    
+    *This is an automated check from `.github/policies/protected-files.yaml`*

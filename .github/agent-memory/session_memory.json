@@ -1,0 +1,35 @@
+{
+  "$schema": "../schemas/memory-entry.schema.json",
+  "session_id": "session-2026-02-10-init",
+  "started_at": "2026-02-10T12:00:00Z",
+  "agent_version": "super-agent-v3.0.0",
+  "entries": [
+    {
+      "id": "mem-init-001",
+      "category": "architecture",
+      "source": "agent-initialization",
+      "timestamp": "2026-02-10T12:00:00Z",
+      "summary": "Initialized SUPER-AGENT v3 .github infrastructure generation",
+      "detail": "Created agent-manifest.json mapping Cape Town GeoHub repository structure. Project is a geospatial decision-support platform with FastAPI backend (app/), React+Vite frontend (frontend/), CI workflows, and existing agent manifests.",
+      "ttl_days": 90
+    },
+    {
+      "id": "mem-init-002",
+      "category": "decision",
+      "source": "safety-mode-default",
+      "timestamp": "2026-02-10T12:00:00Z",
+      "summary": "SAFE_MODE=true enforced by default",
+      "detail": "All generated artifacts are proposals only. No changes to application source code (app/, frontend/src/, tests/) will be made. Only .github/ directory modifications permitted. Patches generated under patches/ for any suggested code changes.",
+      "ttl_days": 365
+    },
+    {
+      "id": "mem-scan-003",
+      "category": "scan",
+      "source": "planner_mode scan",
+      "timestamp": "2026-02-10T12:10:00Z",
+      "summary": "Baseline scan completed: 6 findings in findings.json",
+      "detail": "F001(high): 18 TS errors, F002(medium): 85 ESLint warnings, F003(high): Site suitability TODOs, F004(medium): admin auth risk, F005(low): unused import, F006(low): missing policies dir. verify.sh and patches/ created. README.AGENT_ACTIONS.md generated.",
+      "ttl_days": 90
+    }
+  ]
+}

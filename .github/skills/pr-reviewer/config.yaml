@@ -1,0 +1,27 @@
+# PR Reviewer Configuration
+
+min_coverage:
+  backend: 80
+  frontend: 75
+
+max_pr_size: 500  # lines changed
+
+require_tests_for_new_code: true
+
+enforce_spatial_integrity: true
+
+crs_rules:
+  default_input: "EPSG:4326"
+  analysis: "EPSG:32734"
+
+security:
+  npm_audit_level: "moderate"  # fail on moderate+ vulnerabilities
+  pip_audit_strict: true
+
+policies:
+  - no-secrets
+  - dependency-allowlist
+  - max-pr-size
+  - protected-files
+
+attribution_check: true  # Verify DATA_SOURCES.md updated when datasets added

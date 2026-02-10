@@ -1,0 +1,26 @@
+{
+  "$schema": "../schemas/memory-entry.schema.json",
+  "scope": "global",
+  "description": "Long-term knowledge approved by user for retention across projects",
+  "created_at": "2026-02-10T12:00:00Z",
+  "entries": [
+    {
+      "id": "global-pattern-001",
+      "category": "general",
+      "source": "SUPER-AGENT v3 best practices",
+      "timestamp": "2026-02-10T12:00:00Z",
+      "summary": "Always generate patches for code changes in SAFE_MODE",
+      "detail": "When SAFE_MODE=true (default), never modify application source code directly. Generate unified diffs or git-format-patch files under .github/patches/ and create draft PRs for review. This prevents accidental breaking changes and maintains auditability.",
+      "ttl_days": 730
+    },
+    {
+      "id": "global-security-001",
+      "category": "general",
+      "source": "security best practices",
+      "timestamp": "2026-02-10T12:00:00Z",
+      "summary": "Scan for secrets before any file write or commit",
+      "detail": "Before writing any file, scan content for high-entropy strings (threshold: 4.5+) and patterns like 'api_key', 'password', 'secret', 'token', 'dsn'. If detected, redact and create remediation instructions. Never commit secrets to repository.",
+      "ttl_days": 730
+    }
+  ]
+}

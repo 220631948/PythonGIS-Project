@@ -1,0 +1,124 @@
+# max-pr-size.yaml
+# Policy: Limit PR size to ensure reviewability
+# Enforced by: pr-reviewer skill
+
+name: max-pr-size
+version: 1.0.0
+description: Enforce maximum PR size to maintain code review quality
+severity: medium
+
+limits:
+  # Lines changed (additions + deletions)
+  max_lines_changed: 500
+  
+  # Files changed
+  max_files_changed: 20
+  
+  # Warn thresholds (before hard limit)
+  warn_at_lines: 300
+  warn_at_files: 12
+
+exceptions:
+  # File patterns exempt from line counting
+  excluded_patterns:
+    - "package-lock.json"
+    - "poetry.lock"
+    - "Pipfile.lock"
+    - "*.min.js"
+    - "*.min.css"
+    - "*.svg"
+    - "*.json"  # JSON files (e.g., OpenAPI specs, test fixtures)
+    - "CHANGELOG.md"
+    - "*.md"  # Documentation updates
+  
+  # PR types that can exceed limits
+  allowed_large_prs:
+    - label: "refactor"
+      max_lines: 1000
+      reason: "Refactors may touch many files"
+      requires: ["rollback-plan", "tests-pass"]
+    
+    - label: "migration"
+      max_lines: 1500
+      reason: "Data/schema migrations"
+      requires: ["rollback-script", "migration-guide", "tests-pass"]
+    
+    - label: "dependencies"
+      max_lines: 2000
+      max_files: 50
+      reason: "Dependency updates may update lock files"
+      requires: ["audit-pass"]
+    
+    - label: "generated"
+      max_lines: 1000
+      reason: "Auto-generated code (OpenAPI clients, etc.)"
+      requires: ["generator-script-in-repo"]
+
+breaking_down_large_prs:
+  message: |
+    📏 PR size exceeds recommended limits
+    
+    Large PRs are harder to review and more likely to contain bugs.
+    
+    Consider breaking this PR into smaller, focused PRs:
+    
+    1. Separate refactoring from feature work
+    2. Split by module/component
+    3. Create a "parent" issue tracking the full feature
+    4. Reference parent issue in each sub-PR
+    
+    Sequence example:
+    - PR 1: Add types/interfaces
+    - PR 2: Implement backend logic
+    - PR 3: Add frontend integration
+    - PR 4: Add tests
+    - PR 5: Update documentation
+    
+  strategies:
+    - "Split by layer (backend → frontend → tests)"
+    - "Split by feature component"
+    - "Extract refactoring into separate PR"
+    - "Move documentation updates to follow-up PR"
+
+enforcement:
+  action: "warn"  # warn | block
+  post_comment: true
+  add_label: "large-pr"
+  request_changes: false  # Just warn by default
+
+metrics:
+  track:
+    - average_pr_size
+    - large_pr_percentage
+    - time_to_review_by_size
+  
+  report_frequency: "monthly"
+  report_to: ".github/metrics/pr-size-report.json"
+
+remediation:
+  on_exceed_limit:
+    - comment_on_pr
+    - suggest_split_strategy
+    - create_checklist_issue
+  
+  template: |
+    ## 📏 PR Size Review
+    
+    **Lines Changed**: {lines_changed} / {max_lines_changed}
+    **Files Changed**: {files_changed} / {max_files_changed}
+    
+    ⚠️ This PR exceeds recommended size limits.
+    
+    ### Suggested Split Strategy
+    
+    {split_suggestions}
+    
+    ### Override Options
+    
+    If this PR must remain large, add one of these labels:
+    - `refactor` (with rollback plan)
+    - `migration` (with rollback script)
+    - `dependencies` (with audit pass)
+    - `generated` (with generator script)
+    
+    And ensure all required artifacts are included.
