@@ -11,6 +11,15 @@ interface LandUseModuleProps {
     onLayerUpdate?: (layerData: any) => void;
 }
 
+interface ZoningFeatureProperties {
+    id: number;
+    code: string;
+    description: string;
+    max_height: string;
+    coverage: string;
+    color: string;
+}
+
 const LandUseModule: React.FC<LandUseModuleProps> = ({ onLayerUpdate }) => {
     const { zoningData, active, toggleLayer } = useLandUseData();
 
@@ -103,21 +112,25 @@ const LandUseModule: React.FC<LandUseModuleProps> = ({ onLayerUpdate }) => {
             <div className="p-4">
                 <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-3">Zoning Types</h3>
                 <div className="space-y-2">
-                    {zoningData.features.map((feature: { properties: { id: number; code: string; description: string; max_height: string; coverage: string; color: string } }) => (
-                        <div key={feature.properties.id} className="flex items-center gap-2">
+                    {zoningData.features.map((feature) => {
+                        const properties = feature.properties as ZoningFeatureProperties | undefined;
+                        if (!properties) return null;
+                        return (
+                        <div key={properties.id} className="flex items-center gap-2">
                             <div
                                 className="w-8 h-4 rounded border border-slate-200 dark:border-slate-600"
-                                style={{ backgroundColor: feature.properties.color }}
+                                style={{ backgroundColor: properties.color }}
                             />
                             <div className="flex-1">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{feature.properties.code}</span>
-                                    <span className="text-[10px] text-slate-400 dark:text-slate-500">{feature.properties.max_height}</span>
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{properties.code}</span>
+                                    <span className="text-[10px] text-slate-400 dark:text-slate-500">{properties.max_height}</span>
                                 </div>
-                                <div className="text-xs text-slate-500 dark:text-slate-400">{feature.properties.description}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400">{properties.description}</div>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                     <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
                         <div className="w-8 h-4 bg-slate-100 dark:bg-slate-700 rounded border border-slate-200 dark:border-slate-600"></div>
                         <span className="text-xs text-slate-400 dark:text-slate-500 italic">Other zones (not shown)</span>
