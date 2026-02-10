@@ -139,9 +139,7 @@ const MapView = ({
     layers,
     activeFilters: activeFilters as Record<string, { conditions?: unknown[]; logic?: string }>,
     onLayerLoading,
-  }) as {
-    geoData: Record<string, { geojson?: GeoJSON.FeatureCollection; dataset?: DatasetInfo | null }>;
-  };
+  });
 
   const handleMapClick = useCallback((latlng: LatLng) => {
     const normalized = toLatLng(latlng);
@@ -161,8 +159,8 @@ const MapView = ({
   const basemapConfig: BasemapConfig = (BASEMAPS[basemap] ?? BASEMAPS.streets)!;
 
   const layerIds = Array.isArray(layers) ? layers : [];
-  const dataLayers: React.ReactNode[] = layerIds.map((layerId) => {
-    const data = geoData[layerId];
+  const dataLayers: (React.ReactElement | null)[] = layerIds.map((layerId) => {
+    const data = geoData[layerId] as { geojson?: GeoJSON.FeatureCollection; dataset?: { name: string } | null } | undefined;
     if (!data?.geojson) return null;
     return (
       <LayersControl.Overlay key={layerId} name={layerId.replace(/-/g, ' ').toUpperCase()} checked={true}>
