@@ -130,6 +130,26 @@ jobs:
         run: |
           docker compose build --no-cache
 
+  # Policy-as-Code Checks
+  policy:
+    name: Policy-as-code checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install policy runner dependency (yaml)
+        run: npm install yaml
+
+      - name: Run Policy-as-Code checks
+        run: node .github/scripts/policy_check.js --quiet
+
   # E2E Tests (only on master/develop)
   e2e:
     name: E2E Tests
