@@ -173,8 +173,7 @@ export function FullscreenControl() {
 
     const fullscreenControl = L.control.fullscreen({
       position: 'topright',
-      title: 'Enter fullscreen',
-      titleCancel: 'Exit fullscreen',
+      title: { false: 'Enter fullscreen', true: 'Exit fullscreen' },
     });
 
     map.addControl(fullscreenControl);
@@ -273,3 +272,4 @@ export function MinimapControl({ basemap = 'streets' }: MinimapControlProps) {
 
   return null;
 }
+
