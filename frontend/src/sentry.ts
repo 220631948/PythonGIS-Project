@@ -1,3 +1,9 @@
+// Sentry integration (optional)
+// Disabled until React 19 compatible version is available
+// To enable: npm install @sentry/react@^8.0.0 --legacy-peer-deps
+// and uncomment this entire file
+
+/*
 import * as Sentry from '@sentry/react'
 import { BrowserTracing } from '@sentry/tracing'
 
@@ -41,3 +47,7 @@ if (dsn) {
     // ignore
   }
 }
+*/
+
+// Export a no-op for now
+export default {}

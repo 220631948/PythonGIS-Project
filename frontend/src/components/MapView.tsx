@@ -4,8 +4,7 @@
  * Orchestrates basemaps, data layers, controls, and user interactions.
  * All heavy logic has been extracted into sub-modules under ./map/.
  */
-import { useState, useCallback } from 'react';
-import type { ReactNode } from 'react';
+import React, { useState, useCallback } from 'react';
 import type { PathOptions } from 'leaflet';
 import {
   MapContainer,
@@ -162,7 +161,7 @@ const MapView = ({
   const basemapConfig: BasemapConfig = (BASEMAPS[basemap] ?? BASEMAPS.streets)!;
 
   const layerIds = Array.isArray(layers) ? layers : [];
-  const dataLayers = layerIds.map((layerId) => {
+  const dataLayers: React.ReactNode = layerIds.map((layerId) => {
     const data = geoData[layerId];
     if (!data?.geojson) return null;
     return (
@@ -179,7 +178,7 @@ const MapView = ({
         </LayerGroup>
       </LayersControl.Overlay>
     );
-  }) as ReactNode;
+  });
 
   // Fallback when coords are not yet available
   if (!normalizedCenter) {
