@@ -1,0 +1,26 @@
+*** Begin Patch
+*** Update File: .github/policies/no-secrets.yaml
+@@
+-      - "api[_-]?key[\s:=]+\S+"
+-      - "api[_-]?secret[\s:=]+\S+"
+-      - "access[_-]?key[\s:=]+\S+"
++      - 'api[_-]?key[\\s:=]+\\S+'
++      - 'api[_-]?secret[\\s:=]+\\S+'
++      - 'access[_-]?key[\\s:=]+\\S+'
+@@
+-      - "password[\s:=]+\S+"
+-      - "passwd[\s:=]+\S+"
+-      - "pwd[\s:=]+\S+"
++      - 'password[\\s:=]+\\S+'
++      - 'passwd[\\s:=]+\\S+'
++      - 'pwd[\\s:=]+\\S+'
+@@
+-      - "token[\s:=]+\S+"
+-      - "bearer[\s:=]+\S+"
+-      - "jwt[\s:=]+\S+"
++      - 'token[\\s:=]+\\S+'
++      - 'bearer[\\s:=]+\\S+'
++      - 'jwt[\\s:=]+\\S+'
+@@
+-      - "sentry_dsn[\s:=]+https?://[^@]+@"  # Sentry DSN
++      - 'sentry_dsn[\\s:=]+https?://[^@]+@'  # Sentry DSN
