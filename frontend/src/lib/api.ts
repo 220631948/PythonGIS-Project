@@ -3,7 +3,7 @@
  * Enhanced with interceptors, retry logic, and request cancellation
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 // Request/Response Interceptors
 type RequestInterceptor = (config: RequestInit) => RequestInit;
@@ -223,8 +223,8 @@ export const API_ENDPOINTS = {
 /**
  * Convenience function to fetch dataset by key
  */
-export async function fetchDataset(datasetKey: string, options?: FetchOptions) {
-    return fetchData(`/api/data/${datasetKey}`, options);
+export async function fetchDataset<T = unknown>(datasetKey: string, options?: FetchOptions): Promise<T> {
+    return fetchData<T>(`/api/data/${datasetKey}`, options);
 }
 
 /**
@@ -594,7 +594,7 @@ class APIClient {
 
     checkVisibility(fromLat: number, fromLng: number, toLat: number, toLng: number, fromHeight = 1.7, toHeight = 0) {
         return fetchData(
-            `/api/analysis/visibility-check?from_lat=${fromLat}&from_lng=${fromLng}&to_lat=${toLat}&to_lng=${toLng}&from_height=${fromHeight}&to_height=${toHeight}`
+            `/api/analysis/visibility-check?from_lat=${fromLat}&from_lng=${fromLng}&to_lat=${toLat}&to_lng=${toHeight}`
         );
     }
 
