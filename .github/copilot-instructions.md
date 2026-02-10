@@ -141,6 +141,14 @@ All datasets come from **City of Cape Town Open Data Portal** (ArcGIS REST). Att
 - Do not introduce `/api/v1` paths; routes are mounted under `/api` via `settings.API_PREFIX`.
 - Keep CRS guarantees explicit in code and docs (EPSG:4326 storage, EPSG:32734 for metrics).
 
+## Agent Mode (Copilot/Agent Actions)
+
+- When operating in agent mode (automated agent workflows), consult `.github/README.AGENT_ACTIONS.md` as the authoritative guide for agent behavior, findings, and next steps.
+- Use files under `.github/` (policies, hooks, skills, patches, findings.json, hooks/audit.log, agent-memory) as the single source of truth for policies, safety, auditability, and agent artifacts.
+- In SAFE_MODE (default), restrict writes to `.github/` only; for any proposed changes to application code, generate patches under `.github/patches/` and create a draft PR referencing findings and trace IDs.
+- Log all decisions and audit entries to `.github/hooks/audit.log` and persist notable decisions into `.github/agent-memory/project_memory.json`.
+- Require explicit user confirmation before toggling SAFE_MODE or authorizing writes outside `.github/`.
+
 ## Test Generation Guidelines
 
 - **Backend**: Use `pytest` with clear arrangement/act/assert, and include CRS edge cases.

@@ -1,0 +1,249 @@
+{
+  "$schema": ".github/schemas/agent-manifest.schema.json",
+  "version": "3.0.0",
+  "generated_at": "2026-02-10T12:00:00Z",
+  "repository": {
+    "name": "PythonGIS-Project",
+    "owner": "220631948",
+    "project_name": "Cape Town GeoHub",
+    "description": "Geospatial decision-support platform combining FastAPI, React + Leaflet, and municipal open data",
+    "stage": "Beta (CI-gated)"
+  },
+  "structure": {
+    "root": "/home/mr/PycharmProjects/PythonGIS Project",
+    "primary_language": "Python",
+    "secondary_languages": ["TypeScript", "JavaScript"],
+    "frameworks": {
+      "backend": ["FastAPI", "SQLAlchemy", "GeoAlchemy2", "GeoPandas"],
+      "frontend": ["React 19", "Vite", "Leaflet"],
+      "testing": ["pytest", "Playwright", "Vitest"]
+    },
+    "paths": {
+      "backend_source": "app/",
+      "frontend_source": "frontend/src/",
+      "backend_tests": "tests/",
+      "frontend_tests": "frontend/tests/",
+      "data": "data/",
+      "scripts": "scripts/",
+      "docs": "docs/",
+      "alembic": "alembic/",
+      "static": "static/",
+      "ci_workflows": ".github/workflows/",
+      "agents": ".github/agents/",
+      "skills": ".github/skills/",
+      "hooks": ".github/hooks/",
+      "policies": ".github/policies/",
+      "agent_memory": ".github/agent-memory/",
+      "patches": ".github/patches/",
+      "templates": ".github/templates/"
+    },
+    "key_files": {
+      "backend_main": "app/main.py",
+      "backend_config": "app/config.py",
+      "frontend_main": "frontend/src/App.tsx",
+      "frontend_index": "frontend/index.html",
+      "backend_requirements": "requirements.txt",
+      "frontend_package": "frontend/package.json",
+      "docker_compose": "compose.yaml",
+      "docker_compose_prod": "docker-compose.prod.yml",
+      "dockerfile": "Dockerfile",
+      "env_example": ".env.example",
+      "agents_instructions": "AGENTS.md",
+      "copilot_instructions": ".github/copilot-instructions.md",
+      "makefile": "Makefile",
+      "pytest_config": "pytest.ini",
+      "alembic_config": "alembic.ini"
+    }
+  },
+  "conventions": {
+    "crs": {
+      "default_input_storage": "EPSG:4326",
+      "projected_analysis": "EPSG:32734",
+      "description": "All external data flows through WGS84; internal analysis may use UTM 34S for Cape Town"
+    },
+    "code_style": {
+      "python": "PEP8, type hints required on FastAPI routes",
+      "typescript": "Strict mode, functional components only",
+      "javascript": "ESLint config in eslint.config.js",
+      "css": "CSS Variables from index.css + Tailwind v4 utilities"
+    },
+    "commit_messages": {
+      "prefix_required": "ag:super-v3 — ",
+      "format": "conventional commits",
+      "description": "All automated commits must reference findings.json entry id"
+    },
+    "pr_labels": ["ag:automated", "ag:requires-review"],
+    "pr_description_must_include": [
+      "findings.json ids",
+      "short rationale",
+      "risk/migration/rollback plan",
+      "test instructions"
+    ]
+  },
+  "quality_gates": {
+    "frontend": {
+      "lint": "npm run lint",
+      "type_check": "npm run type-check",
+      "build": "npm run build",
+      "audit": "npm audit",
+      "unit_tests": "npm run test:unit",
+      "e2e_tests": "npm run test:e2e"
+    },
+    "backend": {
+      "lint": "ruff check app/",
+      "audit": "pip-audit -r requirements.txt --strict",
+      "tests": "pytest",
+      "type_check": "mypy app/ (optional)"
+    },
+    "docker": {
+      "build": "docker compose build --no-cache"
+    }
+  },
+  "development": {
+    "backend_server": {
+      "command": ".venv/bin/uvicorn app.main:app --reload --port 8000",
+      "port": 8000,
+      "health_endpoint": "/health"
+    },
+    "frontend_server": {
+      "command": "npm run dev",
+      "cwd": "frontend/",
+      "port": 5173
+    },
+    "database": {
+      "command": "docker compose up -d db",
+      "wait_time_seconds": 10,
+      "migrations": "alembic upgrade head"
+    }
+  },
+  "safety_constraints": {
+    "safe_mode_default": true,
+    "allowed_write_paths": [
+      ".github/*",
+      ".gemini/*"
+    ],
+    "forbidden_write_paths": [
+      "app/*",
+      "frontend/src/*",
+      "tests/*",
+      "alembic/*",
+      "data/*",
+      "docs/*",
+      "scripts/*",
+      "**/package.json",
+      "**/requirements.txt"
+    ],
+    "blacklist_shell_commands": [
+      "rm -rf /",
+      "sudo",
+      "ssh",
+      "scp"
+    ],
+    "secret_detection": {
+      "enabled": true,
+      "high_entropy_threshold": 4.5,
+      "patterns": ["api_key", "password", "secret", "token", "dsn"]
+    }
+  },
+  "skills_registry": {
+    "auto_discover_path": ".github/skills/",
+    "manifest_file": "SKILL.md",
+    "required_skills": [
+      "pr-reviewer",
+      "dep-guardian",
+      "design-linter",
+      "ui-crawler",
+      "api-adapter",
+      "refactor-strategist",
+      "accessibility-auditor"
+    ]
+  },
+  "hooks_registry": {
+    "path": ".github/hooks/",
+    "audit_log": ".github/hooks/audit.log",
+    "required_hooks": [
+      "BeforeAgent",
+      "BeforeTool",
+      "AfterTool",
+      "BeforeFileWrite",
+      "AfterExecution"
+    ],
+    "hook_contract": {
+      "input": "JSON via stdin",
+      "output": "JSON via stdout",
+      "exit_codes": {
+        "0": "allow or modify",
+        "1": "error",
+        "2": "deny"
+      }
+    }
+  },
+  "policies": {
+    "path": ".github/policies/",
+    "policy_check_script": ".github/scripts/policy_check.js",
+    "required_policies": [
+      "no-secrets.yaml",
+      "dependency-allowlist.yaml",
+      "max-pr-size.yaml",
+      "protected-files.yaml"
+    ]
+  },
+  "agent_modes": {
+    "planner_mode": {
+      "allowed_tools": ["codebase_search", "semantic_repo_index", "web_research"],
+      "description": "Build multi-step plans",
+      "default": true
+    },
+    "implementer_mode": {
+      "allowed_tools": ["workspace_file_ops", "terminal_runner", "test_runner"],
+      "description": "Make small, deterministic changes (only .github/)",
+      "safe_mode_required": false
+    },
+    "reviewer_mode": {
+      "allowed_tools": ["git_history_analysis", "pull_request_manager", "api_schema_validate"],
+      "description": "Audit diffs/PRs"
+    },
+    "researcher_mode": {
+      "allowed_tools": ["web_research"],
+      "description": "Run websearch, consult docs, create RFCs"
+    },
+    "refactor_mode": {
+      "allowed_tools": ["workspace_file_ops", "test_runner", "pull_request_manager"],
+      "description": "Controlled refactors with patches only"
+    },
+    "emergency_fix_mode": {
+      "allowed_tools": ["terminal_runner", "workspace_file_ops", "pull_request_manager"],
+      "description": "Quick rollback or hotfix with highest safety checks"
+    }
+  },
+  "memory": {
+    "session_file": ".github/agent-memory/session_memory.json",
+    "project_file": ".github/agent-memory/project_memory.json",
+    "global_file": ".github/agent-memory/global_agent_memory.json",
+    "ttl_days_default": 90,
+    "update_triggers": [
+      "decision commit",
+      "architecture change",
+      "failing test",
+      "new ADR"
+    ]
+  },
+  "outputs": {
+    "findings": "findings.json",
+    "patches": "patches/",
+    "pr_draft": "pr_draft.md",
+    "verify_script": "verify.sh",
+    "readme": "README.AGENT_ACTIONS.md"
+  },
+  "external_references": {
+    "vscode_copilot_overview": "https://code.visualstudio.com/docs/copilot/customization/overview",
+    "mcp_servers": "https://code.visualstudio.com/docs/copilot/customization/mcp-servers",
+    "agents_tutorial": "https://code.visualstudio.com/docs/copilot/agents/agents-tutorial",
+    "awesome_copilot": "https://github.com/github/awesome-copilot"
+  },
+  "metadata": {
+    "generator": "SUPER-AGENT v3",
+    "trace_id": "trace-init-001",
+    "safe_mode": true
+  }
+}

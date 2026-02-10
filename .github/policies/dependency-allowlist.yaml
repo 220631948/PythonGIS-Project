@@ -1,0 +1,141 @@
+# dependency-allowlist.yaml
+# Policy: Define allowed package licenses and versions
+# Enforced by: dep-guardian skill
+
+name: dependency-allowlist
+version: 1.0.0
+description: Control which dependencies and licenses are permitted
+severity: high
+
+licenses:
+  allowed:
+    - MIT
+    - Apache-2.0
+    - BSD-2-Clause
+    - BSD-3-Clause
+    - ISC
+    - Python-2.0  # For Python stdlib
+    - 0BSD
+    - CC0-1.0
+    
+  forbidden:
+    - GPL-3.0
+    - GPL-3.0-only
+    - GPL-3.0-or-later
+    - AGPL-3.0
+    - AGPL-3.0-only
+    - AGPL-3.0-or-later
+  forbidden_reason: "Copyleft licenses incompatible with project license"
+    
+  requires_review:
+    - id: LGPL-2.1
+      reason: "Requires legal review"
+    - id: LGPL-3.0
+      reason: "Requires legal review"
+    - id: MPL-2.0
+      reason: "Weak copyleft - requires legal review"
+
+packages:
+  frontend:
+    # Critical packages pinned to specific versions
+    pinned:
+      - name: "react"
+        version: "^19.0.0"
+        reason: "React 19 required for new features"
+      - name: "vite"
+        version: "^6.0.0"
+        reason: "Vite 6 for improved performance"
+      - name: "leaflet"
+        version: "^1.9.0"
+        reason: "Stable mapping library version"
+    
+    # Explicitly forbidden packages
+    forbidden:
+      - name: "moment"
+        reason: "Use date-fns or native Date instead (smaller bundle)"
+        alternatives: ["date-fns", "dayjs"]
+      - name: "lodash"
+        reason: "Use lodash-es or native methods for tree-shaking"
+        alternatives: ["lodash-es"]
+    
+    # Packages requiring review before addition
+    requires_review:
+      - pattern: ".*-polyfill"
+        reason: "Polyfills increase bundle size; verify necessity"
+      - pattern: "@types/.*"
+        reason: "Verify types are not duplicate or outdated"
+  
+  backend:
+    # Python packages
+    pinned:
+      - name: "fastapi"
+        version: ">=0.128.0"
+        reason: "Security fixes in 0.128+"
+      - name: "python-multipart"
+        version: ">=0.0.22"
+        reason: "Vulnerability fix in 0.0.22"
+      - name: "sqlalchemy"
+        version: "^2.0.0"
+        reason: "SQLAlchemy 2.0 required for GeoAlchemy2 compat"
+    
+    forbidden:
+      - name: "pickle"
+        reason: "Security risk - use JSON or msgpack"
+        alternatives: ["json", "msgpack"]
+      - name: "eval"
+        reason: "Code injection risk"
+    
+    requires_review:
+      - pattern: ".*-unstable"
+        reason: "Unstable packages require review"
+      - pattern: ".*-alpha"
+        reason: "Alpha packages require review"
+
+vulnerability_policy:
+  max_allowed:
+    critical: 0
+    high: 0
+    moderate: 3
+  
+  auto_update:
+    patch: true   # Auto-update patch versions (1.2.3 -> 1.2.4)
+    minor: false  # Require review for minor (1.2.x -> 1.3.0)
+    major: false  # Require review for major (1.x -> 2.0)
+  
+  scan_frequency:
+    npm_audit: "daily"
+    pip_audit: "daily"
+    github_dependabot: "weekly"
+
+exemptions:
+  # Temporarily exempt specific vulnerabilities (with expiry)
+  - cve: "CVE-YYYY-XXXXX"
+    package: "example-package"
+    reason: "No fix available; mitigation in place"
+    expires: "2026-03-01"
+    approved_by: "security-team"
+
+enforcement:
+  pre_commit: true
+  ci_pipeline: true
+  dependency_review_action: true
+  
+actions:
+  on_violation:
+    - log_to_findings
+    - create_issue
+    - block_pr
+
+remediation:
+  message: |
+    ⚠️ Dependency policy violation detected!
+    
+    The dependency you're trying to add violates the project's dependency policy.
+    
+    Actions:
+    1. Check if the package is in the forbidden list
+    2. Verify the license is allowed
+    3. For requires_review packages, open an issue for discussion
+    4. Consider approved alternatives if listed
+    
+    To request an exemption, update .github/policies/dependency-allowlist.yaml and get approval.
