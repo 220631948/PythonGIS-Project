@@ -29,7 +29,7 @@ export class GeoDataRepository {
         // 2. Fetch from API
         console.log(`[GeoDataRepository] Fetching ${key} from API (${datasetId})`);
         try {
-            const data = await fetchDataset(datasetId);
+            const data = await fetchDataset<GeoData>(datasetId);
             
             // 3. Save to cache
             await this.cache.save(data, key);
@@ -57,3 +57,4 @@ export class GeoDataRepository {
 }
 
 export const geoDataRepository = new GeoDataRepository();
+
