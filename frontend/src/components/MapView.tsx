@@ -161,7 +161,7 @@ const MapView = ({
   const basemapConfig: BasemapConfig = (BASEMAPS[basemap] ?? BASEMAPS.streets)!;
 
   const layerIds = Array.isArray(layers) ? layers : [];
-  const dataLayers: React.ReactNode = layerIds.map((layerId) => {
+  const dataLayers: React.ReactNode[] = layerIds.map((layerId) => {
     const data = geoData[layerId];
     if (!data?.geojson) return null;
     return (
