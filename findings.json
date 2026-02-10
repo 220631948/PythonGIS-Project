@@ -1,0 +1,99 @@
+{
+  "scanned_at": "2026-02-10T12:10:00Z",
+  "scanner": "god-mode-gemini v3 (planner_mode)",
+  "summary": "Automated baseline scan: type-check failures, lint warnings, TODOs indicating missing PostGIS wiring, and minor lint/security issues.",
+  "findings": [
+    {
+      "id": "F001",
+      "severity": "high",
+      "category": "type-safety",
+      "title": "Frontend TypeScript check failing (18 errors)",
+      "description": "TypeScript compiler reports 18 errors which break the CI 'type-check' step. Files include: frontend/src/components/DataStatusPanel.tsx, ExportPanel.tsx, MapView.tsx, RealtimePanel.tsx, src/repositories/GeoDataRepository.ts, among others.",
+      "files": [
+        "frontend/src/components/DataStatusPanel.tsx",
+        "frontend/src/components/ExportPanel.tsx",
+        "frontend/src/components/MapView.tsx",
+        "frontend/src/components/RealtimePanel.tsx",
+        "frontend/src/repositories/GeoDataRepository.ts"
+      ],
+      "suggested_action": "Prioritize fixing TypeScript errors by adding explicit types, handle 'unknown' values safely, and add unit tests that cover affected components. Run 'npx tsc --noEmit' locally to reproduce. Consider adding CI gating to block merges until type-check passes.",
+      "confidence": "high"
+    },
+    {
+      "id": "F002",
+      "severity": "medium",
+      "category": "code-quality",
+      "title": "ESLint warnings (85) — many 'no-explicit-any'",
+      "description": "ESLint reports 85 warnings, predominantly '@typescript-eslint/no-explicit-any'. These reflect areas where types should be tightened for long-term maintainability.",
+      "files": ["frontend/src/**"],
+      "suggested_action": "Where possible, replace 'any' with precise types or 'unknown' with runtime type guards. Add linter suppressions only with justifying comments. Consider an incremental migration plan to stricter typing.",
+      "confidence": "high"
+    },
+    {
+      "id": "F003",
+      "severity": "high",
+      "category": "feature-gap",
+      "title": "Site suitability module uses placeholder evaluators (multiple TODOs)",
+      "description": "app/spatial_analysis/site_suitability.py contains multiple TODO comments indicating missing PostGIS wiring for flood_zones, biodiversity, wetlands, open_spaces, zoning, road network, myciti_stops, urban_edge. These are core to the Suitability use case.",
+      "files": ["app/spatial_analysis/site_suitability.py"],
+      "references": [
+        "TODO: Wire to PostGIS ST_Intersects query against 'flood_zones' layer (MapServer/71)",
+        "TODO: Wire to PostGIS query against Critical Biodiversity Areas layer",
+        "TODO: Wire to PostGIS ST_Distance query against road network layer",
+        "TODO: Wire to PostGIS ST_Distance query against 'myciti_stops' layer"
+      ],
+      "suggested_action": "Prioritize implementing PostGIS-backed evaluators and add unit/integration tests that use a test PostGIS dataset (Dockerized PostGIS fixture). Provide migration plan and scripts to seed minimal test data for deterministic tests.",
+      "confidence": "high"
+    },
+    {
+      "id": "F004",
+      "severity": "medium",
+      "category": "security",
+      "title": "Admin endpoints unprotected when ADMIN_API_KEY is not set",
+      "description": "app/dependencies.py allows admin endpoints to be unprotected if settings.ADMIN_API_KEY is empty. This is convenient for local dev but risky for production if misconfigured.",
+      "files": ["app/dependencies.py", "app/config.py"],
+      "suggested_action": "Add CI policy checks and documentation that require ADMIN_API_KEY to be set for protected branches/releases. Consider failing CI when ADMIN_API_KEY is empty on release branch builds, or add runtime enforcement toggled by ENV.",
+      "confidence": "high"
+    },
+    {
+      "id": "F005",
+      "severity": "low",
+      "category": "lint",
+      "title": "Ruff: unused import in app/api/advanced_analysis_api.py",
+      "description": "ruff check reported unused import 'settings' in app/api/advanced_analysis_api.py at line ~16 (fixable).",
+      "files": ["app/api/advanced_analysis_api.py"],
+      "suggested_action": "Apply quick fix: remove the unused import. Patch generated: patches/0001-remove-unused-import.patch",
+      "confidence": "high"
+    },
+    {
+      "id": "F006",
+      "severity": "low",
+      "category": "governance",
+      "title": "Missing .github/policies/ — no policy-as-code detected",
+      "description": "Repository did not initially contain .github/policies/ with rules such as no-secrets, dependency-allowlist, max-pr-size, or protected-files. Agent added example policies and a policy_check script as a starting point.",
+      "files": [".github/policies/"],
+      "suggested_action": "Review the generated policies, adjust patterns and severity for your organization, and integrate policy_check.js into CI. Consider using GitHub Policy-as-Code or OPA for stronger enforcement.",
+      "confidence": "medium"
+    },
+    {
+      "id": "F007",
+      "severity": "medium",
+      "category": "security",
+      "title": "Sample DB connection string with password in code",
+      "description": "app/core/database.py contains a sample DATABASE_URL/connection string in the warning message that includes 'geohub_password'. While this appears to be a placeholder, it may encourage accidental commits of real credentials. Recommend replacing with a clearly marked placeholder or reading it from env.",
+      "files": ["app/core/database.py"],
+      "suggested_action": "Replace sample passwords with '<YOUR_PASSWORD>' or environment variable references in code examples and docs. Add a policy to block 'postgres://.*:.*@' connection strings in committed files unless they contain template variables.",
+      "confidence": "medium"
+    },
+    {
+      "id": "F008",
+      "severity": "low",
+      "category": "security",
+      "title": "SonarQube not bound to workspace (IDE analysis not available)",
+      "description": "The SonarQube for IDE tool indicated the workspace is not bound to a SonarQube project. Without a bound SonarQube instance, security hotspot analysis cannot be performed in our agent runs.",
+      "files": [],
+      "suggested_action": "If SonarQube is used, configure Connected Mode or add a Sonar project and bind this workspace. Alternatively, configure GitHub Advanced Security or external scanning in CI.",
+      "confidence": "medium"
+    }
+  ]
+}

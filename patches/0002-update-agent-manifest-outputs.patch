@@ -1,0 +1,17 @@
+*** Begin Patch
+*** Update File: .github/agent-manifest.json
+@@
+-  "outputs": {
+-    "findings": ".github/findings.json",
+-    "patches": ".github/patches/",
+-    "pr_draft": ".github/pr_draft.md",
+-    "verify_script": ".github/scripts/verify.sh",
+-    "readme": ".github/README.AGENT_ACTIONS.md"
+-  },
++  "outputs": {
++    "findings": "findings.json",
++    "patches": "patches/",
++    "pr_draft": "pr_draft.md",
++    "verify_script": "verify.sh",
++    "readme": "README.AGENT_ACTIONS.md"
++  },

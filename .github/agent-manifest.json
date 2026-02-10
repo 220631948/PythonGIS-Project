@@ -1,0 +1,150 @@
+{
+  "$schema": ".github/schemas/agent-manifest.schema.json",
+  "version": "3.0.0",
+  "generated_at": "2026-02-10T12:00:00Z",
+  "repository": {
+    "name": "PythonGIS-Project",
+    "owner": "220631948",
+    "project_name": "Cape Town GeoHub",
+    "description": "Geospatial decision-support platform combining FastAPI, React + Leaflet, and municipal open data",
+    "stage": "Beta (CI-gated)"
+  },
+  "structure": {
+    "root": "/home/mr/PycharmProjects/PythonGIS Project",
+    "primary_language": "Python",
+    "secondary_languages": ["TypeScript", "JavaScript"],
+    "frameworks": {
+      "backend": ["FastAPI", "SQLAlchemy", "GeoAlchemy2", "GeoPandas"],
+      "frontend": ["React 19", "Vite", "Leaflet"],
+      "testing": ["pytest", "Playwright", "Vitest"]
+    },
+    "paths": {
+      "backend_source": "app/",
+      "frontend_source": "frontend/src/",
+      "backend_tests": "tests/",
+      "frontend_tests": "frontend/tests/",
+      "data": "data/",
+      "scripts": "scripts/",
+      "docs": "docs/",
+      "alembic": "alembic/",
+      "static": "static/",
+      "ci_workflows": ".github/workflows/",
+      "agents": ".github/agents/",
+      "skills": ".github/skills/",
+      "hooks": ".github/hooks/",
+      "policies": ".github/policies/",
+      "agent_memory": ".github/agent-memory/",
+      "patches": "patches/",
+      "templates": ".github/templates/"
+    },
+    "key_files": {
+      "backend_main": "app/main.py",
+      "backend_config": "app/config.py",
+      "frontend_main": "frontend/src/App.tsx",
+      "frontend_index": "frontend/index.html",
+      "backend_requirements": "requirements.txt",
+      "frontend_package": "frontend/package.json",
+      "docker_compose": "compose.yaml",
+      "docker_compose_prod": "docker-compose.prod.yml",
+      "dockerfile": "Dockerfile",
+      "env_example": ".env.example",
+      "agents_instructions": "AGENTS.md",
+      "copilot_instructions": ".github/copilot-instructions.md",
+      "makefile": "Makefile",
+      "pytest_config": "pytest.ini",
+      "alembic_config": "alembic.ini"
+    }
+  },
+  "conventions": {
+    "crs": {
+      "default_input_storage": "EPSG:4326",
+      "projected_analysis": "EPSG:32734",
+      "description": "All external data flows through WGS84; internal analysis may use UTM 34S for Cape Town"
+    },
+    "code_style": {
+      "python": "PEP8, type hints required on FastAPI routes",
+      "typescript": "Strict mode, functional components only",
+      "javascript": "ESLint config in eslint.config.js",
+      "css": "CSS Variables from index.css + Tailwind v4 utilities"
+    },
+    "commit_messages": {
+      "prefix_required": "ag:super-v3 — ",
+      "format": "conventional commits",
+      "description": "All automated commits must reference findings.json entry id"
+    },
+    "pr_labels": ["ag:automated", "ag:requires-review"],
+    "pr_description_must_include": [
+      "findings.json ids",
+      "short rationale",
+      "risk/migration/rollback plan",
+      "test instructions"
+    ]
+  },
+  "quality_gates": {
+    "frontend": {
+      "lint": "npm run lint",
+      "type_check": "npm run type-check",
+      "build": "npm run build",
+      "audit": "npm audit",
+      "unit_tests": "npm run test:unit",
+      "e2e_tests": "npm run test:e2e"
+    },
+    "backend": {
+      "lint": "ruff check app/",
+      "audit": "pip-audit -r requirements.txt --strict",
+      "tests": "pytest",
+      "type_check": "mypy app/ (optional)"
+    },
+    "docker": {
+      "build": "docker compose build --no-cache"
+    }
+  },
+  "development": {
+    "backend_server": {
+      "command": ".venv/bin/uvicorn app.main:app --reload --port 8000",
+      "port": 8000,
+      "health_endpoint": "/health"
+    },
+    "frontend_server": {
+      "command": "npm run dev",
+      "cwd": "frontend/",
+      "port": 5173
+    },
+    "database": {
+      "command": "docker compose up -d db",
+      "wait_time_seconds": 10,
+      "migrations": "alembic upgrade head"
+    }
+  },
+  "safety_constraints": {
+    "safe_mode_default": true,
+    "allowed_write_paths": [
+      ".github/*",
+      ".gemini/*"
+    ],
+    "forbidden_write_paths": [
+      "app/*",
+      "frontend/src/*",
+      "tests/*",
+      "alembic/*",
+      "data/*",
+      "docs/*",
+      "scripts/*",
+      "**/package.json",
+      "**/requirements.txt"
+    ],
+    "blacklist_shell_commands": [
+      "rm -rf /",
+      "sudo",
+      "ssh",
+      "scp"
+    ],
+    "secret_detection": {
+      "enabled": true,
+      "high_entropy_threshold": 4.5,
+      "patterns": ["api_key", "password", "secret", "token", "dsn"]
+    }
+  },
+  "skills_registry": {
+    "auto_discover_path": ".github/skills/",
+      ... (truncated for brevity)

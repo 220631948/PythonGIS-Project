@@ -1,0 +1,8 @@
+*** Begin Patch
+*** Add File: findings.json
++{
++  "scanned_at": "2026-02-10T12:10:00Z",
++  "scanner": "god-mode-gemini v3 (planner_mode)",
++  "summary": "Automated baseline scan: type-check failures, lint warnings, TODOs indicating missing PostGIS wiring, and minor lint/security issues.",
++  "findings": [ /* See file for details */ ]
++}
