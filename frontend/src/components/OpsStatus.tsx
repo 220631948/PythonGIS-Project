@@ -17,22 +17,29 @@ const OpsStatus: React.FC = () => {
 
   const checkHealth = async () => {
     const start = Date.now();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     try {
-      // In a real scenario, this would hit the /health endpoint
-      // For this demo/local mode without backend, we simulate a check
-      const response = await fetch('/api/health', { method: 'GET', signal: AbortSignal.timeout(2000) });
+      const response = await fetch('/api/health', {
+        method: 'GET',
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
       const end = Date.now();
-      
+
       if (response.ok) {
+        const data = await response.json();
         setHealth({
-           api: true,
-           database: true, // Assumed if API is up for this demo
-           latency: end - start
+          api: true,
+          database: data.database === 'connected' || data.status === 'healthy',
+          latency: end - start
         });
       } else {
         throw new Error('API Error');
       }
     } catch (error) {
+      clearTimeout(timeoutId);
       console.warn('OpsStatus health check failed:', error);
       setHealth({
         api: false,

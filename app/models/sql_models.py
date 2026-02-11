@@ -5,13 +5,11 @@ Defines ORM models with GeoAlchemy2 spatial columns for PostGIS integration.
 All models use SRID 4326 (WGS84) for compatibility with web mapping.
 """
 
-from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Dict, Any
 from sqlalchemy import (
     Column, Integer, String, Float, DateTime, JSON,
-    ForeignKey, Boolean, Text, Index, Enum as SQLEnum
+    Boolean, Text, Index
 )
-from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape

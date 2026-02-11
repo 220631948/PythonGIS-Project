@@ -1,0 +1,84 @@
+--- a/app/api/reports_api.py
++++ b/app/api/reports_api.py
+@@ DESCRIPTION
+ # Fix 1: Make geopandas import lazy (inside functions) to prevent module-level crash
+ # Fix 2: Ensure dashboard-data never returns 500 — always returns valid structure
+ # Fix 3: Add per-dataset error isolation in dashboard-data
+
+--- Lines 18-19: Remove module-level geopandas import ---
+-import pandas as pd
+-import geopandas as gpd
++# Lazy imports: pandas and geopandas imported inside functions to avoid
++# module-level crashes when these optional heavy deps are missing.
+
+--- Line 56 in get_summary_report(): Add lazy import ---
+     try:
++        import pandas as pd
+         dataset_list = datasets.split(",") if datasets else list(settings.DATA_URLS.keys())
+
+--- Lines 128-134 in export_dataset(): Add lazy imports ---
+     try:
++        import pandas as pd
++        import geopandas as gpd
+         gdf = data_loader.get_gdf(dataset_name)
+
+--- Lines 197-202 in generate_analysis_report(): Add lazy imports ---
+     try:
++        import pandas as pd
++        import geopandas as gpd
+         from shapely.geometry import Point
+         from app.spatial_analysis.spatial_utils import create_buffer
+
+--- Lines 240-243: Fix CRS handling in analysis report ---
+         if not nearby.empty:
+             # Calculate distances using projected CRS for accurate metric distances
+-            point_gdf = gpd.GeoDataFrame(geometry=[point], crs=settings.TARGET_CRS)
++            point_gdf = gpd.GeoDataFrame(geometry=[point], crs="EPSG:4326")
+-            point_proj = point_gdf.to_crs(settings.PROJECTED_CRS).geometry.iloc[0]
+-            nearby_proj = nearby.to_crs(settings.PROJECTED_CRS)
++            point_proj = point_gdf.to_crs("EPSG:32734").geometry.iloc[0]
++            nearby_proj = nearby.to_crs("EPSG:32734")
+
+--- Lines 276-373 in get_dashboard_data(): Wrap entire function with robust error handling ---
+
+ @router.get("/dashboard-data")
+ async def get_dashboard_data():
+     """Get aggregated data for the analytics dashboard."""
++    empty_dashboard = {
++        "generated_at": datetime.now().isoformat(),
++        "summary": {"total_datasets": 0, "total_features": 0, "categories": {}},
++        "charts": {"features_by_dataset": [], "geometry_distribution": []},
++        "key_metrics": [],
++    }
+     try:
++        # Lazy import to avoid module-level crash
++        import pandas as pd
++
+         dashboard = {
+             "generated_at": datetime.now().isoformat(),
+             "summary": {"total_datasets": 0, "total_features": 0, "categories": {}},
+             "charts": {"features_by_dataset": [], "geometry_distribution": [], "coverage_by_suburb": []},
+             "key_metrics": []
+         }
+
+         # Aggregate dataset statistics with individual error isolation
+         for ds_name in settings.DATA_URLS.keys():
+             try:
+                 gdf = data_loader.get_gdf(ds_name)
+                 if gdf.empty:
+                     logger.debug(f"Skipping empty dataset: {ds_name}")
+                     continue
+                 # ... (rest of loop body unchanged)
+             except Exception as e:
+-                logger.warning(f"Error processing dataset {ds_name}: {e}")
++                logger.debug(f"Skipping unavailable dataset {ds_name}: {e}")
+                 continue
+
+         # ... (rest of function unchanged)
+         return dashboard
+
+     except Exception as e:
+         logger.error(f"Dashboard data generation failed: {e}")
+-        return { ... }
++        empty_dashboard["error"] = f"Dashboard generation failed: {str(e)}"
++        return empty_dashboard

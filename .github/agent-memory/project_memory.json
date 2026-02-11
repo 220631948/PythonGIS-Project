@@ -1,0 +1,98 @@
+{
+  "$schema": "../schemas/memory-entry.schema.json",
+  "project": "Cape Town GeoHub",
+  "repository": "220631948/PythonGIS-Project",
+  "created_at": "2026-02-10T12:00:00Z",
+  "entries": [
+    {
+      "id": "proj-arch-001",
+      "category": "architecture",
+      "source": "AGENTS.md",
+      "timestamp": "2026-02-10T12:00:00Z",
+      "summary": "CRS Rule: Default EPSG:4326 for input/output; EPSG:32734 for Cape Town analysis",
+      "detail": "All external data flows through EPSG:4326 (WGS84). Internal analysis for distance/buffer operations may use EPSG:32734 (UTM 34S for Cape Town). Frontend sends lat/lng, backend returns GeoJSON in 4326. This is enforced in app/config.py and spatial_utils.py.",
+      "ttl_days": 365
+    },
+    {
+      "id": "proj-arch-002",
+      "category": "architecture",
+      "source": "AGENTS.md",
+      "timestamp": "2026-02-10T12:00:00Z",
+      "summary": "Module-per-feature pattern in frontend",
+      "detail": "Frontend follows module-per-feature organization: src/modules/services/, src/modules/transport/, src/modules/safety/, src/modules/environment/. Each module contains its own components, state, and API calls. Shared components live in src/components/Common/.",
+      "ttl_days": 365
+    },
+    {
+      "id": "proj-quality-001",
+      "category": "decision",
+      "source": "AGENTS.md + CI workflows",
+      "timestamp": "2026-02-10T12:00:00Z",
+      "summary": "Beta stage: strict CI quality gates required before merge",
+      "detail": "Project is in Beta (CI-gated) stage. All PRs must pass: frontend (npm run lint, type-check, build, audit), backend (ruff check app/, pip-audit --strict, pytest), E2E (npm run test:e2e for UI changes), Docker (compose build for infra changes).",
+      "ttl_days": 365
+    },
+    {
+      "id": "proj-data-001",
+      "category": "finding",
+      "source": "repository scan",
+      "timestamp": "2026-02-10T12:00:00Z",
+      "summary": "Data sources from City of Cape Town Open Data Portal",
+      "detail": "All datasets come from City of Cape Town Open Data Portal (ArcGIS MapServer). Attributions documented in DATA_SOURCES.md. Key datasets: Informal Settlements, MyCiTi Transport Network, Zoning/Land Use, Safety/Crime Statistics.",
+      "ttl_days": 365
+    },
+    {
+      "id": "proj-security-001",
+      "category": "security",
+      "source": "repository scan",
+      "timestamp": "2026-02-10T12:05:00Z",
+      "summary": "Admin endpoints are unprotected when ADMIN_API_KEY not set",
+      "detail": "app/dependencies.py allows access to admin endpoints when settings.ADMIN_API_KEY is empty. This is acceptable for local dev but should be treated as a security risk in production. Recommend adding a CI policy or runtime check to enforce ADMIN_API_KEY for protected branches and production deployments.",
+      "ttl_days": 365
+    },
+    {
+      "id": "proj-quality-002",
+      "category": "quality",
+      "source": "frontend type-check",
+      "timestamp": "2026-02-10T12:05:00Z",
+      "summary": "Frontend TypeScript checks failing (18 errors)",
+      "detail": "npx tsc --noEmit produced 18 errors in files including DataStatusPanel.tsx, ExportPanel.tsx, MapView.tsx, RealtimePanel.tsx and repositories/GeoDataRepository.ts. These block CI type-check step and should be fixed as a priority for type-safety and maintainability.",
+      "ttl_days": 365
+    },
+    {
+      "id": "proj-quality-003",
+      "category": "lint",
+      "source": "backend ruff",
+      "timestamp": "2026-02-10T12:05:00Z",
+      "summary": "Ruff found a fixable unused import",
+      "detail": "ruff check reported an unused import 'settings' in app/api/advanced_analysis_api.py (fixable). Generated patch: patches/0001-remove-unused-import.patch",
+      "ttl_days": 365
+    },
+    {
+      "id": "proj-tests-001",
+      "category": "tests",
+      "source": "pytest collection",
+      "timestamp": "2026-02-10T12:05:00Z",
+      "summary": "Backend test suite collected 157 tests",
+      "detail": "Collected 157 tests across tests/ including integration tests which may require a running PostGIS database. Plan test runs accordingly and consider tagging long-running integration tests.",
+      "ttl_days": 365
+    },
+    {
+      "id": "proj-technical-debt-001",
+      "category": "technical_debt",
+      "source": "repository scan",
+      "timestamp": "2026-02-10T12:05:00Z",
+      "summary": "Site suitability module uses placeholder evaluators with TODOs",
+      "detail": "app/spatial_analysis/site_suitability.py contains multiple TODOs indicating missing PostGIS wiring for flood_zones, biodiversity, wetlands, open_spaces, zoning, road network, myciti_stops, urban_edge. These represent key missing features for suitability analysis and should be prioritized with tests and a migration plan.",
+      "ttl_days": 365
+    },
+    {
+      "id": "proj-governance-001",
+      "category": "governance",
+      "source": "copilot-instructions.md update",
+      "timestamp": "2026-02-10T12:30:00Z",
+      "summary": "Copilot instructions now reference README.AGENT_ACTIONS and CI workflows for agent mode",
+      "detail": "Updated .github/copilot-instructions.md to direct agent-mode execution to README.AGENT_ACTIONS.md and to consult .github workflows and PR templates for CI/CD alignment, automated checks, and PR drafting.",
+      "ttl_days": 365
+    }
+  ]
+}

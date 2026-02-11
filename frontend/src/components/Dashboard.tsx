@@ -66,21 +66,69 @@ export default function Dashboard({ isOpen, onClose }: DashboardProps) {
   const [error, setError] = useState<string | null>(null);
   const [selectedChart, setSelectedChart] = useState<'bar' | 'pie'>('bar');
 
-  // Load dashboard data
-  const loadDashboardData = useCallback(async () => {
+  // Load dashboard data with retry logic
+  const loadDashboardData = useCallback(async (retryCount = 0) => {
+    const maxRetries = 3;
+    const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 8000); // Exponential backoff
+
     setIsLoading(true);
     setError(null);
+
     try {
-      const response = await fetch('/api/reports/dashboard-data');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const response = await fetch('/api/reports/dashboard-data', {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
       if (response.ok) {
         const data = await response.json();
         setDashboardData(data);
+      } else if (response.status === 500 || response.status === 503) {
+        // Server error - try fallback or retry
+        if (retryCount < maxRetries) {
+          console.warn(`Dashboard API returned ${response.status}, retrying in ${retryDelay}ms...`);
+          setTimeout(() => loadDashboardData(retryCount + 1), retryDelay);
+          return; // Don't clear loading state yet
+        } else {
+          // Final retry failed - use fallback
+          console.warn('Dashboard data endpoint failed after retries, trying summary endpoint...');
+          const summaryResponse = await fetch('/api/reports/summary');
+          if (summaryResponse.ok) {
+            const summaryData = await summaryResponse.json();
+            setDashboardData({
+              key_metrics: [],
+              charts: { features_by_dataset: [], geometry_distribution: [] },
+              summary: summaryData,
+              generated_at: new Date().toISOString()
+            });
+          } else {
+            throw new Error(`API unavailable after ${maxRetries} retries`);
+          }
+        }
       } else {
-        throw new Error('Failed to load dashboard data');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (err: any) {
       console.error('Dashboard load error:', err);
-      setError(err.message);
+
+      // Retry on network errors
+      if (err.name === 'AbortError' && retryCount < maxRetries) {
+        console.warn(`Request timeout, retrying in ${retryDelay}ms...`);
+        setTimeout(() => loadDashboardData(retryCount + 1), retryDelay);
+        return;
+      }
+
+      setError(err.message || 'Failed to load dashboard data');
+      // Set empty but valid data structure
+      setDashboardData({
+        key_metrics: [],
+        charts: { features_by_dataset: [], geometry_distribution: [] },
+        summary: { total_datasets: 0, total_features: 0, categories: {} },
+        generated_at: new Date().toISOString()
+      });
     } finally {
       setIsLoading(false);
     }
@@ -149,7 +197,7 @@ export default function Dashboard({ isOpen, onClose }: DashboardProps) {
             >
               <Download size={18} />
             </button>
-            <button className="close-btn" onClick={onClose}>
+            <button className="close-btn" onClick={onClose} aria-label="Close dashboard">
               <X size={20} />
             </button>
           </div>

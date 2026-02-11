@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Query
-from typing import Optional
 from app.spatial_analysis.infrastructure import infrastructure_analyzer
 
 router = APIRouter(tags=["Infrastructure"])

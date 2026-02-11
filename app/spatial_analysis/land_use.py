@@ -1,6 +1,5 @@
 import logging
 import pandas as pd
-import geopandas as gpd
 from typing import Dict, Any, Optional
 from app.spatial_analysis.base import BaseAnalyzer
 from app.config import settings
@@ -35,6 +34,16 @@ class LandUseAnalyzer(BaseAnalyzer):
                 results.geometry = results.geometry.simplify(simplify)
             elif settings.SIMPLIFICATION_TOLERANCE:
                 results.geometry = results.geometry.simplify(settings.SIMPLIFICATION_TOLERANCE)
+
+            # Proactively convert any pandas.StringDtype columns to object
+            # This fixes "Cannot interpret '<StringDtype...>' as a data type"
+            for col in results.columns:
+                if (
+                    col != "geometry"
+                    and hasattr(results[col], "dtype")
+                    and "string" in str(results[col].dtype).lower()
+                ):
+                    results[col] = results[col].astype(object)
 
             return {
                 "geojson": gdf_to_geojson(results),

@@ -1,9 +1,8 @@
 import logging
 import geopandas as gpd
 from shapely.geometry import LineString, MultiLineString
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from app.spatial_analysis.base import BaseAnalyzer
-from app.core.data_loader import data_loader
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +85,16 @@ class TransportOptimizer(BaseAnalyzer):
         # Always keep geometry
         if cols_to_keep:
             optimized = optimized[cols_to_keep + ["geometry"]]
+
+        # Proactively convert any pandas.StringDtype columns to object
+        # This fixes "Cannot interpret '<StringDtype...>' as a data type"
+        for col in optimized.columns:
+            if (
+                col != "geometry"
+                and hasattr(optimized[col], "dtype")
+                and "string" in str(optimized[col].dtype).lower()
+            ):
+                optimized[col] = optimized[col].astype(object)
 
         final_vertices = self._count_vertices(optimized)
         reduction = (1 - final_vertices / original_vertices) * 100

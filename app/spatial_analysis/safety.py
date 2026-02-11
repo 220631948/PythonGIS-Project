@@ -6,7 +6,7 @@ Merges tabular crime data with precinct boundary shapefiles
 import logging
 import geopandas as gpd
 import pandas as pd
-from typing import List, Optional, Dict, Any
+from typing import Optional, Dict, Any
 from app.spatial_analysis.base import BaseAnalyzer
 from app.core.data_loader import data_loader
 

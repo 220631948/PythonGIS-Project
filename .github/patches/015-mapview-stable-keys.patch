@@ -1,0 +1,48 @@
+--- a/frontend/src/components/MapView.tsx
++++ b/frontend/src/components/MapView.tsx
+@@ DESCRIPTION
+ # CRITICAL FIX: Replace all Date.now() keys with stable keys
+ #
+ # Problem: Using key={`route-${Date.now()}`} on GeoJSON components forces
+ # complete unmount + remount on EVERY render. This destroys performance and
+ # causes layers to flicker/disappear. Date.now() produces a new value each
+ # render, so React treats every GeoJSON as a brand new component.
+ #
+ # Solution: Use stable keys based on content hash or a counter that only
+ # changes when the actual data changes.
+
+--- Replace all Date.now() keys with stable alternatives ---
+
+ # Route Layer (around line 240)
+-                <GeoJSON
+-                  key={`route-${Date.now()}`}
++                <GeoJSON
++                  key={`route-${JSON.stringify(routeData?.route_geojson).length}`}
+
+ # Isochrone Layer (around line 260)
+-                <GeoJSON
+-                  key={`iso-${Date.now()}`}
++                <GeoJSON
++                  key={`iso-${JSON.stringify(isochroneGeojson).length}`}
+
+ # Module GeoJSON Layer (around line 280)
+-                  <GeoJSON
+-                    key={`module-geo-${Date.now()}`}
++                  <GeoJSON
++                    key={`module-geo-${moduleLayer.data?.features?.length ?? 0}`}
+
+ # Choropleth Layer (around line 295)
+-                  <GeoJSON
+-                    key={`module-choro-${Date.now()}`}
++                  <GeoJSON
++                    key={`module-choro-${moduleLayer.data?.features?.length ?? 0}`}
+
+ # Buffer Layers (around line 310)
+-                      key={`transport-buffer-${idx}-${Date.now()}`}
++                      key={`transport-buffer-${idx}`}
+
+ # Multi-layer environment layers (around line 320)
+-                    <GeoJSON
+-                      key={`env-layer-${idx}-${Date.now()}`}
++                    <GeoJSON
++                      key={`env-layer-${idx}-${layerCfg.data?.features?.length ?? 0}`}

@@ -37,6 +37,15 @@ async def calculate_viewshed(
 
     Returns visibility rays and potentially visible areas.
     """
+    # Attach observer location context for Sentry
+    try:
+        from app.utils.sentry_utils import attach_geo_context, attach_map_link
+
+        attach_geo_context(centroid=[lng, lat])
+        attach_map_link(centroid=[lng, lat], zoom=12)
+    except Exception:
+        pass
+
     # Generate visibility rays
     rays = []
     angle_step = 360 / resolution
@@ -162,6 +171,14 @@ async def validate_topology(
     - Gaps between features
     - Invalid geometries
     """
+    # Attach dataset context for Sentry
+    try:
+        from app.utils.sentry_utils import attach_geo_context
+
+        attach_geo_context(dataset_id=dataset)
+    except Exception:
+        pass
+
     try:
         gdf = data_loader.get_gdf(dataset)
     except Exception:
@@ -354,4 +371,134 @@ async def calculate_route(
             "estimated_time_minutes": round(travel_time_minutes, 1)
         },
         "note": "This is an estimated route. For accurate routing, integrate with OSRM or similar routing engine."
+    }
+
+
+@router.get("/isochrone")
+async def calculate_isochrone(
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+    time_minutes: int = Query(default=15, ge=1, le=120),
+    mode: str = Query(default="driving", description="Mode: driving, walking, cycling")
+):
+    """
+    Calculate isochrone (travel time polygon) from a point
+
+    Returns area reachable within specified travel time.
+    Note: Simplified circular approximation.
+    """
+    # Estimate distance based on mode and time
+    speeds = {
+        "driving": 40,  # km/h
+        "cycling": 15,
+        "walking": 5
+    }
+    speed = speeds.get(mode, 40)
+    distance_km = speed * (time_minutes / 60)
+    distance_m = distance_km * 1000
+
+    # Create circular isochrone
+    num_points = 36
+    coords = []
+
+    for i in range(num_points + 1):
+        angle = (i / num_points) * 2 * math.pi
+        dx = (distance_m / 111000) * math.cos(angle)
+        dy = (distance_m / 111000) * math.sin(angle)
+
+        point_lng = lng + dx / math.cos(math.radians(lat))
+        point_lat = lat + dy
+        coords.append([point_lng, point_lat])
+
+    isochrone_geojson = {
+        "type": "Feature",
+        "properties": {
+            "center": [lng, lat],
+            "time_minutes": time_minutes,
+            "mode": mode,
+            "estimated_radius_m": round(distance_m, 2),
+            "isochrone_type": "circular_approximation"
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [coords]
+        }
+    }
+
+    return {
+        "isochrone": isochrone_geojson,
+        "center": {"lat": lat, "lng": lng},
+        "time_minutes": time_minutes,
+        "mode": mode,
+        "note": "Circular approximation. Accurate isochrones require routing network."
+    }
+
+
+@router.get("/nearest-facility")
+async def find_nearest_facility(
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+    facility_type: str = Query(..., description="Type: clinics, schools, parks, myciti_stops"),
+    limit: int = Query(default=5, ge=1, le=20)
+):
+    """
+    Find nearest facilities of a given type
+    """
+    from shapely.geometry import Point
+
+    # Map facility types to datasets
+    facility_datasets = {
+        "clinics": "clinics",
+        "schools": "schools",
+        "parks": "parks",
+        "bus_stops": "myciti_stops",
+        "myciti_stops": "myciti_stops",
+        "rail_stations": "rail_stations"
+    }
+
+    dataset = facility_datasets.get(facility_type.lower())
+    if not dataset:
+        raise HTTPException(status_code=400, detail=f"Unknown facility type: {facility_type}")
+
+    try:
+        gdf = data_loader.get_gdf(dataset)
+    except Exception:
+        raise HTTPException(status_code=404, detail=f"Dataset not found: {dataset}")
+
+    if gdf.empty:
+        return {"facilities": [], "message": "No facilities found"}
+
+    # Calculate distances
+    point = Point(lng, lat)
+    # gdf_proj = gdf.to_crs(settings.PROJECTED_CRS)
+    # point_proj = gdf_proj.unary_union.centroid  # Dummy for CRS transform
+
+    # Simple distance calculation in degrees (approximate)
+    gdf['distance'] = gdf.geometry.distance(point)
+
+    # Sort and get nearest
+    nearest = gdf.nsmallest(limit, 'distance')
+
+    facilities = []
+    for idx, row in nearest.iterrows():
+        geom = row.geometry
+        centroid = geom.centroid if geom.geom_type != 'Point' else geom
+
+        # Approximate distance in meters
+        dist_deg = row['distance']
+        dist_m = dist_deg * 111000  # Very rough approximation
+
+        facility = {
+            "location": {"lat": centroid.y, "lng": centroid.x},
+            "distance_m": round(dist_m, 2),
+            "properties": {k: v for k, v in row.items() if k not in ['geometry', 'distance']}
+        }
+        facilities.append(facility)
+
+    return {
+        "origin": {"lat": lat, "lng": lng},
+        "facility_type": facility_type,
+        "count": len(facilities),
+        "facilities": facilities,
+        "geojson": gdf_to_geojson(nearest)
     }

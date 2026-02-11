@@ -1,0 +1,77 @@
+/**
+ * Comparative Analysis Styles
+ *
+ * Custom styles for comparative analysis components
+ * Using Tailwind CSS as base with custom additions
+ */
+
+/* Comparative Analysis Container */
+.comparative-analysis {
+  @apply w-full h-screen flex flex-col bg-gray-50;
+}
+
+.analysis-header {
+  /* Using Tailwind classes directly in component */
+}
+
+/* Dataset Selector */
+.dataset-selector {
+  /* Using Tailwind classes directly in component */
+}
+
+/* Comparison Charts */
+.comparison-charts {
+  /* Using Tailwind classes directly in component */
+}
+
+/* Custom animations for comparison */
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Apply animations */
+.dataset-selector > div {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.comparison-charts > div {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .comparative-analysis .analysis-content {
+    @apply flex-col;
+  }
+
+  .dataset-selector {
+    @apply w-full border-r-0 border-b;
+  }
+}

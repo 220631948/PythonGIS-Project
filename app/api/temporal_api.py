@@ -338,7 +338,7 @@ def _find_temporal_columns(gdf: gpd.GeoDataFrame, dataset_name: str) -> List[str
                     if len(sample) > 0:
                         pd.to_datetime(sample)
                         found.append(col)
-                except:
+                except Exception:
                     pass
 
     return found
@@ -354,7 +354,7 @@ def _get_date_range(gdf: gpd.GeoDataFrame, time_col: str) -> Optional[Dict[str, 
                 "min": str(dates.min()),
                 "max": str(dates.max())
             }
-    except:
+    except Exception:
         pass
     return None
 

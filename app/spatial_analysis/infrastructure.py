@@ -1,9 +1,7 @@
 import logging
-from typing import Any, Dict, List
-import geopandas as gpd
+from typing import Any, Dict
 from app.spatial_analysis.base import BaseAnalyzer
 from app.spatial_analysis.spatial_utils import gdf_to_geojson
-from app.config import settings
 
 logger = logging.getLogger(__name__)
 

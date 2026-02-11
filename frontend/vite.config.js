@@ -1,15 +1,23 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 import { fileURLToPath } from 'url'
+// Sentry plugin disabled natively
+const sentryPlugin = null
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  const envApiUrl = env.VITE_API_URL || ''
+  const proxyTarget = env.API_PROXY_TARGET
+    || (envApiUrl.startsWith('http') ? envApiUrl.replace(/\/+$/, '') : 'http://127.0.0.1:8000')
+
+  return {
   resolve: {
     dedupe: ['react', 'react-dom'],
     alias: {
@@ -98,7 +106,8 @@ export default defineConfig({
           }
         ]
       }
-    })
+    }),
+    ...(sentryPlugin ? [sentryPlugin] : []),
   ],
   build: {
     outDir: '../static',
@@ -133,7 +142,7 @@ export default defineConfig({
     // Proxy API requests to the FastAPI backend during development
     proxy: {
       '/api': {
-        target: process.env.API_PROXY_TARGET || 'http://localhost:8001',
+        target: proxyTarget,
         changeOrigin: true,
         secure: false,
       },
@@ -144,10 +153,11 @@ export default defineConfig({
     port: 4173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: proxyTarget,
         changeOrigin: true,
         secure: false,
       },
     },
   },
+  }
 })

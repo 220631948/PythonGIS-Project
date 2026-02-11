@@ -1,0 +1,112 @@
+--- a/app/main.py
++++ b/app/main.py
+@@ -313,14 +313,25 @@
+ # Health check (Enhanced - validates database connectivity)
+ @app.get("/health", response_model=HealthResponse)
+ async def health_check_simple():
+-    from app.core.database import check_db_connection
+-
+-    db_status = await check_db_connection()
+-    if not db_status["connected"]:
+-        return JSONResponse(
+-            status_code=503,
+-            content={
+-                "status": "partial_outage",
+-                "database": "disconnected",
+-                "error": db_status["error"],
+-            },
+-        )
+-    return {"status": "online", "database": "connected", "version": "1.0.0"}
++    try:
++        from app.core.database import check_db_connection
++
++        db_status = await check_db_connection()
++        if not db_status["connected"]:
++            return JSONResponse(
++                status_code=503,
++                content={
++                    "status": "partial_outage",
++                    "database": "disconnected",
++                    "error": db_status.get("error", "Connection failed"),
++                },
++            )
++        return {"status": "online", "database": "connected", "version": "1.0.0"}
++    except Exception as e:
++        logger.warning(f"Health check error (non-critical): {e}")
++        return JSONResponse(
++            status_code=200,
++            content={
++                "status": "degraded",
++                "database": "unknown",
++                "version": settings.APP_VERSION,
++                "error": str(e),
++            },
++        )
+ 
+ 
+ # Detailed System Health check
+ @app.get("/api/health", response_model=DetailedHealthResponse)
+ async def health_check():
+-    import psutil
+-
+-    # System information
+-    memory = psutil.virtual_memory()
+-    disk = psutil.disk_usage("/")
+-
+-    return {
+-        "status": "healthy",
+-        "version": settings.APP_VERSION,
+-        "timestamp": time.time(),
+-        "uptime": time.time() - getattr(app.state, "start_time", time.time()),
+-        "system": {
+-            "cpu_percent": psutil.cpu_percent(interval=1),
+-            "memory": {
+-                "total": memory.total,
+-                "available": memory.available,
+-                "percent": memory.percent,
++    try:
++        import psutil
++
++        # System information (non-blocking: interval=0 uses cached value)
++        memory = psutil.virtual_memory()
++        disk = psutil.disk_usage("/")
++
++        return {
++            "status": "healthy",
++            "version": settings.APP_VERSION,
++            "timestamp": time.time(),
++            "uptime": time.time() - getattr(app.state, "start_time", time.time()),
++            "system": {
++                "cpu_percent": psutil.cpu_percent(interval=0),
++                "memory": {
++                    "total": memory.total,
++                    "available": memory.available,
++                    "percent": memory.percent,
++                },
++                "disk": {"total": disk.total, "free": disk.free, "percent": disk.percent},
+             },
+-            "disk": {"total": disk.total, "free": disk.free, "percent": disk.percent},
+-        },
+-        "requests": {
+-            "total": sum(request_stats.values()),
+-            "by_method": dict(request_stats),
+-        },
+-        "errors": {"total": sum(error_stats.values()), "by_type": dict(error_stats)},
+-    }
++            "requests": {
++                "total": sum(request_stats.values()),
++                "by_method": dict(request_stats),
++            },
++            "errors": {"total": sum(error_stats.values()), "by_type": dict(error_stats)},
++        }
++    except Exception as e:
++        logger.error(f"Detailed health check failed: {e}")
++        return JSONResponse(
++            status_code=200,
++            content={
++                "status": "degraded",
++                "version": settings.APP_VERSION,
++                "timestamp": time.time(),
++                "error": str(e),
++            },
++        )

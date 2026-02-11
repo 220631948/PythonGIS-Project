@@ -1,4 +1,3 @@
-from typing import Generator
 import logging
 from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader

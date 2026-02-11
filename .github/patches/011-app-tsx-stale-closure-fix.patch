@@ -1,0 +1,65 @@
+--- a/frontend/src/App.tsx
++++ b/frontend/src/App.tsx
+@@ DESCRIPTION
+ # Fix: handleScenarioLoad captures `urlState` in closure (stale state).
+ # Replace with functional updater to always work with latest state.
+
+--- Lines ~183-195 in handleScenarioLoad ---
+
+-    const handleScenarioLoad = useCallback((scenario: any) => {
+-        setCurrentScenario(scenario);
+-        // Apply scenario state to map
+-        if (scenario.map_state) {
+-            setUrlState({
+-                ...urlState,
+-                lat: scenario.map_state.center[0],
+-                lng: scenario.map_state.center[1],
+-                zoom: scenario.map_state.zoom,
+-                layers: scenario.layers || [],
+-            });
+-        }
+-        addNotification(`Loaded scenario: ${scenario.name}`, 'success');
+-        setIsWorkspaceManagerOpen(false);
+-    }, [urlState, addNotification]);
++    const handleScenarioLoad = useCallback((scenario: any) => {
++        setCurrentScenario(scenario);
++        // Apply scenario state to map — use functional updater to avoid stale closure
++        if (scenario.map_state) {
++            setUrlState(prev => ({
++                ...prev,
++                lat: scenario.map_state.center[0],
++                lng: scenario.map_state.center[1],
++                zoom: scenario.map_state.zoom,
++                layers: scenario.layers || [],
++            }));
++        }
++        addNotification(`Loaded scenario: ${scenario.name}`, 'success');
++        setIsWorkspaceManagerOpen(false);
++    }, [addNotification, setUrlState]); // FIXED: removed urlState, added setUrlState
+
+--- Lines ~186-192 in handleBasemapChange and handleMapMove ---
+ # Same pattern: use functional updater to avoid stale closure
+
+-    const handleBasemapChange = (basemap: string) => {
+-        setUrlState({ ...urlState, basemap });
+-    };
++    const handleBasemapChange = useCallback((basemap: string) => {
++        setUrlState(prev => ({ ...prev, basemap }));
++    }, [setUrlState]);
+
+-    const handleMapMove = (moveState: any) => {
+-        setUrlState({
+-            ...urlState,
+-            lat: moveState.lat,
+-            lng: moveState.lng,
+-            zoom: moveState.zoom
+-        });
+-    };
++    const handleMapMove = useCallback((moveState: any) => {
++        setUrlState(prev => ({
++            ...prev,
++            lat: moveState.lat,
++            lng: moveState.lng,
++            zoom: moveState.zoom
++        }));
++    }, [setUrlState]);

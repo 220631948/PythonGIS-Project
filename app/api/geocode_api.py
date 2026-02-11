@@ -9,8 +9,8 @@ Provides REST API for:
 
 import logging
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Query, HTTPException
-import requests
+from fastapi import APIRouter, Query
+import httpx
 from pydantic import BaseModel
 
 from app.config import settings
@@ -106,7 +106,7 @@ async def reverse_geocode(
 
     # Fallback to Nominatim
     try:
-        url = f"https://nominatim.openstreetmap.org/reverse"
+        url = "https://nominatim.openstreetmap.org/reverse"
         params = {
             "lat": lat,
             "lon": lon,
@@ -115,8 +115,9 @@ async def reverse_geocode(
         }
         headers = {"User-Agent": f"{settings.APP_NAME}/1.0"}
 
-        response = requests.get(url, params=params, headers=headers, timeout=5)
-        if response.ok:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(url, params=params, headers=headers)
+        if response.status_code == 200:
             data = response.json()
             return {
                 "name": data.get("display_name", "Unknown"),
@@ -150,7 +151,9 @@ async def autocomplete(
     # Search suburbs (most common search)
     try:
         suburbs = data_loader.get_gdf("suburbs")
-        if not suburbs.empty and 'name' in suburbs.columns:
+        if suburbs.empty:
+            logger.debug("Suburbs dataset is empty, using landmarks only")
+        elif 'name' in suburbs.columns:
             matches = suburbs[suburbs['name'].str.lower().str.contains(query_lower, na=False)]
             for _, row in matches.head(limit).iterrows():
                 centroid = row.geometry.centroid
@@ -161,7 +164,7 @@ async def autocomplete(
                     "lon": centroid.x
                 })
     except Exception as e:
-        logger.warning(f"Suburb search failed: {e}")
+        logger.warning(f"Suburb autocomplete search failed: {e}")
 
     # Add common Cape Town landmarks if query matches
     landmarks = _get_matching_landmarks(query_lower)
@@ -194,6 +197,7 @@ async def _search_local_datasets(query: str, limit: int) -> List[GeocodingResult
                 ))
     except Exception as e:
         logger.warning(f"Local suburb search failed: {e}")
+        # Continue with other datasets even if suburbs fail
 
     # Search other point datasets (clinics, schools, etc.)
     point_datasets = ["clinics", "schools", "parks", "myciti_stops"]
@@ -247,8 +251,9 @@ async def _search_nominatim(query: str, limit: int) -> List[GeocodingResult]:
         }
         headers = {"User-Agent": f"{settings.APP_NAME}/1.0"}
 
-        response = requests.get(url, params=params, headers=headers, timeout=5)
-        if response.ok:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(url, params=params, headers=headers)
+        if response.status_code == 200:
             data = response.json()
             return [
                 GeocodingResult(
@@ -275,16 +280,19 @@ async def _reverse_geocode_local(lat: float, lon: float) -> Optional[Dict]:
         point = Point(lon, lat)
 
         suburbs = data_loader.get_gdf("suburbs")
-        if not suburbs.empty:
-            for _, row in suburbs.iterrows():
-                if row.geometry.contains(point):
-                    return {
-                        "name": row.get('name', 'Unknown Suburb'),
-                        "lat": lat,
-                        "lon": lon,
-                        "type": "suburb",
-                        "source": "local"
-                    }
+        if suburbs.empty:
+            logger.debug("Suburbs dataset empty for reverse geocoding")
+            return None
+
+        for _, row in suburbs.iterrows():
+            if row.geometry.contains(point):
+                return {
+                    "name": row.get('name', 'Unknown Suburb'),
+                    "lat": lat,
+                    "lon": lon,
+                    "type": "suburb",
+                    "source": "local"
+                }
     except Exception as e:
         logger.warning(f"Local reverse geocode failed: {e}")
 
@@ -306,4 +314,4 @@ def _get_matching_landmarks(query: str) -> List[Dict]:
         {"text": "Signal Hill", "type": "landmark", "lat": -33.9244, "lon": 18.3892},
     ]
 
-    return [l for l in landmarks if query in l["text"].lower()]
+    return [landmark for landmark in landmarks if query in landmark["text"].lower()]

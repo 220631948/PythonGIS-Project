@@ -163,11 +163,11 @@
 }
 
 .connection-indicator.online {
-    color: #22c55e;
+    color: var(--color-success);
 }
 
 .connection-indicator.offline {
-    color: #f97316;
+    color: var(--color-warning);
     animation: pulse 2s infinite;
 }
 
@@ -700,27 +700,28 @@
 }
 
 .stat-value.good {
-    color: #22c55e;
+    color: var(--color-success);
 }
 
 .stat-value.medium {
-    color: #f97316;
+    color: var(--color-warning);
 }
 
 .stat-value.poor {
-    color: #ef4444;
+    color: var(--color-error);
 }
 
 .stat-value.high {
-    color: #ef4444;
+    color: var(--color-error);
 }
 
 .stat-value.medium {
-    color: #f97316;
+    color: var(--color-warning);
 }
 
 .stat-value.low {
-    color: #fef08a;
+    color: var(--color-warning);
+        /* mapped to warning as closest semantic match */
 }
 
 .popup-note {
@@ -730,8 +731,8 @@
 }
 
 .click-marker {
-    background: rgba(59, 130, 246, 0.2);
-    border: 2px solid #3b82f6;
+    background: var(--color-info-soft);
+        border: 2px solid var(--color-info);
     border-radius: 50%;
 }
 
@@ -739,7 +740,7 @@
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: #3b82f6;
+    background: var(--color-info);
     opacity: 0.5;
 }
 

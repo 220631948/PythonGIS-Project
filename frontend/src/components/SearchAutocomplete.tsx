@@ -205,6 +205,7 @@ export default function SearchAutocomplete({ onSelect, placeholder = "Search pla
           aria-autocomplete="list"
           aria-controls="search-suggestions"
           aria-expanded={isOpen && displayItems.length > 0}
+          role="combobox"
         />
         {isLoading && <Loader className="search-loader" size={16} />}
         {query && (

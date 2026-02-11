@@ -20,6 +20,13 @@ import './App.css';
 // Phase 5: Spatial Analysis
 import { useSpatialAnalysis } from './modules/Tools';
 
+// Workspace Management
+import { WorkspaceManager } from './modules/Workspace';
+
+// Dashboard Builder & Comparative Analysis
+import { DashboardBuilder } from './modules/DashboardBuilder';
+import { ComparativeAnalysis } from './modules/ComparativeAnalysis';
+
 const DEFAULT_STATE: UrlState = {
     lat: -33.9249,
     lng: 18.4241,
@@ -58,6 +65,11 @@ function MainApp() {
     const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
     const [isDashboardOpen, setIsDashboardOpen] = useState(false);
     const [isDataStatusOpen, setIsDataStatusOpen] = useState(false);
+    const [isWorkspaceManagerOpen, setIsWorkspaceManagerOpen] = useState(false);
+    const [isDashboardBuilderOpen, setIsDashboardBuilderOpen] = useState(false);
+    const [isComparativeAnalysisOpen, setIsComparativeAnalysisOpen] = useState(false);
+    const [currentWorkspace, setCurrentWorkspace] = useState<any>(null);
+    const [currentScenario, setCurrentScenario] = useState<any>(null);
     // Route/Isochrone data can be wired when RoutePanel is integrated
     const [routeData] = useState<any>(null);
     const [isochroneData] = useState<any>(null);
@@ -73,33 +85,58 @@ function MainApp() {
 
     // Load collaboration markers
     useEffect(() => {
+        let mounted = true;
+        const controller = new AbortController();
+
         const fetchMarkers = async () => {
             try {
-                const markers = await apiClient.getMarkers();
-                setCollaborationMarkers(markers);
-            } catch (error) {
-                console.error("Failed to fetch collaboration markers:", error);
+                const markers = await apiClient.getMarkers() as any[];
+                if (mounted) {
+                    setCollaborationMarkers(markers);
+                }
+            } catch (error: any) {
+                if (error.name !== 'AbortError' && mounted) {
+                    console.error("Failed to fetch collaboration markers:", error);
+                }
             }
         };
-        if (isOnline) fetchMarkers();
+
+        if (isOnline) {
+            fetchMarkers();
+        }
+
+        return () => {
+            mounted = false;
+            controller.abort();
+        };
     }, [isOnline]);
 
     const addNotification = useCallback((message: string, type = 'info') => {
-        const id = Date.now();
+        const id = Date.now() + Math.random(); // Add randomness to prevent collisions
         setNotifications(prev => [...prev, { id, message, type }]);
         announce(message);
         setTimeout(() => {
             setNotifications(prev => prev.filter(n => n.id !== id));
         }, 5000);
-    }, []);
+    }, []); // Empty deps - function only uses internal state updates
 
-    const handleLayerToggle = (layerId: string) => {
-        const newLayers = urlState.layers?.includes(layerId)
-            ? urlState.layers.filter(l => l !== layerId)
-            : [...(urlState.layers || []), layerId];
-        setUrlState({ ...urlState, layers: newLayers });
-        addNotification(`${urlState.layers?.includes(layerId) ? 'Removed' : 'Added'} layer: ${layerId}`);
-    };
+    const handleLayerToggle = useCallback((layerId: string) => {
+        setUrlState(prev => {
+            const currentLayers = prev.layers || [];
+            const newLayers = currentLayers.includes(layerId)
+                ? currentLayers.filter(l => l !== layerId)
+                : [...currentLayers, layerId];
+
+            // Notification sent after state update to avoid dependency loop
+            const action = currentLayers.includes(layerId) ? 'Removed' : 'Added';
+            // Use queueMicrotask to defer notification
+            queueMicrotask(() => {
+                addNotification(`${action} layer: ${layerId}`);
+            });
+
+            return { ...prev, layers: newLayers };
+        });
+    }, [setUrlState, addNotification]);
 
     const handleModuleLayerUpdate = (data: any) => {
         setModuleLayerData(data);
@@ -133,18 +170,18 @@ function MainApp() {
         addNotification(`${type} analysis complete`, 'success');
     }, [analyzeGeometry, addNotification]);
 
-    const handleBasemapChange = (basemap: string) => {
-        setUrlState({ ...urlState, basemap });
-    };
+    const handleBasemapChange = useCallback((basemap: string) => {
+        setUrlState(prev => ({ ...prev, basemap }));
+    }, [setUrlState]);
 
-    const handleMapMove = (moveState: any) => {
-        setUrlState({
-            ...urlState,
+    const handleMapMove = useCallback((moveState: any) => {
+        setUrlState(prev => ({
+            ...prev,
             lat: moveState.lat,
             lng: moveState.lng,
             zoom: moveState.zoom
-        });
-    };
+        }));
+    }, [setUrlState]);
 
     const handleSearch = (location: any) => {
         setFlyTo({
@@ -168,10 +205,34 @@ function MainApp() {
         // Logic for export modal/panel can be added here
     };
 
+    // Workspace handlers
+    const handleWorkspaceChange = useCallback((workspace: any) => {
+        setCurrentWorkspace(workspace);
+        addNotification(`Switched to workspace: ${workspace.name}`, 'success');
+    }, [addNotification]);
+
+    const handleScenarioLoad = useCallback((scenario: any) => {
+        setCurrentScenario(scenario);
+        // Apply scenario state to map using functional updater to avoid stale closure
+        if (scenario.map_state) {
+            setUrlState(prev => ({
+                ...prev,
+                lat: scenario.map_state.center[0],
+                lng: scenario.map_state.center[1],
+                zoom: scenario.map_state.zoom,
+                layers: scenario.layers || [],
+            }));
+        }
+        addNotification(`Loaded scenario: ${scenario.name}`, 'success');
+        setIsWorkspaceManagerOpen(false);
+    }, [setUrlState, addNotification]);
+
     // Keyboard shortcuts
     useKeyboardShortcuts({
         'h': () => setIsSidebarOpen(prev => !prev),
         'd': () => setIsDashboardOpen(prev => !prev),
+        'b': () => setIsDashboardBuilderOpen(prev => !prev),
+        'c': () => setIsComparativeAnalysisOpen(prev => !prev),
         'f': () => {
             const input = document.querySelector('.search-input') as HTMLElement;
             input?.focus();
@@ -179,6 +240,7 @@ function MainApp() {
         't': () => setIsDarkMode(prev => !prev),
         'm': () => setIsOfflineManagerOpen(prev => !prev),
         's': () => setIsDataStatusOpen(prev => !prev),
+        'w': () => setIsWorkspaceManagerOpen(prev => !prev),
         '?': () => openHelp(),
     });
 
@@ -193,17 +255,21 @@ function MainApp() {
                 isSidebarOpen={isSidebarOpen}
                 onShareUrl={handleShareUrl}
                 onDashboardOpen={() => setIsDashboardOpen(!isDashboardOpen)}
+                onDashboardBuilderOpen={() => setIsDashboardBuilderOpen(!isDashboardBuilderOpen)}
+                onComparativeAnalysisOpen={() => setIsComparativeAnalysisOpen(!isComparativeAnalysisOpen)}
                 onBasemapChange={handleBasemapChange}
                 onOpenOfflineManager={() => setIsOfflineManagerOpen(true)}
                 onDataStatus={() => setIsDataStatusOpen(true)}
                 onExport={handleExport}
                 onThemeToggle={() => setIsDarkMode(!isDarkMode)}
+                onWorkspaceOpen={() => setIsWorkspaceManagerOpen(true)}
                 isDarkMode={isDarkMode}
-                currentBasemap={urlState.basemap}
+                currentBasemap={urlState.basemap as string}
                 isOnline={isOnline}
+                currentWorkspace={currentWorkspace}
             />
 
-            <main className="app-main">
+            <main id="main-content" className="app-main">
                 <Sidebar
                     isOpen={isSidebarOpen}
                     onClose={() => setIsSidebarOpen(false)}
@@ -223,7 +289,7 @@ function MainApp() {
                         zoom={urlState.zoom}
                         layers={urlState.layers}
                         moduleLayerData={moduleLayerData} // Passed here
-                        basemap={urlState.basemap}
+                        basemap={urlState.basemap as string}
                         onMapMove={handleMapMove}
                         flyTo={flyTo}
                         onLayerLoading={(id: string, loading: boolean) => {
@@ -283,6 +349,30 @@ function MainApp() {
 
             <InstallBanner />
             <InstallModal isOpen={isInstallModalOpen} onClose={() => setIsInstallModalOpen(false)} />
+
+            {/* Workspace Manager */}
+            <WorkspaceManager
+                isOpen={isWorkspaceManagerOpen}
+                onClose={() => setIsWorkspaceManagerOpen(false)}
+                onWorkspaceChange={handleWorkspaceChange}
+                onScenarioLoad={handleScenarioLoad}
+                currentWorkspace={currentWorkspace}
+                currentUserId="user-1" // Should come from auth context
+            />
+
+            {/* Dashboard Builder */}
+            {isDashboardBuilderOpen && (
+                <DashboardBuilder
+                    onClose={() => setIsDashboardBuilderOpen(false)}
+                />
+            )}
+
+            {/* Comparative Analysis */}
+            {isComparativeAnalysisOpen && (
+                <ComparativeAnalysis
+                    onClose={() => setIsComparativeAnalysisOpen(false)}
+                />
+            )}
         </div>
     );
 }

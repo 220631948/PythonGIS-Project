@@ -1,0 +1,37 @@
+--- a/app/api/geocode_api.py
++++ b/app/api/geocode_api.py
+@@ DESCRIPTION
+ # Fix 1: Replace synchronous requests.get() with httpx.AsyncClient (non-blocking)
+ # Fix 2: Add regex=False to pandas .str.contains() to prevent regex injection
+ # Fix 3: Add proper error handling around data_loader calls
+
+--- Line 13: Replace import ---
+-import requests
++import httpx
+
+--- Lines 118-119 in reverse_geocode(): Replace requests.get with httpx ---
+-        response = requests.get(url, params=params, headers=headers, timeout=5)
++        async with httpx.AsyncClient() as client:
++            response = await client.get(url, params=params, headers=headers, timeout=5.0)
+
+--- Lines 152-156 in autocomplete(): Add regex=False ---
+         elif 'name' in suburbs.columns:
+-            matches = suburbs[suburbs['name'].str.lower().str.contains(query_lower, na=False)]
++            matches = suburbs[suburbs['name'].str.lower().str.contains(query_lower, na=False, regex=False)]
+
+--- Lines 183 in _search_local_datasets(): Add regex=False ---
+-            matches = suburbs[suburbs['name'].str.lower().str.contains(query, na=False)]
++            matches = suburbs[suburbs['name'].str.lower().str.contains(query, na=False, regex=False)]
+
+--- Line 217 in _search_local_datasets(): Add regex=False ---
+-                    matches = gdf[gdf[name_col].str.lower().str.contains(query, na=False)]
++                    matches = gdf[gdf[name_col].str.lower().str.contains(query, na=False, regex=False)]
+
+--- Lines 253 in _search_nominatim(): Replace requests.get with httpx ---
+-        response = requests.get(url, params=params, headers=headers, timeout=5)
++        async with httpx.AsyncClient() as client:
++            response = await client.get(url, params=params, headers=headers, timeout=5.0)
+-        if response.ok:
+-            data = response.json()
++        if response.status_code == 200:
++            data = response.json()

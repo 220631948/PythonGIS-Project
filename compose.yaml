@@ -37,6 +37,11 @@ services:
       - API_PORT=8000
       - CORS_ORIGINS=["http://localhost:3000","http://localhost:5173"]
       - ADMIN_API_KEY=${ADMIN_API_KEY:-}
+      # Sentry runtime configuration (set via environment in CI / production)
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-production}
+      - SENTRY_RELEASE=${SENTRY_RELEASE:-}
+      - SENTRY_TRACES_SAMPLE_RATE=${SENTRY_TRACES_SAMPLE_RATE:-0.1}
     ports:
       - "8000:8000"
     volumes:
@@ -58,6 +63,10 @@ services:
       - VITE_API_URL=http://localhost:8000
       - VITE_MAP_CENTER=-33.9249,18.4241
       - VITE_MAP_ZOOM=12
+      # Optional: allow frontend to receive Sentry config in dev
+      - VITE_SENTRY_DSN=${VITE_SENTRY_DSN:-}
+      - VITE_SENTRY_RELEASE=${SENTRY_RELEASE:-}
+      - VITE_SENTRY_TRACES_SAMPLE_RATE=${SENTRY_TRACES_SAMPLE_RATE:-0.1}
     ports:
       - "5173:5173"
     volumes:

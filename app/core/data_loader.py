@@ -109,6 +109,15 @@ class DataLoader:
                     params={"limit": limit, "offset": offset},
                 )
 
+                # Convert StringDtype columns to object to avoid serialization errors
+                for col in gdf.columns:
+                    if (
+                        col != "geometry"
+                        and hasattr(gdf[col], "dtype")
+                        and "string" in str(gdf[col].dtype).lower()
+                    ):
+                        gdf[col] = gdf[col].astype(object)
+
                 self._log_retrieval(
                     dataset_name,
                     True,
@@ -438,6 +447,7 @@ class DataLoader:
                         geom = None
                         if feat.get("geometry"):
                             try:
+                                from shapely.geometry import shape
                                 geom = shape(feat["geometry"])
                             except Exception:
                                 geom = None
@@ -449,7 +459,30 @@ class DataLoader:
                         props["geometry"] = geom
                         rows.append(props)
 
-                    gdf = gpd.GeoDataFrame(rows, crs="EPSG:4326")
+                    import pandas as pd
+
+                    # Convert to DataFrame first to handle any pandas-specific types that gpd might struggle with                    # Use dtype_backend=None to avoid pandas 2.0's StringDtype inference
+                    df = pd.DataFrame(rows)
+
+                    # Proactively convert ALL non-geometry string columns to object dtype
+                    # This fixes "Cannot interpret '<StringDtype...>' as a data type"
+                    for col in df.columns:
+                        if col != "geometry":
+                            if hasattr(df[col], "dtype"):
+                                dtype_str = str(df[col].dtype).lower()
+                                # Convert any string-like dtypes to object
+                                if "string" in dtype_str or "object" not in dtype_str and df[col].dtype == object:
+                                    try:
+                                        df[col] = df[col].astype(object)
+                                    except Exception:
+                                        pass
+
+                    gdf = gpd.GeoDataFrame(df, crs="EPSG:4326")
+
+                    # Double-check: ensure no StringDtype columns remain in final GDF
+                    for col in gdf.columns:
+                        if col != "geometry" and hasattr(gdf[col], "dtype") and "string" in str(gdf[col].dtype).lower():
+                            gdf[col] = gdf[col].astype(object)
 
                 self._log_retrieval(
                     dataset_name,
@@ -530,7 +563,17 @@ class DataLoader:
         if gdf.crs is None:
             logger.warning(f"No CRS detected for {dataset_name}. Assuming EPSG:4326")
             gdf.set_crs(epsg=4326, inplace=True)
-        elif gdf.crs.to_epsg() not in [4326, 3857]:  # Not in common web CRS
+
+        # Proactively convert any pandas.StringDtype columns to object before serialization/projection
+        for col in gdf.columns:
+            if (
+                col != "geometry"
+                and hasattr(gdf[col], "dtype")
+                and "string" in str(gdf[col].dtype).lower()
+            ):
+                gdf[col] = gdf[col].astype(object)
+
+        if gdf.crs.to_epsg() not in [4326, 3857]:  # Not in common web CRS
             logger.info(f"Reprojecting {dataset_name} from {gdf.crs} to EPSG:4326")
             try:
                 gdf = gdf.to_crs(epsg=4326)

@@ -7,20 +7,18 @@ Provides:
 - Analysis result exports
 """
 
-from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
-from fastapi.responses import FileResponse, StreamingResponse
-from typing import Optional, List, Dict, Any
+from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi.responses import FileResponse
+from typing import Dict
 from datetime import datetime, timedelta
 import json
 import csv
-import io
 import uuid
 import logging
-from pathlib import Path
 
 from app.models.export_models import (
     ExportFormat, DataExportRequest, AnalysisExportRequest,
-    ExportResponse, MapPrintConfig, ReportConfig
+    ExportResponse, MapPrintConfig
 )
 from app.core.data_loader import data_loader
 from app.config import settings
@@ -138,7 +136,7 @@ async def export_data(request: DataExportRequest, background_tasks: BackgroundTa
 
     try:
         gdf = data_loader.get_gdf(request.dataset)
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=404, detail=f"Dataset not found: {request.dataset}")
 
     if gdf.empty:
@@ -192,7 +190,7 @@ async def export_data(request: DataExportRequest, background_tasks: BackgroundTa
         filepath = EXPORT_DIR / filename
         try:
             gdf.to_file(filepath, driver='KML')
-        except Exception as e:
+        except Exception:
             # Fallback: convert to simple KML format manually
             kml_content = _generate_simple_kml(gdf, request.dataset)
             with open(filepath, 'w') as f:
@@ -361,7 +359,7 @@ async def generate_printable_map(config: MapPrintConfig):
             "client_side": "Use Leaflet-image or html2canvas to capture the map",
             "server_side": "Server-side PDF generation available with additional setup"
         },
-        "print_url": f"/api/export/map-print/render?config_id=pending",
+        "print_url": "/api/export/map-print/render?config_id=pending",
         "supported_formats": ["png", "pdf"]
     }
 
