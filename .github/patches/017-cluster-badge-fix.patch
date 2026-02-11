@@ -1,0 +1,63 @@
+--- a/frontend/src/components/map/ClusterLayer.tsx
++++ b/frontend/src/components/map/ClusterLayer.tsx
+@@ DESCRIPTION
+ # Fix: The <div> badge inside <CircleMarker> is INVALID in Leaflet.
+ # CircleMarker uses SVG/Canvas renderer — raw HTML divs are invisible.
+ #
+ # Solution: Use a Tooltip component to show the cluster count,
+ # which properly overlays on the map. Alternatively, use a DivIcon
+ # with Marker instead of CircleMarker for clusters.
+
+--- Replace the invalid div badge (lines ~120-135) with Tooltip ---
+
+ # Add import at top:
++import { CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet';
+
+ # Replace the invalid div inside CircleMarker:
+-            {/* Cluster count badge for clusters */}
+-            {is_cluster && (
+-              <div
+-                style={{
+-                  position: 'absolute',
+-                  top: '50%',
+-                  left: '50%',
+-                  transform: 'translate(-50%, -50%)',
+-                  color: '#fff',
+-                  fontWeight: 'bold',
+-                  fontSize: point_count > 999 ? '10px' : '12px',
+-                  textShadow: '0 0 2px rgba(0,0,0,0.5)',
+-                  pointerEvents: 'none'
+-                }}
+-              >
+-                {point_count > 999 ? `${(point_count / 1000).toFixed(1)}k` : point_count}
+-              </div>
+-            )}
++            {/* Cluster count shown as permanent tooltip */}
++            {is_cluster && (
++              <Tooltip
++                direction="center"
++                permanent
++                className="cluster-count-tooltip"
++              >
++                <span style={{
++                  fontWeight: 'bold',
++                  fontSize: point_count > 999 ? '10px' : '12px',
++                  color: '#fff',
++                  textShadow: '0 0 3px rgba(0,0,0,0.7)',
++                }}>
++                  {point_count > 999 ? `${(point_count / 1000).toFixed(1)}k` : point_count}
++                </span>
++              </Tooltip>
++            )}
+
+--- Add CSS for cluster tooltip (add to styles or inline) ---
+ # In a CSS file or <style> tag:
+ .cluster-count-tooltip {
+   background: transparent !important;
+   border: none !important;
+   box-shadow: none !important;
+   padding: 0 !important;
+ }
+ .cluster-count-tooltip::before {
+   display: none !important; /* Remove tooltip arrow */
+ }

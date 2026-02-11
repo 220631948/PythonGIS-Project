@@ -177,6 +177,36 @@ Use these automatically when creating PRs in agent mode:
 Additional Copilot customisation lives in [`copilot/`](./copilot/) including
 docs, examples, instructions, prompts, and templates.
 
+Local MCP Servers (Playwright & Chrome DevTools)
+
+This repository supports two MCP servers for browser automation:
+
+- Playwright MCP (default browser): Run the Playwright MCP server from Docker using the `mcp/playwright` image. It's the recommended default for UI automation and E2E flows.
+- Chrome DevTools MCP (deep debugging): Use `chrome-devtools-mcp` via `npx` for low-level Chrome DevTools debugging.
+
+Add a repository-level MCP file `.copilot/mcp.json` with an example that registers both servers:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "mcp/playwright"]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"]
+    }
+  }
+}
+```
+
+After adding the file, restart VS Code so it picks up the new MCP configuration. For Playwright, ensure Docker is installed and running; the image `mcp/playwright` will be pulled automatically when started. For deep Chrome debugging, launch Chrome in debuggable mode:
+
+chrome --remote-debugging-port=9222
+
+These MCP servers expose endpoints Copilot agents can connect to; use Playwright as the default for automation and Chrome DevTools for targeted debugging.
+
 #### Patches & Templates
 
 - [`patches/`](./patches/) — generated patch files when `SAFE_MODE=true`.

@@ -15,12 +15,13 @@ from datetime import datetime
 from fastapi import APIRouter, Query, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-import pandas as pd
-import geopandas as gpd
 
 from app.config import settings
 from app.core.data_loader import data_loader
 from app.core.cache_manager import cache_manager
+
+# Lazy-import geopandas and pandas inside functions to avoid module-level crash
+# when heavy spatial dependencies (libgdal, etc.) are not installed.
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,8 @@ async def get_summary_report(
     Generate a summary report of datasets and their statistics.
     """
     try:
+        import pandas as pd
+
         dataset_list = datasets.split(",") if datasets else list(settings.DATA_URLS.keys())
 
         report = {
@@ -125,6 +128,8 @@ async def export_dataset(
     Export a dataset to CSV or GeoJSON format.
     """
     try:
+        import pandas as pd
+
         gdf = data_loader.get_gdf(dataset_name)
         if gdf.empty:
             raise HTTPException(status_code=404, detail=f"Dataset {dataset_name} not found")
@@ -195,6 +200,8 @@ async def generate_analysis_report(
     Includes nearby facilities, accessibility scores, and recommendations.
     """
     try:
+        import pandas as pd
+        import geopandas as gpd
         from shapely.geometry import Point
         from app.spatial_analysis.spatial_utils import create_buffer
 
@@ -298,6 +305,7 @@ async def get_dashboard_data():
             try:
                 gdf = data_loader.get_gdf(ds_name)
                 if gdf.empty:
+                    logger.debug(f"Skipping empty dataset: {ds_name}")
                     continue
 
                 dashboard["summary"]["total_datasets"] += 1
@@ -315,8 +323,9 @@ async def get_dashboard_data():
                     "value": len(gdf)
                 })
 
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Error processing dataset {ds_name}: {e}")
+                continue
 
         # Geometry distribution for pie chart
         for geom_type, count in dashboard["summary"]["categories"].items():
@@ -354,7 +363,21 @@ async def get_dashboard_data():
 
     except Exception as e:
         logger.error(f"Dashboard data generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return empty but valid dashboard structure instead of 500 error
+        return {
+            "generated_at": datetime.now().isoformat(),
+            "summary": {
+                "total_datasets": 0,
+                "total_features": 0,
+                "categories": {}
+            },
+            "charts": {
+                "features_by_dataset": [],
+                "geometry_distribution": []
+            },
+            "key_metrics": [],
+            "error": "Dashboard generation partially failed. Some datasets may be unavailable."
+        }
 
 
 def _calculate_location_scores(analyses: List[Dict]) -> Dict[str, int]:

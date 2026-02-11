@@ -1,0 +1,59 @@
+--- a/frontend/src/components/map/useMapLayers.ts
++++ b/frontend/src/components/map/useMapLayers.ts
+@@ DESCRIPTION
+ # Fix: The fallback logic in fetchLayerData is incorrect.
+ # A non-2xx HTTP response does NOT throw an error in fetch(),
+ # so the catch block only fires on network failures.
+ # The portal fallback never triggers on 404/500 from /api/data/.
+ #
+ # Solution: Check response.ok FIRST, then try fallback if it fails.
+
+--- Replace fetchLayerData (lines 58-89) ---
+
+   const fetchLayerData = useCallback(async (id: string) => {
+     onLayerLoadingRef.current?.(id, true);
+     try {
+       const datasetKey = LAYER_TO_DATASET[id] ?? id;
+
+-      // Prefer the smart /api/data proxy which handles caching, pagination, and transformations
+-      // Fallback to portal API if no mapping exists
+-      let response: Response | null = null;
+-      try {
+-        response = await fetch(`/api/data/${datasetKey}?limit=2000`);
+-      } catch {
+-        // Fallback to portal endpoint if proxy fails or mapping was actually the same ID
+-        response = await fetch(`/api/portal/datasets/${id}/geojson`);
+-      }
++      // Try primary /api/data endpoint first, then fallback to /api/portal
++      let response: Response | null = null;
++      try {
++        response = await fetch(`/api/data/${datasetKey}?limit=2000`);
++        // If primary endpoint returns an error, try fallback
++        if (!response.ok) {
++          console.debug(`Primary API returned ${response.status} for ${datasetKey}, trying portal fallback`);
++          response = await fetch(`/api/portal/datasets/${id}/geojson`);
++        }
++      } catch {
++        // Network error — try fallback
++        try {
++          response = await fetch(`/api/portal/datasets/${id}/geojson`);
++        } catch {
++          console.warn(`Both endpoints failed for layer ${id}`);
++        }
++      }
+
+       if (response && response.ok) {
+         const data = await response.json();
+         const normalized: LayerData = data.geojson
+           ? data
+           : { geojson: data, dataset: { name: datasetKey } };
+         setGeoData((prev) => ({ ...prev, [id]: normalized }));
+       } else if (response) {
+         console.warn(`Fetch for layer ${id} returned HTTP ${response.status}`);
+       }
+     } catch (error) {
+       console.error(`Error fetching layer ${id}:`, error);
+     } finally {
+       onLayerLoadingRef.current?.(id, false);
+     }
+   }, []);

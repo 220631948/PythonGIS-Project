@@ -86,6 +86,16 @@ class TransportOptimizer(BaseAnalyzer):
         if cols_to_keep:
             optimized = optimized[cols_to_keep + ["geometry"]]
 
+        # Proactively convert any pandas.StringDtype columns to object
+        # This fixes "Cannot interpret '<StringDtype...>' as a data type"
+        for col in optimized.columns:
+            if (
+                col != "geometry"
+                and hasattr(optimized[col], "dtype")
+                and "string" in str(optimized[col].dtype).lower()
+            ):
+                optimized[col] = optimized[col].astype(object)
+
         final_vertices = self._count_vertices(optimized)
         reduction = (1 - final_vertices / original_vertices) * 100
 

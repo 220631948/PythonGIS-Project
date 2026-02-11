@@ -35,6 +35,16 @@ class LandUseAnalyzer(BaseAnalyzer):
             elif settings.SIMPLIFICATION_TOLERANCE:
                 results.geometry = results.geometry.simplify(settings.SIMPLIFICATION_TOLERANCE)
 
+            # Proactively convert any pandas.StringDtype columns to object
+            # This fixes "Cannot interpret '<StringDtype...>' as a data type"
+            for col in results.columns:
+                if (
+                    col != "geometry"
+                    and hasattr(results[col], "dtype")
+                    and "string" in str(results[col].dtype).lower()
+                ):
+                    results[col] = results[col].astype(object)
+
             return {
                 "geojson": gdf_to_geojson(results),
                 "summary": summary.to_dict(orient='records'),

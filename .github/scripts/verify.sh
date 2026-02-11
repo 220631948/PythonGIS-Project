@@ -153,6 +153,22 @@ else
   fail "frontend/package.json missing"
 fi
 echo ""
+# Check 7.5: Copilot MCP configuration (Playwright/Chrome DevTools)
+echo "🔌 Checking Copilot MCP configuration..."
+if [[ -f "${REPO_ROOT}/.copilot/mcp.json" ]]; then
+  pass ".copilot/mcp.json exists"
+  if grep -q '"playwright"' "${REPO_ROOT}/.copilot/mcp.json" 2>/dev/null; then
+    if command -v docker &> /dev/null; then
+      pass "Docker available for Playwright MCP server"
+    else
+      warn "Playwright MCP server configured but Docker not found; install Docker to run Playwright MCP server"
+    fi
+  fi
+else
+  warn ".copilot/mcp.json not found (recommended for Copilot browser automation)"
+fi
+
+echo ""
 
 # Check 8: Linting (if tools available)
 echo "🔧 Running linters..."

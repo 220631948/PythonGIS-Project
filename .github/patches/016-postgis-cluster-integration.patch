@@ -1,0 +1,64 @@
+--- a/frontend/src/components/MapView.tsx
++++ b/frontend/src/components/MapView.tsx
+@@ DESCRIPTION
+ # CRITICAL: Wire PostGIS clusters into MapView
+ #
+ # Problem: usePostGISClusters hook is imported but NEVER called.
+ # ClusterLayer component is imported but NEVER rendered.
+ # Result: PostGIS server-side clusters are invisible.
+ #
+ # Solution: Call the hook with map state, render ClusterLayer in JSX.
+
+--- Add state tracking for zoom level (needed for clustering) ---
+ # After existing useState declarations (around line 130):
+
++  const [currentZoom, setCurrentZoom] = useState(zoom ?? 11);
++  const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
+
+--- Wire up usePostGISClusters hook (after useMapLayers call, around line 145) ---
+
++  // PostGIS server-side clustering for "informal_settlements" dataset
++  const { clusters: postgisClusterData } = usePostGISClusters({
++    dataset: 'informal_settlements',
++    zoom: currentZoom,
++    bounds: mapBounds,
++    enabled: _layers.includes('services-layer') || _layers.includes('clusters-layer'),
++    minZoom: 15,
++  });
+
+--- Update handleMapClick and MapEvents to track zoom/bounds ---
+ # In the MapEvents onMove handler, capture zoom and bounds:
+ # Modify the onMapMove prop to also update local zoom/bounds state.
+
+ # Replace MapEvents usage (around line 225):
+-        <MapEvents onMove={onMapMove} onClick={handleMapClick} onLocationFound={handleLocationFound} />
++        <MapEvents
++          onMove={(data) => {
++            onMapMove(data);
++            setCurrentZoom(data.zoom);
++            if (data.bounds) setMapBounds(data.bounds as L.LatLngBounds);
++          }}
++          onClick={handleMapClick}
++          onLocationFound={handleLocationFound}
++        />
+
+--- Add ClusterLayer rendering in JSX (after LayersControl data layers, before collaboration markers) ---
+ # Insert before {/* Collaboration Markers */}:
+
++        {/* PostGIS Server-side Clusters */}
++        {postgisClusterData && postgisClusterData.features.length > 0 && (
++          <ClusterLayer
++            clusterData={postgisClusterData}
++            color="#3b82f6"
++            onClusterClick={(_clusterId, bounds) => {
++              // Zoom to cluster bounds
++              if (bounds && bounds.coordinates) {
++                const coords = bounds.coordinates[0];
++                if (coords && coords.length >= 2) {
++                  // bounds is a GeoJSON polygon envelope
++                  // No-op for now: map will zoom on click via ClusterLayer internal handler
++                }
++              }
++            }}
++          />
++        )}

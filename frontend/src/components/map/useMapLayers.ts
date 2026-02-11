@@ -25,6 +25,7 @@ export const LAYER_TO_DATASET: Record<string, string> = {
   'zoning-layer': 'zoning',
   'building-footprints-layer': 'building_footprints',
   'open-spaces-layer': 'open_spaces',
+  'water-facilities-layer': 'water_facilities',
 
   'services-layer': 'informal_settlements',
   'clinics-layer': 'clinics',
@@ -39,6 +40,9 @@ export const LAYER_TO_DATASET: Record<string, string> = {
   'flood-layer': 'flood_zones',
   'cemeteries-layer': 'cemeteries',
   'trading-layer': 'trading_locations',
+  'myciti-stops-layer': 'myciti_stops',
+  'myciti-routes-layer': 'myciti_routes',
+  'railway-stations-layer': 'rail_stations',
 };
 
 export function useMapLayers({ layers, activeFilters, onLayerLoading }: UseMapLayersOptions) {
@@ -58,13 +62,22 @@ export function useMapLayers({ layers, activeFilters, onLayerLoading }: UseMapLa
       const datasetKey = LAYER_TO_DATASET[id] ?? id;
 
       // Prefer the smart /api/data proxy which handles caching, pagination, and transformations
-      // Fallback to portal API if no mapping exists
+      // Fallback to portal API if the proxy returns a non-OK response
       let response: Response | null = null;
       try {
         response = await fetch(`/api/data/${datasetKey}?limit=2000`);
       } catch {
-        // Fallback to portal endpoint if proxy fails or mapping was actually the same ID
-        response = await fetch(`/api/portal/datasets/${id}/geojson`);
+        // Network error — will try fallback below
+        response = null;
+      }
+
+      // If the primary endpoint failed (network error or HTTP error), try portal fallback
+      if (!response || !response.ok) {
+        try {
+          response = await fetch(`/api/portal/datasets/${id}/geojson`);
+        } catch {
+          response = null;
+        }
       }
 
       if (response && response.ok) {
@@ -148,5 +161,5 @@ export function useMapLayers({ layers, activeFilters, onLayerLoading }: UseMapLa
     });
   }, [layers]);
 
-  return { geoData };
+  return { geoData } as { geoData: Record<string, LayerData | undefined> };
 }

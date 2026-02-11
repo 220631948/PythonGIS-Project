@@ -1,0 +1,71 @@
+--- a/app/api/data_status_api.py
++++ b/app/api/data_status_api.py
+@@ DESCRIPTION
+ # Fix 1: Wrap check_all_sources_health_async in robust error handling
+ # Fix 2: Add /eval-log alias (frontend expects /eval-log but API defines /retrieval-log)
+ # Fix 3: Replace datetime.utcnow() with datetime.now(timezone.utc)
+
+--- Changes to check_all_sources_health() ---
+
+ Replace lines 22-57 with:
+
+ @router.get("/health")
+ async def check_all_sources_health():
+     """
+     Check the health/accessibility of all configured open data sources.
+     Returns status for each data source endpoint.
+     """
++    from datetime import timezone
+     try:
+-        results = await data_loader.check_all_sources_health_async()
++        # check_all_sources_health_async may not exist on all data_loader implementations
++        if hasattr(data_loader, 'check_all_sources_health_async'):
++            results = await data_loader.check_all_sources_health_async()
++        else:
++            # Fallback: check each source individually
++            results = {}
++            for name, url in settings.DATA_URLS.items():
++                try:
++                    if hasattr(data_loader, 'check_data_source_health_async'):
++                        results[name] = await data_loader.check_data_source_health_async(name)
++                    else:
++                        results[name] = {"accessible": True, "url": url, "note": "health check not implemented"}
++                except Exception as src_err:
++                    results[name] = {"accessible": False, "error": str(src_err)}
+
+         total = len(results)
+         accessible = sum(1 for r in results.values() if r.get("accessible", False))
+
+         return {
+             "summary": {
+                 "total_sources": total,
+                 "accessible": accessible,
+                 "unavailable": total - accessible,
+                 "health_percentage": round(accessible / total * 100, 1) if total > 0 else 0
+             },
+             "sources": results,
+-            "checked_at": datetime.utcnow().isoformat()
++            "checked_at": datetime.now(timezone.utc).isoformat()
+         }
+     except Exception as e:
+         logger.error(f"Health check failed: {e}")
+         return {
+             "summary": {
+                 "total_sources": 0,
+                 "accessible": 0,
+                 "unavailable": 0,
+                 "health_percentage": 0,
+                 "status": "degraded",
+                 "error": str(e)
+             },
+             "sources": {},
+-            "checked_at": datetime.utcnow().isoformat()
++            "checked_at": datetime.now(timezone.utc).isoformat()
+          }
+
+--- Add eval-log alias route (after retrieval-log endpoint) ---
+
++@router.get("/eval-log")
++async def get_eval_log(limit: int = Query(20, ge=1, le=100)):
++    """Alias for /retrieval-log — frontend expects this path."""
++    return await get_retrieval_log(limit=limit)

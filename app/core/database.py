@@ -47,20 +47,51 @@ logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Database URL resolution (no crash on missing env var)
+# Normalizes to asyncpg for async engine while keeping a sync URL for GeoPandas
 # ---------------------------------------------------------------------------
-DATABASE_URL: Optional[str] = os.environ.get("DATABASE_URL")
+RAW_DATABASE_URL: Optional[str] = os.environ.get("DATABASE_URL")
 
-if DATABASE_URL:
-    # Create synchronous DATABASE_URL for geopandas and sync operations
-    SYNC_DATABASE_URL: Optional[str] = DATABASE_URL.replace(
-        "postgresql+asyncpg://", "postgresql://"
-    )
+
+def _normalize_database_urls(url: str) -> tuple[str, str]:
+    """
+    Ensure we always have an asyncpg DSN for async SQLAlchemy while also
+    providing a psycopg2-compatible DSN for sync GeoPandas operations.
+
+    Handles common misconfigurations (postgres://, postgresql+psycopg2://)
+    to prevent the "async driver required" error seen in devtools.
+    """
+
+    normalized = url.strip()
+
+    # Heroku-style URLs
+    if normalized.startswith("postgres://"):
+        normalized = normalized.replace("postgres://", "postgresql://", 1)
+
+    # If someone supplied the sync driver, transparently upgrade to asyncpg
+    if normalized.startswith("postgresql+psycopg2://"):
+        logger.warning(
+            "DATABASE_URL uses psycopg2; upgrading to asyncpg for async engine compatibility."
+        )
+        normalized = normalized.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
+    elif normalized.startswith("postgresql://"):
+        # Add explicit async driver for consistency
+        logger.info("Normalizing DATABASE_URL to use asyncpg driver for async engine.")
+        normalized = normalized.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+    async_url = normalized
+    sync_url = normalized.replace("postgresql+asyncpg://", "postgresql://", 1)
+    return async_url, sync_url
+
+
+if RAW_DATABASE_URL:
+    DATABASE_URL, SYNC_DATABASE_URL = _normalize_database_urls(RAW_DATABASE_URL)
 else:
+    DATABASE_URL = None
     SYNC_DATABASE_URL = None
     logger.warning(
         "DATABASE_URL not set — database features disabled. "
         "Set DATABASE_URL to enable PostGIS integration, e.g. "
-        "postgresql+asyncpg://geohub:geohub_password@db:5432/geohub_db"
+        "postgresql+asyncpg://geohub:geohub_password@localhost:5432/geohub_db"
     )
 
 # ---------------------------------------------------------------------------
@@ -97,9 +128,9 @@ class DatabaseConnectionError(Exception):
 
 
 async def create_engine_with_retry(
-    max_retries: int = 10,
-    initial_delay: float = 2.0,
-    max_delay: float = 30.0,
+    max_retries: int = 4,
+    initial_delay: float = 1.0,
+    max_delay: float = 8.0,
 ) -> AsyncEngine:
     """
     Create async SQLAlchemy engine with exponential backoff retry logic.
@@ -317,3 +348,116 @@ def rows_to_feature_collection(rows: list, geom_column: str = "geom") -> Dict[st
     """Convert a list of SQLAlchemy row results to a GeoJSON FeatureCollection."""
     features = [row_to_feature(row, geom_column) for row in rows]
     return {"type": "FeatureCollection", "features": features}
+
+
+async def get_clustered_points(
+    table_name: str,
+    zoom: int,
+    bounds: Optional[tuple[float, float, float, float]] = None,
+    geom_column: str = "geom",
+    max_features: int = 5000,
+) -> Dict[str, Any]:
+    """
+    Get server-side clustered points using PostGIS ST_ClusterKMeans.
+
+    Args:
+        table_name: Name of the table to cluster
+        zoom: Current zoom level (0-22)
+        bounds: Optional bounding box (min_lng, min_lat, max_lng, max_lat)
+        geom_column: Name of the geometry column
+        max_features: Maximum features to return
+
+    Returns:
+        Dict with clustered points as GeoJSON
+    """
+    import re
+
+    # Validate table_name against SQL injection (only allow alphanumeric + underscores)
+    if not re.match(r"^[a-zA-Z_]\w{0,62}$", table_name):
+        raise ValueError(f"Invalid table name: {table_name!r}")
+    # Validate geom_column similarly
+    if not re.match(r"^[a-zA-Z_]\w{0,62}$", geom_column):
+        raise ValueError(f"Invalid geometry column: {geom_column!r}")
+
+    try:
+        engine = await get_engine()
+
+        # Calculate cluster count based on zoom level
+        # Lower zoom = fewer clusters, higher zoom = more detail
+        cluster_count = max(5, min(100, int(2 ** (zoom / 2))))
+
+        # Build query with parameterised bounds filter
+        # table_name and geom_column are validated above and safe for interpolation;
+        # all numeric values are passed as bind parameters.
+        bounds_filter = ""
+        bind_params: Dict[str, Any] = {
+            "cluster_count": cluster_count,
+            "max_features": max_features,
+        }
+
+        if bounds:
+            min_lng, min_lat, max_lng, max_lat = bounds
+            bounds_filter = f"""
+            WHERE ST_Intersects(
+                {geom_column},
+                ST_MakeEnvelope(:min_lng, :min_lat, :max_lng, :max_lat, 4326)
+            )
+            """
+            bind_params.update({
+                "min_lng": min_lng,
+                "min_lat": min_lat,
+                "max_lng": max_lng,
+                "max_lat": max_lat,
+            })
+
+        # Use ST_ClusterKMeans for point clustering
+        query = text(f"""
+        WITH clustered AS (
+            SELECT
+                {geom_column},
+                ST_ClusterKMeans({geom_column}, :cluster_count) OVER() AS cluster_id
+            FROM {table_name}
+            {bounds_filter}
+            LIMIT :max_features
+        )
+        SELECT
+            cluster_id,
+            COUNT(*) as point_count,
+            ST_AsGeoJSON(ST_Centroid(ST_Collect({geom_column})))::json as centroid,
+            ST_AsGeoJSON(ST_Envelope(ST_Collect({geom_column})))::json as bounds
+        FROM clustered
+        GROUP BY cluster_id
+        ORDER BY cluster_id;
+        """)
+
+        async with engine.connect() as conn:
+            result = await conn.execute(query, bind_params)
+            rows = result.fetchall()
+
+            features = []
+            for row in rows:
+                cluster_id, point_count, centroid, bounds_geom = row
+                features.append({
+                    "type": "Feature",
+                    "geometry": centroid,
+                    "properties": {
+                        "cluster_id": cluster_id,
+                        "point_count": point_count,
+                        "is_cluster": point_count > 1,
+                        "bounds": bounds_geom
+                    }
+                })
+
+            return {
+                "type": "FeatureCollection",
+                "features": features,
+                "metadata": {
+                    "cluster_count": len(features),
+                    "zoom": zoom,
+                    "total_points": sum(f["properties"]["point_count"] for f in features)
+                }
+            }
+
+    except Exception as e:
+        logger.error(f"Clustering error for table {table_name}: {e}")
+        raise

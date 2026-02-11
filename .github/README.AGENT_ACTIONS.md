@@ -244,6 +244,35 @@ bash .github/scripts/verify.sh && git commit
 ln -s ../../.github/scripts/verify.sh .git/hooks/pre-commit
 ```
 
+Enable Copilot MCP Server (Playwright & Chrome DevTools)
+
+To enable Copilot agents to control browsers locally, add a repository-level MCP configuration file `.copilot/mcp.json` that registers one or both MCP servers. The preferred default is Playwright (for browser automation), while Chrome DevTools is available for deep debugging.
+
+Example:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "mcp/playwright"]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"]
+    }
+  }
+}
+```
+
+After creating the file, restart VS Code so the Copilot extension picks it up.
+
+Note: Playwright MCP requires Docker to be installed and running. Chrome DevTools requires launching Chrome with:
+
+chrome --remote-debugging-port=9222
+
+Use Playwright as the default MCP server for automated tests and E2E flows; use Chrome DevTools for deep, interactive debugging.
+
 ### 7. Extend Skills (Future)
 
 To add a new skill:

@@ -2,6 +2,40 @@
 
 All notable changes to the Cape Town GeoHub project are documented in this file.
 
+## [2.0.0] - 2026-02-10
+
+### Added - Major Platform Evolution 🚀
+
+This release represents a transformative upgrade with 15 major new features, adding 67 new API endpoints across 14 new modules.
+
+#### High Priority Features
+
+- **3D Visualization & Terrain Analysis**: Building extrusion, elevation profiles, shadow analysis, viewshed, terrain tiles
+- **AI-Powered Insights**: Traffic/crime prediction, land use change detection, natural language queries
+- **Community Engagement**: Public feedback, issue reporting with photos, polling/voting, data contributions
+- **Smart Notifications & Alerts**: Location-based subscriptions, push notifications, alert management, location watching
+
+#### Analytics & Workflow Features
+
+- **Advanced Demographics**: Population density heatmaps, socioeconomic indicators, age distribution
+- **Environmental Impact**: Flood risk modeling, air quality monitoring, green space accessibility, climate resilience
+- **Custom Dashboard Builder**: Drag-and-drop widgets, templates, chart/map/metric components
+- **Comparative Analysis**: Neighborhood comparisons, temporal analysis, benchmarking, similar area finder
+- **Project Workspaces**: Multi-scenario management, team collaboration, version tracking
+- **Automated Reports**: PDF/DOCX generation, scheduled delivery, templates
+- **Data Quality Dashboard**: Quality metrics, validation errors, data lineage, freshness indicators
+- **Advanced Search**: Spatial query builder, cross-dataset search, saved searches, recommendations
+
+#### Technical Features
+
+- **Performance Optimization**: Vector tiles (MVT), clustering, level-of-detail, cache management
+- **Mobile App**: React Native foundation, offline maps, GPS tracking, data collection
+- **API Marketplace**: Extension system, API key management, webhooks, developer portal
+
+**New Dependencies**: scikit-learn, scipy, pytz, pillow, reportlab, weasyprint, redis, celery, python-jose
+
+**See NEW_FEATURES_2026.md for complete documentation**
+
 ## [1.1.0] - 2026-01-19
 
 ### Added

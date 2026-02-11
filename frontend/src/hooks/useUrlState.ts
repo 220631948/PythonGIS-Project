@@ -12,6 +12,12 @@ export interface UrlState {
 export function useUrlState<T extends UrlState>(initialState: T): [T, (updater: T | ((prev: T) => T)) => void] {
   const [searchParams, setSearchParams] = useSearchParams();
   const isInitialRender = useRef(true);
+  // Keep a ref to searchParams so the sync effect can read them without
+  // depending on the (frequently changing) searchParams value.
+  const searchParamsRef = useRef(searchParams);
+  useEffect(() => {
+    searchParamsRef.current = searchParams;
+  }, [searchParams]);
 
   // Initialize state from URL params only on mount
   const [state, setState] = useState<T>(() => {
@@ -30,7 +36,9 @@ export function useUrlState<T extends UrlState>(initialState: T): [T, (updater: 
     return newState;
   });
 
-  // Sync state to URL in a separate effect
+  // Sync state to URL — depends only on `state` and `setSearchParams`.
+  // Reading current params via ref avoids the infinite loop caused by
+  // including `searchParams` in the dependency array.
   useEffect(() => {
     // Skip first render to avoid redundant update
     if (isInitialRender.current) {
@@ -47,18 +55,12 @@ export function useUrlState<T extends UrlState>(initialState: T): [T, (updater: 
     }
 
     // Check if params actually changed before updating to avoid loops
-    const currentParams = Object.fromEntries(searchParams.entries());
-
-    // We only care if the params we manage are different.
-    // Using JSON.stringify for deep comparison of the generated params vs current params
-    // Note: This assumes currentParams doesn't have extra keys we want to preserve?
-    // The original code replaced ALL params: setSearchParams(params, { replace: true })
-    // So we replicate that behavior.
+    const currentParams = Object.fromEntries(searchParamsRef.current.entries());
 
     if (JSON.stringify(params) !== JSON.stringify(currentParams)) {
       setSearchParams(params, { replace: true });
     }
-  }, [state, setSearchParams, searchParams]);
+  }, [state, setSearchParams]);
 
   const setUrlState = useCallback((updater: T | ((prev: T) => T)) => {
     setState((prev) => {

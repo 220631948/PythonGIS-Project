@@ -318,7 +318,7 @@ class APIClient {
     }
 
     // ── Environment ──
-    getFloodRisk(simplify = 0.0001) {
+    getFloodRiskLegacy(simplify = 0.0001) {
         return fetchData(`/api/environment/flood-risk?simplify=${simplify}`);
     }
 
@@ -670,6 +670,384 @@ class APIClient {
 
     getRetrievalLog(limit = 50) {
         return fetchData(`/api/data-status/retrieval-log?limit=${limit}`);
+    }
+
+    // ==========================================
+    // 2026 NEW FEATURES API METHODS
+    // ==========================================
+
+    // ── 3D Visualization ──
+    extrudeBuildings(request: unknown) {
+        return this.post('/api/3d/buildings/extrude', request);
+    }
+
+    getElevationProfile(request: unknown) {
+        return this.post('/api/3d/elevation/profile', request);
+    }
+
+    analyzeShadows(request: unknown) {
+        return this.post('/api/3d/shadow/analysis', request);
+    }
+
+    calculate3DViewshed(request: unknown) {
+        return this.post('/api/3d/viewshed', request);
+    }
+
+    getTerrainTile(z: number, x: number, y: number) {
+        return fetch(`${API_BASE_URL}/api/3d/terrain/tiles/${z}/${x}/${y}`);
+    }
+
+    // ── AI Insights ──
+    predictTraffic(request: unknown) {
+        return this.post('/api/ai/traffic/predict', request);
+    }
+
+    predictCrimeHotspots(request: unknown) {
+        return this.post('/api/ai/crime/hotspots', request);
+    }
+
+    detectLandUseChange(request: unknown) {
+        return this.post('/api/ai/landuse/change-detection', request);
+    }
+
+    queryNaturalLanguage(request: unknown) {
+        return this.post('/api/ai/nlp/query', request);
+    }
+
+    getTrendingPredictions() {
+        return fetchData('/api/ai/predictions/trending');
+    }
+
+    // ── Community Engagement ──
+    submitFeedback(feedback: unknown) {
+        return this.post('/api/community/feedback/submit', feedback);
+    }
+
+    getFeedbackList(proposalId?: string, page = 1) {
+        let url = `/api/community/feedback/list?page=${page}`;
+        if (proposalId) url += `&proposal_id=${proposalId}`;
+        return fetchData(url);
+    }
+
+    reportIssue(issue: unknown) {
+        return this.post('/api/community/issues/report', issue);
+    }
+
+    uploadIssuePhoto(issueId: string, formData: FormData) {
+        return fetch(`${API_BASE_URL}/api/community/issues/upload-photo?issue_id=${issueId}`, {
+            method: 'POST',
+            body: formData
+        });
+    }
+
+    getIssuesList(category?: string, status?: string, page = 1) {
+        let url = `/api/community/issues/list?page=${page}`;
+        if (category) url += `&category=${category}`;
+        if (status) url += `&status=${status}`;
+        return fetchData(url);
+    }
+
+    voteOnPoll(pollId: string, optionId: string, voterId: string) {
+        return this.post('/api/community/polls/vote', {
+            poll_id: pollId,
+            option_id: optionId,
+            voter_id: voterId
+        });
+    }
+
+    getPollsList(status = 'active') {
+        return fetchData(`/api/community/polls/list?status=${status}`);
+    }
+
+    contributeData(contribution: unknown) {
+        return this.post('/api/community/contribute/data', contribution);
+    }
+
+    getContributionsList(status?: string) {
+        let url = '/api/community/contribute/list';
+        if (status) url += `?status=${status}`;
+        return fetchData(url);
+    }
+
+    getCommunityStats() {
+        return fetchData('/api/community/stats');
+    }
+
+    // ── Notifications & Alerts ──
+    subscribeToAlerts(subscription: unknown) {
+        return this.post('/api/notifications/subscribe', subscription);
+    }
+
+    getSubscriptions(userId: string) {
+        return fetchData(`/api/notifications/subscriptions/${userId}`);
+    }
+
+    updateSubscription(subscriptionId: string, update: unknown) {
+        return this.patch(`/api/notifications/subscriptions/${subscriptionId}`, update);
+    }
+
+    unsubscribe(subscriptionId: string) {
+        return this.delete(`/api/notifications/subscriptions/${subscriptionId}`);
+    }
+
+    registerPushDevice(registration: unknown) {
+        return this.post('/api/notifications/push/register', registration);
+    }
+
+    createAlert(alert: unknown) {
+        return this.post('/api/notifications/alerts/create', alert);
+    }
+
+    getActiveAlerts(lat?: number, lng?: number, radius?: number) {
+        let url = '/api/notifications/alerts/active';
+        if (lat !== undefined && lng !== undefined) {
+            url += `?lat=${lat}&lng=${lng}`;
+            if (radius) url += `&radius=${radius}`;
+        }
+        return fetchData(url);
+    }
+
+    getUserNotifications(userId: string, unreadOnly = false) {
+        return fetchData(`/api/notifications/${userId}?unread_only=${unreadOnly}`);
+    }
+
+    markNotificationRead(notificationId: string) {
+        return this.post(`/api/notifications/${notificationId}/read`, {});
+    }
+
+    addLocationWatch(watch: unknown) {
+        return this.post('/api/notifications/watch/add', watch);
+    }
+
+    getLocationWatches(userId: string) {
+        return fetchData(`/api/notifications/watch/list/${userId}`);
+    }
+
+    // ── Demographics ──
+    getDensityHeatmap(request: unknown) {
+        return this.post('/api/demographics/density/heatmap', request);
+    }
+
+    getSocioeconomicIndicators(areaId: string) {
+        return fetchData(`/api/demographics/indicators/${areaId}`);
+    }
+
+    getAgeDistribution(areaId: string) {
+        return fetchData(`/api/demographics/age-distribution/${areaId}`);
+    }
+
+    // ── Environmental ──
+    getFloodRisk(lat: number, lng: number, scenario = 'current') {
+        return fetchData(`/api/environmental/flood/risk?lat=${lat}&lng=${lng}&scenario=${scenario}`);
+    }
+
+    getAirQuality(lat?: number, lng?: number) {
+        let url = '/api/environmental/air-quality';
+        if (lat !== undefined && lng !== undefined) {
+            url += `?lat=${lat}&lng=${lng}`;
+        }
+        return fetchData(url);
+    }
+
+    getGreenSpaceAccessibility(lat: number, lng: number) {
+        return fetchData(`/api/environmental/green-space/accessibility?lat=${lat}&lng=${lng}`);
+    }
+
+    getClimateResilience(areaId: string) {
+        return fetchData(`/api/environmental/climate/resilience?area_id=${areaId}`);
+    }
+
+    // ── Dashboard Builder ──
+    createDashboard(dashboard: unknown) {
+        return this.post('/api/dashboard-builder/dashboards', dashboard);
+    }
+
+    getUserDashboards(userId: string) {
+        return fetchData(`/api/dashboard-builder/dashboards/${userId}`);
+    }
+
+    updateDashboard(dashboardId: string, update: unknown) {
+        return this.patch(`/api/dashboard-builder/dashboards/${dashboardId}`, update);
+    }
+
+    deleteDashboard(dashboardId: string) {
+        return this.delete(`/api/dashboard-builder/dashboards/${dashboardId}`);
+    }
+
+    getDashboardTemplates() {
+        return fetchData('/api/dashboard-builder/templates');
+    }
+
+    // ── Comparison ──
+    compareNeighborhoods(request: unknown) {
+        return this.post('/api/comparison/neighborhoods', request);
+    }
+
+    compareTemporally(areaId: string, metric: string, years: number[]) {
+        return fetchData(`/api/comparison/temporal?area_id=${areaId}&metric=${metric}&years=${years.join(',')}`);
+    }
+
+    benchmarkArea(areaId: string, metrics?: string[]) {
+        let url = `/api/comparison/benchmark/${areaId}`;
+        if (metrics) url += `?metrics=${metrics.join(',')}`;
+        return fetchData(url);
+    }
+
+    findSimilarAreas(areaId: string, limit = 5) {
+        return fetchData(`/api/comparison/similar/${areaId}?limit=${limit}`);
+    }
+
+    // ── Workspace ──
+    createWorkspace(workspace: unknown) {
+        return this.post('/api/workspace/workspaces', workspace);
+    }
+
+    getUserWorkspaces(userId: string) {
+        return fetchData(`/api/workspace/workspaces/${userId}`);
+    }
+
+    updateWorkspace(workspaceId: string, update: unknown) {
+        return this.patch(`/api/workspace/workspaces/${workspaceId}`, update);
+    }
+
+    deleteWorkspace(workspaceId: string) {
+        return this.delete(`/api/workspace/workspaces/${workspaceId}`);
+    }
+
+    createScenario(scenario: unknown) {
+        return this.post('/api/workspace/scenarios', scenario);
+    }
+
+    getWorkspaceScenarios(workspaceId: string) {
+        return fetchData(`/api/workspace/scenarios/${workspaceId}`);
+    }
+
+    // ── PDF Reports ──
+    generateReport(request: unknown) {
+        return this.post('/api/pdf-reports/generate', request);
+    }
+
+    getReportStatus(taskId: string) {
+        return fetchData(`/api/pdf-reports/status/${taskId}`);
+    }
+
+    getReportTemplates() {
+        return fetchData('/api/pdf-reports/templates');
+    }
+
+    scheduleReport(schedule: unknown) {
+        return this.post('/api/pdf-reports/schedule', schedule);
+    }
+
+    getScheduledReports(userId: string) {
+        return fetchData(`/api/pdf-reports/scheduled/${userId}`);
+    }
+
+    // ── Data Quality ──
+    getDataQualityOverview() {
+        return fetchData('/api/data-quality/overview');
+    }
+
+    getDatasetQuality(datasetId: string) {
+        return fetchData(`/api/data-quality/dataset/${datasetId}`);
+    }
+
+    getValidationErrors(datasetId: string, severity?: string) {
+        let url = `/api/data-quality/validation/errors/${datasetId}`;
+        if (severity) url += `?severity=${severity}`;
+        return fetchData(url);
+    }
+
+    // ── Advanced Search ──
+    executeSpatialQuery(query: unknown) {
+        return this.post('/api/advanced-search/spatial-query', query);
+    }
+
+    saveSearch(search: unknown) {
+        return this.post('/api/advanced-search/save-search', search);
+    }
+
+    getSavedSearches(userId: string, publicOnly = false) {
+        return fetchData(`/api/advanced-search/saved-searches/${userId}?public_only=${publicOnly}`);
+    }
+
+    crossDatasetSearch(query: string, datasets?: string[]) {
+        let url = `/api/advanced-search/cross-dataset-search?q=${encodeURIComponent(query)}`;
+        if (datasets) url += `&datasets=${datasets.join(',')}`;
+        return fetchData(url);
+    }
+
+    getSearchRecommendations(userId: string) {
+        return fetchData(`/api/advanced-search/recommendations/${userId}`);
+    }
+
+    // ── Performance ──
+    getVectorTile(dataset: string, z: number, x: number, y: number) {
+        return fetch(`${API_BASE_URL}/api/performance/vector-tiles/${z}/${x}/${y}.mvt?dataset=${dataset}`);
+    }
+
+    getClusteredData(dataset: string, zoom: number, bounds?: string) {
+        let url = `/api/performance/cluster/${dataset}?zoom=${zoom}`;
+        if (bounds) url += `&bounds=${bounds}`;
+        return fetchData(url);
+    }
+
+    getLODData(dataset: string, zoom: number, simplify = true) {
+        return fetchData(`/api/performance/lod/${dataset}?zoom=${zoom}&simplify=${simplify}`);
+    }
+
+    preloadCache(request: unknown) {
+        return this.post('/api/performance/cache/preload', request);
+    }
+
+    getCacheStats() {
+        return fetchData('/api/performance/cache/stats');
+    }
+
+    // ── Extensions ──
+    registerExtension(extension: unknown) {
+        return this.post('/api/extensions/register', extension);
+    }
+
+    getMarketplaceExtensions(category?: string, search?: string) {
+        let url = '/api/extensions/marketplace';
+        const params = [];
+        if (category) params.push(`category=${category}`);
+        if (search) params.push(`search=${encodeURIComponent(search)}`);
+        if (params.length) url += `?${params.join('&')}`;
+        return fetchData(url);
+    }
+
+    createAPIKey(request: unknown) {
+        return this.post('/api/extensions/api-keys', request);
+    }
+
+    getUserAPIKeys(userId: string) {
+        return fetchData(`/api/extensions/api-keys/${userId}`);
+    }
+
+    revokeAPIKey(keyId: string) {
+        return this.delete(`/api/extensions/api-keys/${keyId}`);
+    }
+
+    getAPIUsage(keyId: string) {
+        return fetchData(`/api/extensions/usage?api_key_id=${keyId}`);
+    }
+
+    registerWebhook(webhook: unknown) {
+        return this.post('/api/extensions/webhooks', webhook);
+    }
+
+    getUserWebhooks(userId: string) {
+        return fetchData(`/api/extensions/webhooks/${userId}`);
+    }
+
+    deleteWebhook(webhookId: string) {
+        return this.delete(`/api/extensions/webhooks/${webhookId}`);
+    }
+
+    getExtensionDocs() {
+        return fetchData('/api/extensions/docs/getting-started');
     }
 }
 

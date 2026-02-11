@@ -1,7 +1,8 @@
 import React from 'react';
 import {
   MapPin, Menu, X, Wifi, WifiOff, Layers, BarChart3,
-  Share2, Download, Database, Sun, Moon, Info, Activity
+  Share2, Download, Database, Sun, Moon, Info, Activity, Folder,
+  Layout, GitCompare
 } from 'lucide-react';
 import SearchAutocomplete from './SearchAutocomplete';
 
@@ -18,14 +19,18 @@ interface HeaderProps {
   isSidebarOpen?: boolean;
   onShareUrl?: () => void;
   onDashboardOpen?: () => void;
+  onDashboardBuilderOpen?: () => void;
+  onComparativeAnalysisOpen?: () => void;
   onBasemapChange?: (basemap: string) => void;
   onOpenOfflineManager?: () => void;
   onDataStatus?: () => void;
   onExport?: () => void;
   onThemeToggle?: () => void;
+  onWorkspaceOpen?: () => void;
   isDarkMode?: boolean;
   currentBasemap?: string;
   isOnline?: boolean;
+  currentWorkspace?: any;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -34,14 +39,18 @@ const Header: React.FC<HeaderProps> = ({
   isSidebarOpen,
   onShareUrl,
   onDashboardOpen,
+  onDashboardBuilderOpen,
+  onComparativeAnalysisOpen,
   onBasemapChange,
   onOpenOfflineManager,
   onDataStatus,
   onExport,
   onThemeToggle,
+  onWorkspaceOpen,
   isDarkMode = false,
   currentBasemap = 'streets',
-  isOnline = true
+  isOnline = true,
+  currentWorkspace
 }) => {
   const basemapOptions = [
     { id: 'streets', name: 'Streets' },
@@ -99,14 +108,58 @@ const Header: React.FC<HeaderProps> = ({
           {isOnline ? <Wifi size={16} /> : <WifiOff size={16} />}
         </div>
 
+        {/* Workspace Indicator & Button */}
+        {currentWorkspace ? (
+          <div className="workspace-indicator" title={`Current workspace: ${currentWorkspace.name}`}>
+            <button
+              className="header-btn workspace-btn"
+              onClick={onWorkspaceOpen}
+              aria-label={`Open workspace manager. Current: ${currentWorkspace.name}`}
+            >
+              <Folder size={18} aria-hidden="true" />
+              <span className="btn-text workspace-name">{currentWorkspace.name}</span>
+            </button>
+          </div>
+        ) : (
+          <button
+            className="header-btn"
+            onClick={onWorkspaceOpen}
+            title="Workspaces (W)"
+            aria-label="Open workspace manager"
+          >
+            <Folder size={18} aria-hidden="true" />
+            <span className="btn-text">Workspaces</span>
+          </button>
+        )}
+
         <button
           className="header-btn"
           onClick={onDashboardOpen}
-          title="Analytics Dashboard"
+          title="Analytics Dashboard (D)"
           aria-label="Open analytics dashboard"
         >
           <BarChart3 size={18} aria-hidden="true" />
           <span className="btn-text">Dashboard</span>
+        </button>
+
+        <button
+          className="header-btn"
+          onClick={onDashboardBuilderOpen}
+          title="Dashboard Builder (B)"
+          aria-label="Open dashboard builder"
+        >
+          <Layout size={18} aria-hidden="true" />
+          <span className="btn-text">Builder</span>
+        </button>
+
+        <button
+          className="header-btn"
+          onClick={onComparativeAnalysisOpen}
+          title="Comparative Analysis (C)"
+          aria-label="Open comparative analysis"
+        >
+          <GitCompare size={18} aria-hidden="true" />
+          <span className="btn-text">Compare</span>
         </button>
 
         <div className="basemap-selector">

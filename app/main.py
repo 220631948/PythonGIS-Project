@@ -88,6 +88,33 @@ except Exception as exc:  # pragma: no cover
     collaboration_api = export_api = field_data_api = None
     metadata_api = advanced_analysis_api = realtime_api = data_status_api = None
 
+# New feature APIs (2026 enhancement)
+try:
+    from app.api import (
+        visualization_3d_api,
+        ai_insights_api,
+        community_api,
+        notifications_api,
+        demographics_api,
+        environmental_api,
+        dashboard_builder_api,
+        comparison_api,
+        workspace_api,
+        pdf_reports_api,
+        data_quality_api,
+        advanced_search_api,
+        performance_api,
+        extensions_api,
+    )
+except Exception as exc:  # pragma: no cover
+    import logging as _logging
+
+    _logging.warning("New feature API imports failed: %s", exc)
+    visualization_3d_api = ai_insights_api = community_api = notifications_api = None
+    demographics_api = environmental_api = dashboard_builder_api = comparison_api = None
+    workspace_api = pdf_reports_api = data_quality_api = advanced_search_api = None
+    performance_api = extensions_api = None
+
 # Setup logging
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -237,6 +264,36 @@ if realtime_api:
     app.include_router(realtime_api.router, prefix=settings.API_PREFIX)
 if data_status_api:
     app.include_router(data_status_api.router, prefix=settings.API_PREFIX)
+
+# New feature routers (2026 enhancement)
+if visualization_3d_api:
+    app.include_router(visualization_3d_api.router, prefix=settings.API_PREFIX)
+if ai_insights_api:
+    app.include_router(ai_insights_api.router, prefix=settings.API_PREFIX)
+if community_api:
+    app.include_router(community_api.router, prefix=settings.API_PREFIX)
+if notifications_api:
+    app.include_router(notifications_api.router, prefix=settings.API_PREFIX)
+if demographics_api:
+    app.include_router(demographics_api.router, prefix=settings.API_PREFIX)
+if environmental_api:
+    app.include_router(environmental_api.router, prefix=settings.API_PREFIX)
+if dashboard_builder_api:
+    app.include_router(dashboard_builder_api.router, prefix=settings.API_PREFIX)
+if comparison_api:
+    app.include_router(comparison_api.router, prefix=settings.API_PREFIX)
+if workspace_api:
+    app.include_router(workspace_api.router, prefix=settings.API_PREFIX)
+if pdf_reports_api:
+    app.include_router(pdf_reports_api.router, prefix=settings.API_PREFIX)
+if data_quality_api:
+    app.include_router(data_quality_api.router, prefix=settings.API_PREFIX)
+if advanced_search_api:
+    app.include_router(advanced_search_api.router, prefix=settings.API_PREFIX)
+if performance_api:
+    app.include_router(performance_api.router, prefix=settings.API_PREFIX)
+if extensions_api:
+    app.include_router(extensions_api.router, prefix=settings.API_PREFIX)
 
 # Generic Data Proxy Endpoint (Phase 7.5: System Integration)
 # Bounded in-memory cache with automatic TTL eviction (B5 refactor)
@@ -456,30 +513,43 @@ async def health_check_simple():
 async def health_check():
     import psutil
 
-    # System information
-    memory = psutil.virtual_memory()
-    disk = psutil.disk_usage("/")
+    try:
+        # System information — use interval=0 to avoid blocking the async event loop.
+        # interval=1 sleeps the entire thread for 1 second which stalls all other requests.
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage("/")
 
-    return {
-        "status": "healthy",
-        "version": settings.APP_VERSION,
-        "timestamp": time.time(),
-        "uptime": time.time() - getattr(app.state, "start_time", time.time()),
-        "system": {
-            "cpu_percent": psutil.cpu_percent(interval=1),
-            "memory": {
-                "total": memory.total,
-                "available": memory.available,
-                "percent": memory.percent,
+        return {
+            "status": "healthy",
+            "version": settings.APP_VERSION,
+            "timestamp": time.time(),
+            "uptime": time.time() - getattr(app.state, "start_time", time.time()),
+            "system": {
+                "cpu_percent": psutil.cpu_percent(interval=0),
+                "memory": {
+                    "total": memory.total,
+                    "available": memory.available,
+                    "percent": memory.percent,
+                },
+                "disk": {"total": disk.total, "free": disk.free, "percent": disk.percent},
             },
-            "disk": {"total": disk.total, "free": disk.free, "percent": disk.percent},
-        },
-        "requests": {
-            "total": sum(request_stats.values()),
-            "by_method": dict(request_stats),
-        },
-        "errors": {"total": sum(error_stats.values()), "by_type": dict(error_stats)},
-    }
+            "requests": {
+                "total": sum(request_stats.values()),
+                "by_method": dict(request_stats),
+            },
+            "errors": {"total": sum(error_stats.values()), "by_type": dict(error_stats)},
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "degraded",
+                "version": settings.APP_VERSION,
+                "timestamp": time.time(),
+                "error": str(e),
+            },
+        )
 
 
 # Sentry verification endpoint (development / testing only)

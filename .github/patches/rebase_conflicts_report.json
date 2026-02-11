@@ -1,0 +1,15 @@
+{
+  "branch": "ag/auto/1770725576",
+  "upstream": "origin/ag/auto/1770725576",
+  "rebase_target": "origin/master",
+  "rebase_attempt": "origin/ag/auto/1770725576",
+  "status": "conflicts",
+  "conflicts": [
+    {
+      "file": ".github/workflows/branch-cleanup.yml",
+      "marker_count": 2,
+      "note": "add/add conflict when applying commit a70e0aa (Add automated branch cleanup workflow)"
+    }
+  ],
+  "action_taken": "rebase aborted; no auto-resolution performed"
+}

@@ -9,7 +9,7 @@ Provides:
 """
 
 from fastapi import APIRouter, HTTPException, Query
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 from app.config import settings
@@ -25,21 +25,36 @@ async def check_all_sources_health():
     Check the health/accessibility of all configured open data sources.
     Returns status for each data source endpoint.
     """
-    results = await data_loader.check_all_sources_health_async()
+    try:
+        results = await data_loader.check_all_sources_health_async()
 
-    total = len(results)
-    accessible = sum(1 for r in results.values() if r.get("accessible", False))
+        total = len(results)
+        accessible = sum(1 for r in results.values() if r.get("accessible", False))
 
-    return {
-        "summary": {
-            "total_sources": total,
-            "accessible": accessible,
-            "unavailable": total - accessible,
-            "health_percentage": round(accessible / total * 100, 1) if total > 0 else 0
-        },
-        "sources": results,
-        "checked_at": datetime.utcnow().isoformat()
-    }
+        return {
+            "summary": {
+                "total_sources": total,
+                "accessible": accessible,
+                "unavailable": total - accessible,
+                "health_percentage": round(accessible / total * 100, 1) if total > 0 else 0
+            },
+            "sources": results,
+            "checked_at": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {
+            "summary": {
+                "total_sources": 0,
+                "accessible": 0,
+                "unavailable": 0,
+                "health_percentage": 0,
+                "status": "degraded",
+                "error": str(e)
+            },
+            "sources": {},
+            "checked_at": datetime.now(timezone.utc).isoformat()
+        }
 
 
 @router.get("/health/{dataset_name}")
@@ -81,7 +96,7 @@ async def get_retrieval_log(limit: int = Query(50, ge=1, le=100)):
             "failed": failed,
             "success_rate": round(successful / len(log) * 100, 1) if log else 0
         },
-        "retrieved_at": datetime.utcnow().isoformat()
+        "retrieved_at": datetime.now(timezone.utc).isoformat()
     }
 
 
@@ -142,7 +157,7 @@ async def get_data_provenance(dataset_name: str):
         },
         "current_status": health,
         "category": _categorize_dataset(dataset_name),
-        "checked_at": datetime.utcnow().isoformat()
+        "checked_at": datetime.now(timezone.utc).isoformat()
     }
 
 
@@ -163,7 +178,7 @@ async def validate_dataset(dataset_name: str, force_refresh: bool = Query(False)
             "dataset": dataset_name,
             "validation": validation.to_dict(),
             "source_url": settings.DATA_URLS[dataset_name],
-            "validated_at": datetime.utcnow().isoformat()
+            "validated_at": datetime.now(timezone.utc).isoformat()
         }
     except Exception as e:
         logger.error(f"Validation failed for {dataset_name}: {e}")

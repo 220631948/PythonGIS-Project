@@ -81,14 +81,13 @@ const LayerCard: React.FC<LayerCardProps> = ({ layerId, isActive, onToggle, meta
         </div>
         <button 
           className="layer-toggle"
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             onToggle();
           }}
-          tabIndex={-1} // Handled by parent card click usually, but keeping button meant separate focus?
-          // Actually, pattern often is card is clickable OR button is clickable.
-          // Here I made card clickable.
-          aria-hidden="true"
+          aria-pressed={isActive}
+          aria-label={isActive ? 'Hide layer' : 'Show layer'}
         >
           {isActive ? <Eye size={18} /> : <EyeOff size={18} />}
         </button>

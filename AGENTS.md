@@ -74,6 +74,9 @@ You are not just a coder; you are a steward of municipal spatial data. You prior
    - Backend: `.venv/bin/uvicorn app.main:app --reload --port 8000`
    - Frontend (from `frontend/`): `npm run dev`
 5. **Verify**: Load `http://localhost:5173` and check console for a clean boot.
+6. **Copilot MCP — Playwright (default) & Chrome DevTools (debugging)**: If Copilot agents or local UI automation need to control a browser instance, add `.copilot/mcp.json` to register one or both MCP servers. The preferred default is Playwright (Docker image `mcp/playwright`) for E2E and automation; use Chrome DevTools (`chrome-devtools-mcp`) for deep interactive debugging. After adding the file, restart VS Code so the extension picks it up. For Playwright, ensure Docker is installed and running. For Chrome DevTools, start Chrome with:
+
+   chrome --remote-debugging-port=9222
 
 ### CI Quality Gates (Beta)
 
