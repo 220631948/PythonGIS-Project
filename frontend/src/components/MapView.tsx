@@ -6,7 +6,7 @@
  *
  * ENHANCED: Now supports PostGIS clustering, heatmaps, and advanced layer rendering
  */
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { PathOptions } from 'leaflet';
 import {
   MapContainer,
@@ -156,7 +156,7 @@ function ViewportTracker({
   // Initial viewport
   useEffect(() => {
     onViewportChange(map.getBounds(), map.getZoom());
-  }, []);
+  }, [map, onViewportChange]);
 
   return null;
 }
@@ -192,9 +192,28 @@ const MapView = ({
   const [userLocation, setUserLocation] = useState<LatLng | null>(null);
   const [mapBounds, setMapBounds] = useState<unknown>(null);
   const [mapZoom, setMapZoom] = useState<number>(zoom ?? 11);
+  const lastViewportSignature = useRef<string>('');
 
   // Viewport change handler
   const handleViewportChange = useCallback((bounds: unknown, currentZoom: number) => {
+    const typedBounds = bounds as { getSouthWest: () => { lat: number; lng: number }; getNorthEast: () => { lat: number; lng: number } } | null;
+    if (!typedBounds) return;
+
+    const sw = typedBounds.getSouthWest();
+    const ne = typedBounds.getNorthEast();
+    const signature = [
+      currentZoom,
+      sw.lat.toFixed(4),
+      sw.lng.toFixed(4),
+      ne.lat.toFixed(4),
+      ne.lng.toFixed(4),
+    ].join(':');
+
+    if (signature === lastViewportSignature.current) {
+      return;
+    }
+    lastViewportSignature.current = signature;
+
     setMapBounds(bounds);
     setMapZoom(currentZoom);
   }, []);
@@ -245,121 +264,61 @@ const MapView = ({
   // Data layers rendering temporarily removed to simplify strict typing.
   // TODO: Reintroduce typed layer rendering (follow-up task).
 
-  // Pre-compute data layer elements to avoid TS inference issues with Object.keys in JSX
+  const dataLayerElements: React.ReactNode = useMemo(() => {
+    const elements: React.ReactNode[] = [];
 
-  const dataLayerElements: any[] = [];
+    for (const layerId of Object.keys(geoData)) {
+      const layerData = geoData[layerId];
+      if (!layerData?.geojson) continue;
 
-  for (const layerId of Object.keys(geoData)) {
+      const datasetName = String(LAYER_TO_DATASET[layerId] ?? layerId);
+      const isPointLayer = layerData.geojson.features?.some(
+        (f) => f.geometry?.type === 'Point' || f.geometry?.type === 'MultiPoint',
+      );
 
-    const layerData = geoData[layerId];
+      const geoJsonLayer = (
+        <GeoJSON
+          data={layerData.geojson}
+          style={{
+            color: '#3b82f6',
+            weight: 2,
+            opacity: 0.7,
+            fillOpacity: _layerOpacity,
+          }}
+          onEachFeature={(feature, layer) => {
+            const props = feature.properties || {};
+            const name = props.name || props.NAME || props.label || datasetName;
 
-    if (!layerData?.geojson) continue;
+            const popupLines = [`<strong>${String(name)}</strong>`];
+            if (props.description) popupLines.push(`<p>${String(props.description)}</p>`);
+            if (props.category) popupLines.push(`<p>Category: ${String(props.category)}</p>`);
+            if (props.area) popupLines.push(`<p>Area: ${String(props.area)}</p>`);
 
-    const datasetName = String(LAYER_TO_DATASET[layerId] ?? layerId);
+            layer.bindPopup(`<div class="p-2">${popupLines.join('')}</div>`);
+            layer.on({
+              click: (e) => _onFeatureClick?.(feature, e),
+              mouseover: () => _onFeatureHover?.(feature, true),
+              mouseout: () => _onFeatureHover?.(feature, false),
+            });
+          }}
+        />
+      );
 
+      elements.push(
+        <LayersControl.Overlay key={layerId} checked name={datasetName}>
+          {isPointLayer ? (
+            <MarkerClusterGroup chunkedLoading maxClusterRadius={50} showCoverageOnHover={false}>
+              {geoJsonLayer}
+            </MarkerClusterGroup>
+          ) : (
+            geoJsonLayer
+          )}
+        </LayersControl.Overlay>,
+      );
+    }
 
-
-    const isPointLayer = layerData.geojson.features?.some(
-
-      (f) => f.geometry?.type === 'Point' || f.geometry?.type === 'MultiPoint'
-
-    );
-
-
-
-    const geoJsonLayer = (
-
-      <GeoJSON
-
-        data={layerData.geojson}
-
-        style={{
-
-          color: '#3b82f6',
-
-          weight: 2,
-
-          opacity: 0.7,
-
-          fillOpacity: _layerOpacity,
-
-        }}
-
-        onEachFeature={(feature, layer) => {
-
-          const props = feature.properties || {};
-
-          const name = props.name || props.NAME || props.label || datasetName;
-
-
-
-          // Build popup content
-
-          const popupLines = [`<strong>${String(name)}</strong>`];
-
-          if (props.description) popupLines.push(`<p>${String(props.description)}</p>`);
-
-          if (props.category) popupLines.push(`<p>Category: ${String(props.category)}</p>`);
-
-          if (props.area) popupLines.push(`<p>Area: ${String(props.area)}</p>`);
-
-
-
-          layer.bindPopup(`<div class="p-2">${popupLines.join('')}</div>`);
-
-
-
-          // Attach event handlers
-
-          layer.on({
-
-            click: (e) => _onFeatureClick?.(feature, e),
-
-            mouseover: () => _onFeatureHover?.(feature, true),
-
-            mouseout: () => _onFeatureHover?.(feature, false),
-
-          });
-
-        }}
-
-      />
-
-    );
-
-
-
-    dataLayerElements.push(
-
-      <LayersControl.Overlay key={layerId} checked name={datasetName}>
-
-        {isPointLayer ? (
-
-          <MarkerClusterGroup
-
-            chunkedLoading
-
-            maxClusterRadius={50}
-
-            showCoverageOnHover={false}
-
-          >
-
-            {geoJsonLayer}
-
-          </MarkerClusterGroup>
-
-        ) : (
-
-          geoJsonLayer
-
-        )}
-
-      </LayersControl.Overlay>
-
-    );
-
-  }
+    return elements;
+  }, [geoData, _layerOpacity, _onFeatureClick, _onFeatureHover]);
 
   // Fallback when coords are not yet available
   if (!normalizedCenter) {
