@@ -4,7 +4,15 @@
  */
 
 import { useCallback } from 'react';
-import * as turf from '@turf/turf';
+import { polygon as turfPolygon, lineString as turfLineString, point as turfPoint } from '@turf/helpers';
+import turfArea from '@turf/area';
+import turfCentroid from '@turf/centroid';
+import turfBbox from '@turf/bbox';
+import turfLength from '@turf/length';
+import turfPolygonToLine from '@turf/polygon-to-line';
+import turfMidpoint from '@turf/midpoint';
+import turfCircle from '@turf/circle';
+import turfPointsWithinPolygon from '@turf/points-within-polygon';
 import type { Polygon, LineString, Point, FeatureCollection } from 'geojson';
 
 export interface AnalysisResult {
@@ -25,11 +33,11 @@ export const useSpatialAnalysis = () => {
      * Analyze a polygon geometry
      */
     const analyzePolygon = useCallback((geometry: Polygon): AnalysisResult => {
-        const feature = turf.polygon(geometry.coordinates);
-        const area = turf.area(feature);
-        const centroidPoint = turf.centroid(feature);
-        const bbox = turf.bbox(feature);
-        const perimeter = turf.length(turf.polygonToLine(feature), { units: 'meters' });
+        const feature = turfPolygon(geometry.coordinates);
+        const area = turfArea(feature);
+        const centroidPoint = turfCentroid(feature);
+        const bboxResult = turfBbox(feature);
+        const perimeter = turfLength(turfPolygonToLine(feature), { units: 'meters' });
 
         return {
             type: 'polygon',
@@ -37,7 +45,7 @@ export const useSpatialAnalysis = () => {
             areaKm: Math.round(area / 1000000 * 100) / 100,
             perimeter: Math.round(perimeter),
             centroid: centroidPoint.geometry.coordinates as [number, number],
-            bounds: [[bbox[1], bbox[0]], [bbox[3], bbox[2]]]
+            bounds: [[bboxResult[1], bboxResult[0]], [bboxResult[3], bboxResult[2]]]
         };
     }, []);
 
@@ -45,12 +53,12 @@ export const useSpatialAnalysis = () => {
      * Analyze a line geometry
      */
     const analyzeLine = useCallback((geometry: LineString): AnalysisResult => {
-        const feature = turf.lineString(geometry.coordinates);
-        const length = turf.length(feature, { units: 'meters' });
+        const feature = turfLineString(geometry.coordinates);
+        const length = turfLength(feature, { units: 'meters' });
         const firstCoord = geometry.coordinates[0];
         const lastCoord = geometry.coordinates[geometry.coordinates.length - 1];
         const midpoint = firstCoord && lastCoord
-            ? turf.midpoint(turf.point(firstCoord), turf.point(lastCoord))
+            ? turfMidpoint(turfPoint(firstCoord), turfPoint(lastCoord))
             : null;
 
         return {
@@ -68,12 +76,12 @@ export const useSpatialAnalysis = () => {
         polygon: Polygon,
         layers: { [layerName: string]: FeatureCollection<Point> }
     ): { [layerName: string]: number } => {
-        const polygonFeature = turf.polygon(polygon.coordinates);
+        const polygonFeature = turfPolygon(polygon.coordinates);
         const counts: { [key: string]: number } = {};
 
         Object.entries(layers).forEach(([name, featureCollection]) => {
             if (featureCollection && featureCollection.features) {
-                const within = turf.pointsWithinPolygon(featureCollection, polygonFeature);
+                const within = turfPointsWithinPolygon(featureCollection, polygonFeature);
                 counts[name] = within.features.length;
             }
         });
@@ -107,7 +115,7 @@ export const useSpatialAnalysis = () => {
 
             case 'circle': {
                 // Convert circle to polygon for analysis
-                const circlePolygon = turf.circle(
+                const circlePolygon = turfCircle(
                     geometry.coordinates,
                     geometry.radius / 1000, // Convert to km
                     { units: 'kilometers', steps: 64 }

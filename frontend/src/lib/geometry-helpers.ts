@@ -1,4 +1,7 @@
-import * as turf from '@turf/turf';
+import turfArea from '@turf/area';
+import turfBuffer from '@turf/buffer';
+import turfCentroid from '@turf/centroid';
+import turfSimplify from '@turf/simplify';
 import type { Geometry, Point, Polygon, Feature, FeatureCollection } from 'geojson';
 
 /**
@@ -7,7 +10,7 @@ import type { Geometry, Point, Polygon, Feature, FeatureCollection } from 'geojs
  * @returns number - Area in square meters
  */
 export const calculateArea = (polygon: Polygon | Feature<Polygon>): number => {
-    return turf.area(polygon);
+    return turfArea(polygon);
 };
 
 /**
@@ -17,7 +20,7 @@ export const calculateArea = (polygon: Polygon | Feature<Polygon>): number => {
  * @returns Polygon - Buffer polygon
  */
 export const bufferPoint = (point: Point | Feature<Point>, radiusMeters: number): Polygon => {
-    const buffer = turf.buffer(point, radiusMeters, { units: 'meters' });
+    const buffer = turfBuffer(point, radiusMeters, { units: 'meters' });
     return (buffer as Feature<Polygon>).geometry;
 };
 
@@ -27,7 +30,7 @@ export const bufferPoint = (point: Point | Feature<Point>, radiusMeters: number)
  * @returns Point - Centroid point
  */
 export const centroid = (geometry: Geometry | Feature | FeatureCollection): Point => {
-    const result = turf.centroid(geometry);
+    const result = turfCentroid(geometry);
     return result.geometry as Point;
 };
 
@@ -38,7 +41,7 @@ export const centroid = (geometry: Geometry | Feature | FeatureCollection): Poin
  * @returns Geometry - Simplified geometry
  */
 export const simplify = <T extends Geometry>(geometry: T, tolerance: number = 0.001): T => {
-    return turf.simplify(geometry, { tolerance, highQuality: true }) as T;
+    return turfSimplify(geometry, { tolerance, highQuality: true }) as T;
 };
 
 export default {

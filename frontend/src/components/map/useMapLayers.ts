@@ -6,6 +6,10 @@
  */
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { LatLngBounds } from 'leaflet';
+import { LAYER_TO_DATASET } from '../../lib/layer-datasets';
+
+// Re-export for backward compatibility
+export { LAYER_TO_DATASET };
 
 interface LayerData {
   geojson: GeoJSON.FeatureCollection;
@@ -29,31 +33,6 @@ interface UseMapLayersOptions {
   zoom?: number;
 }
 
-// Map frontend layer IDs -> backend dataset keys (used by /api/data)
-export const LAYER_TO_DATASET: Record<string, string> = {
-  'zoning-layer': 'zoning',
-  'building-footprints-layer': 'building_footprints',
-  'open-spaces-layer': 'open_spaces',
-  'water-facilities-layer': 'water_facilities',
-
-  'services-layer': 'informal_settlements',
-  'clinics-layer': 'clinics',
-  'housing-offices-layer': 'housing_offices',
-  'courts-layer': 'courts',
-
-  'parks-layer': 'parks',
-  'sports-layer': 'sports_grounds',
-  'swimming-pools-layer': 'swimming_pools',
-
-  'safety-layer': 'precincts', // precincts / crime_stat aggregation
-  'flood-layer': 'flood_zones',
-  'cemeteries-layer': 'cemeteries',
-  'trading-layer': 'trading_locations',
-  'myciti-stops-layer': 'myciti_stops',
-  'myciti-routes-layer': 'myciti_routes',
-  'railway-stations-layer': 'rail_stations',
-};
-
 export function useMapLayers({
   layers,
   activeFilters,
@@ -65,6 +44,7 @@ export function useMapLayers({
   const [geoData, setGeoData] = useState<Record<string, LayerData>>({});
   const fetchingLayers = useRef(new Set<string>());
   const lastFetchedViewportByLayer = useRef(new Map<string, string>());
+  const viewportDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const getViewportKey = useCallback((viewportBounds?: LatLngBounds | null, viewportZoom?: number) => {
     if (!viewportBounds || viewportZoom == null) return 'global';
@@ -178,30 +158,44 @@ export function useMapLayers({
   }, []);
 
   // Fetch standard layers (without filters) with deduped requests
-  // If viewport loading is enabled, refetch on bounds/zoom change
+  // If viewport loading is enabled, debounce refetches on bounds/zoom change
   useEffect(() => {
-    const currentViewportKey = getViewportKey(bounds, zoom);
+    const doFetch = () => {
+      const currentViewportKey = getViewportKey(bounds, zoom);
 
-    layers.forEach((layerId) => {
-      if (activeFilters[layerId]) return;
+      layers.forEach((layerId) => {
+        if (activeFilters[layerId]) return;
 
-      const shouldFetch = enableViewportLoading
-        ? lastFetchedViewportByLayer.current.get(layerId) !== currentViewportKey
-        : !geoData[layerId] && !fetchingLayers.current.has(layerId);
+        const shouldFetch = enableViewportLoading
+          ? lastFetchedViewportByLayer.current.get(layerId) !== currentViewportKey
+          : !geoData[layerId] && !fetchingLayers.current.has(layerId);
 
-      if (shouldFetch && !fetchingLayers.current.has(layerId)) {
-        fetchingLayers.current.add(layerId);
-        fetchLayerData(layerId, bounds)
-          .then((ok) => {
-            if (ok && enableViewportLoading) {
-              lastFetchedViewportByLayer.current.set(layerId, currentViewportKey);
-            }
-          })
-          .finally(() => {
-            fetchingLayers.current.delete(layerId);
-          });
-      }
-    });
+        if (shouldFetch && !fetchingLayers.current.has(layerId)) {
+          fetchingLayers.current.add(layerId);
+          fetchLayerData(layerId, bounds)
+            .then((ok) => {
+              if (ok && enableViewportLoading) {
+                lastFetchedViewportByLayer.current.set(layerId, currentViewportKey);
+              }
+            })
+            .finally(() => {
+              fetchingLayers.current.delete(layerId);
+            });
+        }
+      });
+    };
+
+    // Debounce viewport-triggered refetches to avoid flooding during pan/zoom
+    if (enableViewportLoading) {
+      if (viewportDebounceRef.current) clearTimeout(viewportDebounceRef.current);
+      viewportDebounceRef.current = setTimeout(doFetch, 300);
+      return () => {
+        if (viewportDebounceRef.current) clearTimeout(viewportDebounceRef.current);
+      };
+    }
+
+    // Non-viewport fetches fire immediately
+    doFetch();
   }, [
     layers,
     activeFilters,
