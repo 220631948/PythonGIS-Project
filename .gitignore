@@ -1,108 +1,348 @@
-# Python backend
+# =============================================================================
+# Cape Town GeoHub — .gitignore
+# Purpose: keep repository clean while preserving source, configs, and fixtures.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Python / FastAPI artifacts
+# -----------------------------------------------------------------------------
 __pycache__/
 **/__pycache__/
 *.py[cod]
+*$py.class
 *.so
-venv/
+*.pyd
+.Python
+
+# Virtual environments (local-only)
 .venv/
+.venv*/
+venv/
 ENV/
 env/
 .audit-venv/
-.Python
+
+# Python tooling caches
 .pytest_cache/
+.hypothesis/
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+.pyre/
+.dmypy.json
+dmypy.json
+.ipynb_checkpoints/
+
+# Coverage / reports
 .coverage
-htmlcov/
+.coverage.*
 coverage.xml
+htmlcov/
 *.cover
 
-# Packaging
+# Build / packaging outputs
 build/
 dist/
+site/
 *.egg-info/
-*.wheels/
+*.egg
+*.manifest
+*.spec
+pip-wheel-metadata/
 
-# Node frontend
+# -----------------------------------------------------------------------------
+# Node / React (Vite + TypeScript) artifacts
+# -----------------------------------------------------------------------------
 node_modules/
 **/node_modules/
 .pnp
 .pnp.js
+
+# Package manager caches (machine-specific)
+.npm/
+.pnpm-store/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Frontend build + tool caches
+.vite/
+frontend/.vite/
 frontend/dist/
 frontend/build/
-.vite/
+.cache/
+.parcel-cache/
+.turbo/
+storybook-static/
+.eslintcache
+frontend/.eslintcache
 *.tsbuildinfo
+
+# JS test outputs
 coverage/
+.nyc_output/
 frontend/test-results/
 frontend/playwright-report/
-frontend/.eslintcache
-*.log
+frontend/playwright/.cache/
+playwright/.cache/
+blob-report/
+
+# JS logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-static/
-.static/
-static/assets/
-.static/assets/
+pnpm-debug.log*
+lerna-debug.log*
 
-# Data and spatial
+# -----------------------------------------------------------------------------
+# Spatial / PostGIS / database artifacts
+# -----------------------------------------------------------------------------
 postgres_data/
 pgdata/
-data/cache/*
+pg_data/
+volumes/
+docker-data/
+
+# DB dumps and backups
+*.sql.gz
+*.dump
+*.backup
+*.bak
+
+# Local sqlite and similar db files
 *.db
+*.db-shm
+*.db-wal
 *.sqlite3
+*.sqlite3-journal
+
+# Binary geospatial formats (large/derived)
 *.parquet
+*.feather
 *.shp
 *.shx
 *.dbf
 *.prj
 *.cpg
+*.sbn
+*.sbx
+*.gpkg
+*.mbtiles
+*.kml
+*.kmz
+*.gml
+*.tif
+*.tiff
+
+# GeoJSON can be very large in this repo; keep targeted fixtures/public assets
 *.geojson
 !test-fixtures/*.geojson
 !frontend/public/*.geojson
+
+# Cache directories (keep repo placeholders)
+data/cache/*
 !data/cache/.gitkeep
 !data/raw/.gitkeep
 
-# Env and secrets
+# -----------------------------------------------------------------------------
+# Environment and secrets (critical)
+# -----------------------------------------------------------------------------
 .env
-.env.local
-.env.production
-.env.development
-.env.*.local
+.env.*
+!.env.example
+!.env.template
+.envrc
+
 secrets/
 *.pem
 *.key
 *.crt
+*.cer
+*.der
+*.p12
+*.pfx
 id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+.ssh/
+*.asc
+*.gpg
 config/local.yaml
 config/production.yaml
+.secrets.baseline
 
-# IDE / OS
+# -----------------------------------------------------------------------------
+# IDE / editor / OS clutter
+# -----------------------------------------------------------------------------
 .vscode/
-.idea/
 *.code-workspace
+.idea/
 *.iml
 *.iws
+*.ipr
+
+# Editor swap/backup files
 *.swp
 *.swo
 *~
+.*.sw[op]
+\#*\#
+.\#*
+
+# macOS
 .DS_Store
 .AppleDouble
 .LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+
+# Windows
 Thumbs.db
+Thumbs.db:encryptable
 ehthumbs.db
 Desktop.ini
-.junie/
+$RECYCLE.BIN/
+*.lnk
+*.stackdump
 
-# Docker / deployment
-volumes/
-docker-data/
+# Linux
+.directory
+.Trash-*
+.nfs*
+
+# Other editors
+.junie/
+.helix/
+.fleet/
+*.sublime-workspace
+*.sublime-project
+
+# -----------------------------------------------------------------------------
+# Docker / runtime / temp artifacts
+# -----------------------------------------------------------------------------
+docker-compose.override.yml
+.dockerignore.local
+*.tar
+
 tmp/
 temp/
+.temp/
 *.tmp
+*.temp
+*.pid
+*.pid.lock
+*.sock
 logs/
+*.log
+*.log.*
 
-# Local agent memory
+# ═════════════════════════════════════════════════════════════════════════════
+# AI assistant / agent tool caches & runtime state
+# ═════════════════════════════════════════════════════════════════════════════
+.agent-memory/
+.agentpipe.state
+.gemini/
+.claude/
+.copilot/
+.cursor/
+.continue/
+.aider/
+.windsurf/
+aider.*.md
+.spec-env/
+.codex/
+.code/
+.ollama/
+.ai/
+.local-ai/
+.zap/
 .agent-memory
+agents/
+.ralph/
+.jules/
+.junie
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.idea/
+.vscode/
+.*.txt
+.logs
 
-# Temporary outputs
+
+
+# Claude / Gemini / Copilot state
+# .gemini/
+# .claude/
+# !.claude/CLAUDE.md
+# .copilot/
+# !.copilot/mcp.json
+# !.copilot/*.md
+
+# Other AI IDE tools
+.cursor/
+.continue/
+.aider/
+.windsurf/
+aider.*.md
+.spec-env/
+
+# Additional AI agent & LLM tool caches
+.codex/
+.code/
+.ollama/
+.ai/
+.local-ai/
+agents/logs/
+.zap/
+runs/
+sessions/
+memory/
+.history/
+*.cache/
+/vectorstores/
+/chroma/
+/faiss_index/
+/lancedb/
+/embeddings/
+/models/
+/checkpoints/
+/weights/
+
+# LLM tokens and auth (security-critical)
+tokens.json
+auth.json
+
+# Ralph state (keep human-authored guardrails/progress)
+.ralph/*.log
+.ralph-worktrees/
+.ralph/tasks.yaml
+!.ralph/progress.md
+!.ralph/guardrails.md
+
+# Generated agent outputs
+outputs/
 .output.txt
-test_output.txt
+scratch.*
+*.scratch
+TODO.local.md
+NOTES.local.md
+
+# Local AI agent configs, caches, and runtime
+cache/
+*.pyc
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Project-specific keeps
+# ═════════════════════════════════════════════════════════════════════════════
+# Keep repository automation and policies tracked
+!.github/

@@ -1,12 +1,277 @@
-# An .aiignore file follows the same syntax as a .gitignore file.
-# .gitignore documentation: https://git-scm.com/docs/gitignore
+# =============================================================================
+# Cape Town GeoHub — .aiignore
+# Purpose: keep AI context focused on source code and architecture, not noise.
+# Syntax is gitignore-compatible.
+# =============================================================================
 
-# you can ignore files
+# -----------------------------------------------------------------------------
+# OS / editor noise
+# -----------------------------------------------------------------------------
 .DS_Store
-*.log
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.swp
+*.swo
+*~
 *.tmp
+*.temp
 
-# or folders
+# IDE folders (frequently noisy metadata)
+.vscode/
+.idea/
+*.code-workspace
+*.iml
+*.iws
+*.ipr
+.junie/
+.helix/
+.fleet/
+*.sublime-workspace
+*.sublime-project
+
+# -----------------------------------------------------------------------------
+# Build artifacts / compiled outputs
+# -----------------------------------------------------------------------------
 dist/
 build/
 out/
+target/
+site/
+*.log
+*.log.*
+*.pyc
+*.pyo
+*.so
+*.dll
+*.dylib
+*.exe
+
+# -----------------------------------------------------------------------------
+# Dependencies and local environments
+# -----------------------------------------------------------------------------
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+
+.venv/
+.venv*/
+venv/
+ENV/
+env/
+__pycache__/
+**/__pycache__/
+*.egg-info/
+.eggs/
+vendor/
+
+# Lockfiles are often very noisy for LLM context windows
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+poetry.lock
+Pipfile.lock
+Cargo.lock
+
+# -----------------------------------------------------------------------------
+# Secrets and environment files (must stay out of AI context)
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.crt
+*.cer
+*.der
+*.p12
+*.pfx
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+.ssh/
+*.asc
+*.gpg
+config/local.yaml
+config/production.yaml
+.secrets.baseline
+
+# -----------------------------------------------------------------------------
+# Test outputs / coverage / cache noise
+# -----------------------------------------------------------------------------
+.pytest_cache/
+.hypothesis/
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+.pyre/
+.cache/
+.parcel-cache/
+.vite/
+.turbo/
+.next/
+.nuxt/
+.eslintcache
+*.tsbuildinfo
+.coverage
+.coverage.*
+coverage/
+coverage.xml
+htmlcov/
+.nyc_output/
+test-results/
+playwright-report/
+blob-report/
+frontend/test-results/
+frontend/playwright-report/
+frontend/playwright/.cache/
+playwright/.cache/
+
+# -----------------------------------------------------------------------------
+# Databases / heavy binary data / geospatial binaries
+# -----------------------------------------------------------------------------
+postgres_data/
+pgdata/
+pg_data/
+volumes/
+docker-data/
+
+*.db
+*.db-shm
+*.db-wal
+*.sqlite3
+*.sqlite3-journal
+*.sql.gz
+*.dump
+*.backup
+*.bak
+
+*.parquet
+*.feather
+*.avro
+*.hdf5
+*.h5
+*.nc
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+*.bz2
+*.gz
+*.xz
+
+# Spatial binaries
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.sbn
+*.sbx
+*.gpkg
+*.mbtiles
+*.tif
+*.tiff
+
+# Media/doc binaries (usually non-code context)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.ico
+*.webp
+*.mp4
+*.avi
+*.mov
+*.mp3
+*.wav
+*.flac
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+
+# GeoJSON can be huge; keep key project fixtures/public assets readable
+*.geojson
+!test-fixtures/*.geojson
+!frontend/public/*.geojson
+
+# ═════════════════════════════════════════════════════════════════════════════
+# AI agent / automation state (recursive context poison)
+# ═════════════════════════════════════════════════════════════════════════════
+.agent-memory/
+.agentpipe.state
+.spec-env/
+
+.gemini/
+.claude/
+!.claude/CLAUDE.md
+.copilot/
+!.copilot/mcp.json
+!.copilot/*.md
+.code/
+.cursor/
+.continue/
+.aider/
+.windsurf/
+aider.*.md
+
+# Additional AI agent & LLM tool caches
+.codex/
+.ollama/
+.ai/
+.local-ai/
+.zap/
+.agent-memory
+
+# Local orchestration state/logs
+.ralph/
+!.ralph/progress.md
+!.ralph/guardrails.md
+.github/hooks/audit.log
+.github/agent-memory/session_memory.json
+.github/agent-memory/global_agent_memory.json
+
+# Generated outputs and scratchpads
+agents/logs/
+outputs/
+runs/
+sessions/
+memory/
+.history/
+*.cache/
+/vectorstores/
+/chroma/
+/faiss_index/
+/lancedb/
+/embeddings/
+/models/
+/checkpoints/
+/weights/
+tokens.json
+auth.json
+
+tmp/
+temp/
+.temp/
+scratch.*
+*.scratch
+
+# Optional noise reductions (uncomment if needed):
+# .github/workflows/
+# docs/
+# CHANGELOG.md

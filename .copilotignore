@@ -1,0 +1,81 @@
+# =============================================================================
+# Cape Town GeoHub — .copilotignore
+# Purpose: keep Copilot context focused on source and architecture.
+# =============================================================================
+
+# Dependencies / environments
+node_modules/
+**/node_modules/
+.venv/
+.venv*/
+venv/
+ENV/
+env/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Build and coverage artifacts
+dist/
+build/
+frontend/dist/
+frontend/build/
+coverage/
+htmlcov/
+.vite/
+.cache/
+.parcel-cache/
+.turbo/
+static/assets/*.js
+static/assets/*.css
+
+# Logs and temp
+logs/
+*.log
+*.log.*
+tmp/
+temp/
+.temp/
+
+# Data / database runtime files
+postgres_data/
+pgdata/
+pg_data/
+volumes/
+docker-data/
+data/cache/
+
+# Local AI agent and runtime state
+.gemini/
+.claude/
+.code/
+.codex/
+.ollama/
+.ai/
+.local-ai/
+.agent-memory/
+.agent-memory
+.agentpipe.state
+.zap/
+agents/logs/
+outputs/
+runs/
+sessions/
+memory/
+.history/
+/vectorstores/
+/chroma/
+/faiss_index/
+/lancedb/
+/embeddings/
+/models/
+/checkpoints/
+/weights/
+tokens.json
+auth.json
+
+# Keep project governance/instructions visible; only skip generated agent state
+.github/agent-memory/
+.github/hooks/audit.log
+.github/patches/
+.github/findings.json
