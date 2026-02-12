@@ -266,7 +266,7 @@ aider.*.md
 .local-ai/
 .zap/
 .agent-memory
-agents/
+/agents/
 .ralph/
 .jules/
 .junie
@@ -302,7 +302,7 @@ aider.*.md
 .ollama/
 .ai/
 .local-ai/
-agents/logs/
+/agents/logs/
 .zap/
 runs/
 sessions/
@@ -338,7 +338,7 @@ TODO.local.md
 NOTES.local.md
 
 # Local AI agent configs, caches, and runtime
-cache/
+/cache/
 *.pyc
 
 # ═════════════════════════════════════════════════════════════════════════════
