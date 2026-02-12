@@ -1,0 +1,174 @@
+/* Header — App header, search, connection indicators, buttons */
+
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    height: 64px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 2000;
+}
+
+.filter-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border: 1px solid var(--border-color, #e0e0e0);
+    background: var(--bg-primary, #ffffff);
+    border-radius: 12px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-chip:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.menu-toggle {
+    border: 1px solid var(--border);
+    background: var(--surface-raised);
+    border-radius: 8px;
+    padding: 6px;
+    cursor: pointer;
+    color: var(--text-primary);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+}
+
+.logo-icon {
+    color: var(--accent);
+}
+
+.logo-text {
+    font-size: 1.05rem;
+}
+
+.search-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: 0 12px;
+    min-width: 220px;
+}
+
+.search-container .search-autocomplete {
+    width: 100%;
+    max-width: 520px;
+}
+
+.search-form {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.search-input-wrapper {
+    position: relative;
+    width: min(520px, 100%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-raised);
+}
+
+.search-icon {
+    color: var(--text-muted);
+}
+
+.search-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.search-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.connection-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.connection-indicator.online {
+    color: var(--color-success);
+}
+
+.connection-indicator.offline {
+    color: var(--color-warning);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.header-btn {
+    border: 1px solid var(--border);
+    background: var(--surface-raised);
+    color: var(--text-primary);
+    padding: 8px 10px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.header-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent-strong);
+}
+
+.header-btn .btn-text {
+    display: none;
+}
+
+.theme-toggle {
+    width: 38px;
+    justify-content: center;
+}

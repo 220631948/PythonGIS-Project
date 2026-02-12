@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import {
   MapPin,
   AlertTriangle,
@@ -15,9 +16,9 @@ import {
   Gavel,
   Home,
   Leaf,
-  Stethoscope,
   LucideIcon
 } from 'lucide-react';
+import { List, type RowComponentProps } from 'react-window';
 import { LAYER_CONFIG } from './Legend';
 
 const LAYER_ICONS: Record<string, LucideIcon> = {
@@ -29,7 +30,7 @@ const LAYER_ICONS: Record<string, LucideIcon> = {
   'sports-layer': Trophy,
   'swimming-pools-layer': Waves,
   'cemeteries-layer': Church,
-  'clinics-layer': Stethoscope,
+  'clinics-layer': Store,
   'trading-layer': Store,
   'building-footprints-layer': Home,
   'courts-layer': Gavel,
@@ -70,6 +71,7 @@ const LayerCard: React.FC<LayerCardProps> = ({ layerId, isActive, onToggle, meta
           onToggle();
         }
       }}
+      style={{ height: '100%', boxSizing: 'border-box' }}
     >
       <div className="layer-card-header">
         <div className="layer-icon-wrapper">
@@ -77,9 +79,9 @@ const LayerCard: React.FC<LayerCardProps> = ({ layerId, isActive, onToggle, meta
         </div>
         <div className="layer-info">
           <h4>{config.name}</h4>
-          <p>{config.description}</p>
+          <p className="line-clamp-1">{config.description}</p>
         </div>
-        <button 
+        <button
           className="layer-toggle"
           type="button"
           onClick={(e) => {
@@ -87,7 +89,7 @@ const LayerCard: React.FC<LayerCardProps> = ({ layerId, isActive, onToggle, meta
             onToggle();
           }}
           aria-pressed={isActive}
-          aria-label={isActive ? 'Hide layer' : 'Show layer'}
+          aria-label={isActive ? `Hide ${config.name} layer` : `Show ${config.name} layer`}
         >
           {isActive ? <Eye size={18} /> : <EyeOff size={18} />}
         </button>
@@ -122,43 +124,100 @@ interface LayerPanelProps {
   loadingLayers?: string[];
 }
 
-const LayerPanel: React.FC<LayerPanelProps> = ({ 
-  activeLayers, 
-  onLayerToggle, 
-  metadata = {}, 
-  loadingLayers = [] 
+interface ListItem {
+  type: 'category' | 'layer';
+  id: string;
+  label?: string;
+}
+
+interface LayerRowData {
+  items: ListItem[];
+  activeLayers: string[];
+  onLayerToggle: (layerId: string) => void;
+  metadata: Record<string, LayerMetadata>;
+  loadingLayers: string[];
+}
+
+const LayerRow = ({
+  index,
+  style,
+  items,
+  activeLayers,
+  onLayerToggle,
+  metadata,
+  loadingLayers,
+}: RowComponentProps<LayerRowData>): React.ReactElement | null => {
+  const item = items[index];
+  if (!item) return null;
+
+  if (item.type === 'category') {
+    return (
+      <div style={style} className="layer-category-header">
+        <h4 className="category-title">{item.label}</h4>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ ...style, padding: '4px 8px' }}>
+      <LayerCard
+        layerId={item.id}
+        isActive={activeLayers.includes(item.id)}
+        onToggle={() => onLayerToggle(item.id)}
+        metadata={metadata[item.id]}
+        isLoading={loadingLayers.includes(item.id)}
+      />
+    </div>
+  );
+};
+
+const LayerPanel: React.FC<LayerPanelProps> = ({
+  activeLayers,
+  onLayerToggle,
+  metadata = {},
+  loadingLayers = []
 }) => {
-  const categories: Record<string, string[]> = {
-    'Urban Planning': ['zoning-layer', 'building-footprints-layer', 'open-spaces-layer'],
-    'Transport': ['myciti-stops-layer', 'myciti-routes-layer', 'railway-stations-layer'],
-    'Public Services': ['services-layer', 'water-facilities-layer', 'clinics-layer', 'housing-offices-layer', 'courts-layer'],
-    'Recreation': ['parks-layer', 'sports-layer', 'swimming-pools-layer'],
-    'Safety & Risk': ['safety-layer', 'flood-layer', 'cemeteries-layer', 'trading-layer']
-  };
+  const flattenedList = useMemo(() => {
+    const categories: Record<string, string[]> = {
+      'Urban Planning': ['zoning-layer', 'building-footprints-layer', 'open-spaces-layer'],
+      'Transport': ['myciti-stops-layer', 'myciti-routes-layer', 'railway-stations-layer'],
+      'Public Services': ['services-layer', 'water-facilities-layer', 'clinics-layer', 'housing-offices-layer', 'courts-layer'],
+      'Recreation': ['parks-layer', 'sports-layer', 'swimming-pools-layer'],
+      'Safety & Risk': ['safety-layer', 'flood-layer', 'cemeteries-layer', 'trading-layer'],
+    };
+
+    const list: ListItem[] = [];
+    Object.entries(categories).forEach(([category, layers]) => {
+      list.push({ type: 'category', id: category, label: category });
+      layers.forEach(layerId => {
+        list.push({ type: 'layer', id: layerId });
+      });
+    });
+    return list;
+  }, []);
 
   return (
     <div className="layer-panel">
       <div className="panel-header">
-        <h3>Map Layers</h3>
-        <span className="layer-count">{activeLayers.length} active</span>
+        <h3 id="layers-heading">Map Layers</h3>
+        <span className="layer-count" aria-live="polite">{activeLayers.length} active</span>
       </div>
 
-      <div className="layers-list">
-        {Object.entries(categories).map(([category, layers]) => (
-          <div key={category} className="layer-category">
-            <h4 className="category-title">{category}</h4>
-            {layers.map(layerId => (
-              <LayerCard
-                key={layerId}
-                layerId={layerId}
-                isActive={activeLayers.includes(layerId)}
-                onToggle={() => onLayerToggle(layerId)}
-                metadata={metadata[layerId]}
-                isLoading={loadingLayers.includes(layerId)}
-              />
-            ))}
-          </div>
-        ))}
+      <div className="layers-list-container" style={{ height: 'calc(100vh - 240px)', width: '100%' }}>
+        <List
+          style={{ height: 600, width: '100%' }}
+          rowCount={flattenedList.length}
+          rowHeight={80}
+          rowComponent={LayerRow}
+          rowProps={{
+            items: flattenedList,
+            activeLayers,
+            onLayerToggle,
+            metadata,
+            loadingLayers,
+          }}
+          aria-labelledby="layers-heading"
+        />
       </div>
     </div>
   );

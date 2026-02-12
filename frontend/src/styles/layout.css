@@ -1,0 +1,126 @@
+/* Layout — Root containers and responsive breakpoints */
+
+#root {
+    width: 100%;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: var(--surface);
+    color: var(--text-primary);
+}
+
+.main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    background: var(--surface-raised);
+}
+
+.map-container {
+    flex: 1;
+    position: relative;
+    height: calc(100vh - 64px);
+    transition: margin-left 0.25s ease;
+}
+
+.map-container.expanded {
+    margin-left: -280px;
+}
+
+/* Responsive — Overall layout adjustments */
+@media (max-width: 960px) {
+    .header-btn .btn-text {
+        display: none;
+    }
+
+    .sidebar {
+        position: absolute;
+        left: 0;
+        top: 64px;
+        height: calc(100vh - 64px);
+        box-shadow: 8px 0 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .map-container.expanded {
+        margin-left: 0;
+    }
+
+    .app-header {
+        flex-wrap: wrap;
+        height: auto;
+        gap: 8px;
+        padding: 8px 12px;
+    }
+
+    .header-left {
+        flex: 1 1 100%;
+        justify-content: space-between;
+    }
+
+    .search-container {
+        order: 3;
+        flex: 1 1 100%;
+        padding: 0;
+    }
+
+    .header-actions {
+        flex: 1 1 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+}
+
+@media (max-width: 640px) {
+    .search-input-wrapper {
+        width: 100%;
+    }
+
+    .header-actions {
+        gap: 4px;
+    }
+
+    .sidebar {
+        width: 90vw;
+    }
+
+    .logo-text {
+        font-size: 0.95rem;
+    }
+
+    .header-btn {
+        padding: 6px 8px;
+    }
+
+    .basemap-selector {
+        order: 2;
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-header {
+        padding: 8px;
+    }
+
+    .header-actions {
+        justify-content: space-around;
+    }
+
+    .menu-toggle {
+        padding: 4px;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

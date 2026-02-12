@@ -1,0 +1,224 @@
+/* Guided Tour — Tour overlay, highlight, tooltip, navigation */
+
+.guided-tour-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2000;
+    pointer-events: none;
+}
+
+.tour-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+}
+
+.tour-highlight {
+    position: absolute;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 0 4px var(--color-primary);
+    border-radius: var(--radius-md);
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 2001;
+}
+
+/* Tooltip Positioning */
+.tour-tooltip {
+    position: absolute;
+    width: 320px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    z-index: 2002;
+    padding: var(--space-4);
+    pointer-events: auto;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: fade-in-up 0.3s ease-out;
+}
+
+.tour-tooltip.center {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.tour-tooltip.bottom {
+    top: calc(100% + 16px);
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 10px;
+}
+
+.tour-tooltip.top {
+    bottom: calc(100% + 16px);
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 10px;
+}
+
+.tour-tooltip.right {
+    top: 50%;
+    left: calc(100% + 16px);
+    transform: translateY(-50%);
+    margin-left: 10px;
+}
+
+.tour-tooltip.left {
+    top: 50%;
+    right: calc(100% + 16px);
+    transform: translateY(-50%);
+    margin-right: 10px;
+}
+
+/* Tooltip Content */
+.tour-content h3 {
+    margin: 0 0 var(--space-2) 0;
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+}
+
+.tour-content p {
+    margin: 0 0 var(--space-4) 0;
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* Tooltip Footer */
+.tour-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+}
+
+.step-indicator {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    font-weight: var(--font-weight-medium);
+}
+
+.tour-actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.btn-prev,
+.btn-next,
+.btn-complete {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1-5) var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-prev {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+
+.btn-prev:hover {
+    background: var(--surface-raised);
+    color: var(--text-primary);
+}
+
+.btn-next {
+    background: var(--color-primary);
+    border: 1px solid transparent;
+    color: white;
+}
+
+.btn-next:hover {
+    background: var(--color-primary-hover);
+    transform: translateY(-1px);
+}
+
+.btn-complete {
+    background: var(--color-success);
+    border: 1px solid transparent;
+    color: white;
+}
+
+.btn-complete:hover {
+    background: var(--color-success-hover);
+    transform: translateY(-1px);
+}
+
+/* Close & Skip Buttons */
+.tour-tooltip .close-btn {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: var(--space-1);
+    border-radius: var(--radius-full);
+}
+
+.tour-tooltip .close-btn:hover {
+    background: var(--surface-raised);
+    color: var(--text-primary);
+}
+
+.skip-tour {
+    display: block;
+    width: 100%;
+    margin-top: var(--space-2);
+    padding: var(--space-1);
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.skip-tour:hover {
+    color: var(--text-primary);
+}
+
+/* Help Button */
+.help-button {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-full);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    z-index: 1000;
+}
+
+.help-button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}

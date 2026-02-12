@@ -1,0 +1,33 @@
+/* Print — Print-only styles */
+
+.print-only {
+    display: none;
+}
+
+@media print {
+    .app-header, .main-content, .notification-container, .leaflet-control-container {
+        display: none !important;
+    }
+
+    .print-only {
+        display: block;
+        padding: 16px;
+        color: #000;
+    }
+
+    .print-header h1 {
+        margin: 0 0 4px;
+    }
+
+    .print-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+    }
+
+    .print-table th, .print-table td {
+        border: 1px solid #888;
+        padding: 6px;
+        text-align: left;
+    }
+}
