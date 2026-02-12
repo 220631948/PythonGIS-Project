@@ -5,10 +5,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import logging
 import time
-import json
 from collections import defaultdict
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Optional, Union
 
 try:
     from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
@@ -19,7 +18,7 @@ from fastapi import FastAPI, Request, HTTPException, Query, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -31,6 +30,7 @@ from app.utils.logging_config import setup_logging
 from app.sentry_ import init_sentry
 from app.core.exceptions import GeoHubException, geohub_exception_handler
 from app.dependencies import require_admin_key
+from app.utils.response_utils import create_geojson_response_string
 from app.models.response_models import (
     CacheClearResponse,
     ConfigResponse,
@@ -302,12 +302,12 @@ CACHE_MAX_ENTRIES = 256  # Prevent unbounded memory growth
 _response_cache: TTLCache = TTLCache(maxsize=CACHE_MAX_ENTRIES, ttl=CACHE_TTL_SECONDS)
 
 
-def get_cached_response(cache_key: str) -> Optional[dict]:
+def get_cached_response(cache_key: str) -> Optional[Union[dict, str]]:
     """Get cached response if present (TTLCache handles expiration automatically)."""
     return _response_cache.get(cache_key)
 
 
-def set_cached_response(cache_key: str, data: dict) -> None:
+def set_cached_response(cache_key: str, data: Union[dict, str]) -> None:
     """Store response in bounded TTL cache (evicts oldest when full)."""
     _response_cache[cache_key] = data
 
@@ -356,13 +356,24 @@ async def proxy_data(
     if use_cache:
         cached = get_cached_response(cache_key)
         if cached:
-            return JSONResponse(
-                content=cached,
-                headers={
-                    "X-Cache": "HIT",
-                    "Cache-Control": "public, max-age=300",
-                },
-            )
+            # Handle both legacy dict cache and new string cache
+            if isinstance(cached, dict):
+                return JSONResponse(
+                    content=cached,
+                    headers={
+                        "X-Cache": "HIT",
+                        "Cache-Control": "public, max-age=300",
+                    },
+                )
+            else:
+                return Response(
+                    content=cached,
+                    media_type="application/json",
+                    headers={
+                        "X-Cache": "HIT",
+                        "Cache-Control": "public, max-age=300",
+                    },
+                )
 
     try:
         # Domain Intelligence Logic
@@ -374,19 +385,21 @@ async def proxy_data(
             # Apply pagination
             total = len(optimized)
             paginated = optimized.iloc[offset : offset + limit]
-            result = {
-                "type": "FeatureCollection",
-                "features": json.loads(paginated.to_json())["features"],
-                "metadata": {
-                    "total": total,
-                    "limit": limit,
-                    "offset": offset,
-                    "returned": len(paginated),
-                },
+
+            metadata = {
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+                "returned": len(paginated),
             }
-            set_cached_response(cache_key, result)
-            return JSONResponse(
-                content=result,
+
+            # Optimized serialization
+            json_str = create_geojson_response_string(paginated, metadata)
+            set_cached_response(cache_key, json_str)
+
+            return Response(
+                content=json_str,
+                media_type="application/json",
                 headers={
                     "X-Optimization": "TransportOptimizer",
                     "X-Cache": "MISS",
@@ -403,19 +416,21 @@ async def proxy_data(
                 # Apply pagination
                 total = len(merged)
                 paginated = merged.iloc[offset : offset + limit]
-                result = {
-                    "type": "FeatureCollection",
-                    "features": json.loads(paginated.to_json())["features"],
-                    "metadata": {
-                        "total": total,
-                        "limit": limit,
-                        "offset": offset,
-                        "returned": len(paginated),
-                    },
+
+                metadata = {
+                    "total": total,
+                    "limit": limit,
+                    "offset": offset,
+                    "returned": len(paginated),
                 }
-                set_cached_response(cache_key, result)
-                return JSONResponse(
-                    content=result,
+
+                # Optimized serialization
+                json_str = create_geojson_response_string(paginated, metadata)
+                set_cached_response(cache_key, json_str)
+
+                return Response(
+                    content=json_str,
+                    media_type="application/json",
                     headers={
                         "X-Merged": "SafetyAnalyzer",
                         "X-Cache": "MISS",
@@ -427,18 +442,17 @@ async def proxy_data(
                 precincts = data_loader.get_gdf("precincts")
                 total = len(precincts)
                 paginated = precincts.iloc[offset : offset + limit]
-                return JSONResponse(
-                    content={
-                        "type": "FeatureCollection",
-                        "features": json.loads(paginated.to_json())["features"],
-                        "metadata": {
-                            "total": total,
-                            "limit": limit,
-                            "offset": offset,
-                            "returned": len(paginated),
-                        },
-                    }
-                )
+
+                metadata = {
+                    "total": total,
+                    "limit": limit,
+                    "offset": offset,
+                    "returned": len(paginated),
+                }
+
+                # Optimized serialization fallback
+                json_str = create_geojson_response_string(paginated, metadata)
+                return Response(content=json_str, media_type="application/json")
 
         # 3. Default Path - Smart Loader with Pagination
         # Optimized with direct DB pagination
@@ -446,21 +460,22 @@ async def proxy_data(
             dataset_key, limit=limit, offset=offset
         )
 
-        result = {
-            "type": "FeatureCollection",
-            "features": json.loads(gdf.to_json())["features"],
-            "metadata": {
-                "total": total,
-                "limit": limit,
-                "offset": offset,
-                "returned": len(gdf),
-                "has_more": offset + limit < total,
-            },
+        metadata = {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "returned": len(gdf),
+            "has_more": offset + limit < total,
         }
-        set_cached_response(cache_key, result)
 
-        return JSONResponse(
-            content=result,
+        # Optimized serialization using string splicing
+        json_str = create_geojson_response_string(gdf, metadata)
+
+        set_cached_response(cache_key, json_str)
+
+        return Response(
+            content=json_str,
+            media_type="application/json",
             headers={
                 "Cache-Control": f"public, max-age={settings.CACHE_DURATION_DAYS * 86400}",
                 "X-Data-Source": "City of Cape Town",
