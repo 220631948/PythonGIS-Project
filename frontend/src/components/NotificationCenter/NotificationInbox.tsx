@@ -4,11 +4,10 @@
  * Full notification inbox modal with filtering, marking as read, and actions
  */
 
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   X,
   CheckCheck,
-  Filter,
   AlertTriangle,
   Info,
   AlertCircle,
@@ -39,7 +38,6 @@ export default function NotificationInbox({
   isLoading,
   onMarkAsRead,
   onMarkAllAsRead,
-  onRefresh
 }: NotificationInboxProps) {
   const [filter, setFilter] = useState<NotificationFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');

@@ -47,6 +47,72 @@ export class TimeoutError extends APIError {
     }
 }
 
+// Offline/Backend unavailable flag
+let isOfflineMode = false;
+let offlineNotificationShown = false;
+
+export const setOfflineMode = (offline: boolean) => {
+    isOfflineMode = offline;
+    if (!offline) {
+        offlineNotificationShown = false;
+    }
+};
+
+export const getOfflineMode = () => isOfflineMode;
+
+// Mock data for offline fallback
+const MOCK_DATA: Record<string, any> = {
+    '/api/health': { status: 'offline', message: 'Backend unavailable - using cached data' },
+    '/api/data-status/health': {
+        summary: { total_sources: 0, accessible: 0, status: 'offline' },
+        sources: {},
+        checked_at: new Date().toISOString()
+    },
+    '/api/reports/summary': {
+        generated_at: new Date().toISOString(),
+        summary: { total_datasets: 0, total_features: 0, total_categories: 0 },
+        error: 'Backend offline'
+    },
+    '/api/reports/dashboard-data': {
+        generated_at: new Date().toISOString(),
+        summary: { total_datasets: 0 },
+        charts: {},
+        error: 'Backend offline'
+    }
+};
+
+// Show offline toast notification (to be called from components)
+export const showOfflineNotification = () => {
+    if (!offlineNotificationShown) {
+        offlineNotificationShown = true;
+        console.warn('[API] Offline Mode Active - Using Cached Data');
+        // Components can listen to this event
+        window.dispatchEvent(new CustomEvent('api:offline', {
+            detail: { message: 'Backend Offline - Using Cached Data' }
+        }));
+    }
+};
+
+// Get mock data for endpoint
+const getMockData = (endpoint: string): any => {
+    // Check exact match first
+    if (MOCK_DATA[endpoint]) {
+        return MOCK_DATA[endpoint];
+    }
+
+    // Check pattern matches
+    if (endpoint.startsWith('/api/data/')) {
+        return { type: 'FeatureCollection', features: [] };
+    }
+
+    if (endpoint.startsWith('/api/geocode/')) {
+        return { results: [] };
+    }
+
+    // Default empty response
+    return { error: 'Backend offline', data: null };
+};
+
 // Fetch Options
 export interface FetchOptions {
     timeout?: number;
@@ -96,7 +162,7 @@ async function fetchWithRetry(
 }
 
 /**
- * Generic data fetcher with error handling, retries, and cancellation
+ * Generic data fetcher with error handling, retries, cancellation, and offline fallback
  */
 export async function fetchData<T = unknown>(
     endpoint: string,
@@ -141,6 +207,11 @@ export async function fetchData<T = unknown>(
 
         clearTimeout(timeoutId);
 
+        // Backend is online
+        if (isOfflineMode) {
+            setOfflineMode(false);
+        }
+
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
 
@@ -174,6 +245,24 @@ export async function fetchData<T = unknown>(
     } catch (error: unknown) {
         clearTimeout(timeoutId);
 
+        // If it's a network error or connection refused, use offline fallback
+        if (error instanceof NetworkError ||
+            (error instanceof Error && (
+                error.message.includes('ECONNREFUSED') ||
+                error.message.includes('Failed to fetch') ||
+                error.message.includes('Network error')
+            ))
+        ) {
+            if (!isOfflineMode) {
+                setOfflineMode(true);
+                showOfflineNotification();
+            }
+
+            // Return mock data instead of throwing
+            console.warn(`[API] Using offline fallback for ${endpoint}`);
+            return getMockData(endpoint) as T;
+        }
+
         if (error instanceof APIError) {
             throw error;
         }
@@ -182,7 +271,12 @@ export async function fetchData<T = unknown>(
             throw new TimeoutError();
         }
 
-        throw new NetworkError('Network error', error instanceof Error ? error.message : String(error));
+        // Last resort: offline fallback for any unknown error
+        if (!isOfflineMode) {
+            setOfflineMode(true);
+            showOfflineNotification();
+        }
+        return getMockData(endpoint) as T;
     }
 }
 
@@ -1048,6 +1142,72 @@ class APIClient {
 
     getExtensionDocs() {
         return fetchData('/api/extensions/docs/getting-started');
+    }
+
+    // ── Comparative Analysis & Dashboard Builder ──
+    listDatasets() {
+        return fetchData('/api/datasets');
+    }
+
+    compareDatasets(request: unknown) {
+        return this.post('/api/comparative-analysis/compare', request);
+    }
+
+    exportComparison(comparisonId: string, format = 'csv') {
+        return fetch(`${API_BASE_URL}/api/comparative-analysis/export/${comparisonId}?format=${format}`);
+    }
+
+    listDashboards(userId?: string) {
+        const url = userId ? `/api/dashboards?user_id=${userId}` : '/api/dashboards';
+        return fetchData(url);
+    }
+
+    getDashboard(dashboardId: string) {
+        return fetchData(`/api/dashboards/${dashboardId}`);
+    }
+
+    saveDashboard(dashboard: unknown) {
+        return this.post('/api/dashboards', dashboard);
+    }
+
+    updateDashboard(dashboardId: string, update: unknown) {
+        return this.patch(`/api/dashboards/${dashboardId}`, update);
+    }
+
+    deleteDashboard(dashboardId: string) {
+        return this.delete(`/api/dashboards/${dashboardId}`);
+    }
+
+    // ── Additional Workspace Methods ──
+    getWorkspaces(userId: string) {
+        return fetchData(`/api/workspace/workspaces/${userId}`);
+    }
+
+    getScenarios(workspaceId: string) {
+        return fetchData(`/api/workspace/scenarios/${workspaceId}`);
+    }
+
+    // ── Additional 3D Methods ──
+    get3DBuildings(bounds: unknown) {
+        return this.post('/api/3d/buildings', bounds);
+    }
+
+    simulateShadow(request: { geometry: any; height: number; datetime: string }) {
+        return this.post('/api/3d/simulate-shadow', request);
+    }
+
+    createWorkspaceItem(item: { name: string; item_type: string; data?: any; geom?: any }) {
+        return this.post('/api/workspace/items', item);
+    }
+
+    listWorkspaceItems(itemType?: string) {
+        let url = '/api/workspace/items';
+        if (itemType) url += `?item_type=${itemType}`;
+        return fetchData(url);
+    }
+
+    deleteWorkspaceItem(itemId: number) {
+        return this.delete(`/api/workspace/items/${itemId}`);
     }
 }
 

@@ -89,3 +89,39 @@ def calculate_distance(p1: Point, p2: Point, crs: str = settings.TARGET_CRS) -> 
 
 def simplify_geometry(geometry, tolerance: float = settings.SIMPLIFICATION_TOLERANCE):
     return geometry.simplify(tolerance, preserve_topology=True)
+
+
+def calculate_shadow_geometry(
+    geometry: Dict[str, Any], height: float, datetime_str: str
+) -> Dict[str, Any]:
+    """
+    Calculates the shadow polygon for a given geometry at a specific time.
+    
+    NOTE: This is a simplified simulation for the MVP.
+    Real solar azimuth/altitude calculation would require 'pysolar' or similar.
+    """
+    from shapely.geometry import shape, Polygon, MultiPolygon
+    from shapely.affinity import translate
+    
+    # Parse input geometry
+    geom = shape(geometry)
+    
+    # 1. Simulate sun position based on time (very basic approximation)
+    # In a real app, use pysolar.get_altitude(lat, lng, date)
+    # Here we just assume a fixed offset to demonstrate the concept
+    
+    # Shift x/y based on height to simulate shadow casting
+    # Higher buildings cast longer shadows
+    shift_x = height * 0.5
+    shift_y = height * -0.5
+    
+    # 2. Project the 'top' of the building to the ground
+    shadow_offset = translate(geom, xoff=shift_x, yoff=shift_y)
+    
+    # 3. Create the convex hull of the original footprint + the projected top
+    # This represents the total shadow area on the ground
+    combined = geom.union(shadow_offset)
+    shadow_hull = combined.convex_hull
+    
+    # Return as GeoJSON
+    return mapping(shadow_hull)

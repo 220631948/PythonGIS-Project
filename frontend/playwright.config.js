@@ -12,7 +12,7 @@ export default defineConfig({
   },
   // Retries and worker configuration tailored for CI to reduce flakiness
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: Number(process.env.PLAYWRIGHT_WORKERS || 1),
   use: {
     baseURL: frontendBase,
     trace: 'on-first-retry',

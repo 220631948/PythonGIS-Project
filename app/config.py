@@ -119,6 +119,11 @@ class Settings(BaseSettings):
     # Set via ADMIN_API_KEY env var or .env file. Empty = admin endpoints unprotected.
     ADMIN_API_KEY: str = ""
 
+    # Security - JWT Secret Key
+    # REQUIRED in production. Must be at least 32 characters.
+    # Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+    SECRET_KEY: str = "CHANGE_THIS_IN_PRODUCTION_USE_LONG_RANDOM_STRING"
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )

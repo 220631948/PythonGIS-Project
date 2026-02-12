@@ -5,21 +5,39 @@
  * so utilities like bg-primary, text-accent etc. resolve to our tokens.
  */
 @theme {
-  --color-primary: #6366f1;
+  /* === Civic-Tech Color System === */
+  --color-primary: #0891b2; /* Teal - Trust & Civic engagement */
+  --color-primary-dark: #0e7490;
+  --color-primary-light: #06b6d4;
   --color-secondary: #8b5cf6;
-  --color-accent: #06b6d4;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
+  --color-accent: #06b6d4; /* Bright teal for CTAs */
+  --color-success: #10b981; /* Online/success states */
+  --color-warning: #f59e0b; /* Offline warning */
+  --color-error: #ef4444; /* Error states */
   --color-info: #3b82f6;
+
+  /* === Slate Backgrounds for Sidebar/Dark UI === */
+  --color-slate-900: #0f172a;
+  --color-slate-800: #1e293b;
+  --color-slate-700: #334155;
+  --color-slate-600: #475569;
+  --color-slate-100: #f1f5f9;
+  --color-slate-50: #f8fafc;
+
   --color-surface: #ffffff;
   --color-surface-raised: #ffffff;
   --color-bg-primary: #f8fafc;
   --color-bg-secondary: #f1f5f9;
 
+  /* === Typography === */
   --font-family-display: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-family-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-family-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+
+  /* === Civic-Tech Shadows for Floating Islands === */
+  --shadow-island: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-island-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-toast: 0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.08);
 }
 
 :root {
@@ -467,4 +485,113 @@
 
 .bg-slate-400 {
   background-color: #94a3b8 !important;
+}
+
+/* === Civic-Tech Component Utilities === */
+
+/* Floating Island Pills (Map Controls) */
+.floating-island {
+  @apply bg-white dark:bg-slate-800 rounded-xl shadow-lg p-2 backdrop-blur-sm;
+}
+
+.floating-island-control {
+  @apply w-10 h-10 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-center;
+}
+
+/* Toast Notifications with Tailwind */
+.toast-container {
+  @apply fixed top-20 right-4 z-[800] space-y-2;
+}
+
+.toast {
+  @apply rounded-lg p-4 shadow-lg backdrop-blur-sm border-l-4 flex items-start gap-3 min-w-[320px];
+  animation: slide-in-right 0.3s ease-out forwards;
+}
+
+.toast-success {
+  @apply bg-green-50 dark:bg-green-900/30 border-green-500 text-green-900 dark:text-green-100;
+}
+
+.toast-error {
+  @apply bg-red-50 dark:bg-red-900/30 border-red-500 text-red-900 dark:text-red-100;
+}
+
+.toast-warning {
+  @apply bg-orange-50 dark:bg-orange-900/30 border-orange-500 text-orange-900 dark:text-orange-100;
+}
+
+.toast-info {
+  @apply bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-900 dark:text-blue-100;
+}
+
+/* Sidebar Styles */
+.sidebar-tab {
+  @apply px-4 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium;
+}
+
+.sidebar-tab-inactive {
+  @apply text-slate-400 hover:text-slate-200 hover:bg-slate-800;
+}
+
+.sidebar-tab-active {
+  @apply text-white bg-slate-700 border-l-4 border-teal-500;
+}
+
+/* Button Variants */
+.btn-primary {
+  @apply bg-teal-500 hover:bg-teal-600 text-white font-medium rounded-lg shadow px-4 py-2 transition-colors;
+}
+
+.btn-secondary {
+  @apply bg-slate-600 hover:bg-slate-700 text-white font-medium rounded-lg px-4 py-2 transition-colors;
+}
+
+.btn-ghost {
+  @apply hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium rounded-lg px-4 py-2 transition-colors;
+}
+
+/* Animations - Using @layer utilities for Tailwind v4 */
+@layer utilities {
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s ease-out forwards;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out forwards;
+  }
+}
+
+/* Responsive Utilities */
+@media (max-width: 768px) {
+  .toast-container {
+    @apply right-2 left-2;
+  }
+
+  .toast {
+    @apply min-w-full;
+  }
+
+  .floating-island {
+    @apply p-1.5;
+  }
 }

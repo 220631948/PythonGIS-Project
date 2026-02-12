@@ -93,6 +93,15 @@
       "summary": "Copilot instructions now reference README.AGENT_ACTIONS and CI workflows for agent mode",
       "detail": "Updated .github/copilot-instructions.md to direct agent-mode execution to README.AGENT_ACTIONS.md and to consult .github workflows and PR templates for CI/CD alignment, automated checks, and PR drafting.",
       "ttl_days": 365
+    },
+    {
+      "id": "proj-planning-002",
+      "category": "planning",
+      "source": "Agent Task: Gantt & Diagram Improvements",
+      "timestamp": "2026-02-11T15:35:00Z",
+      "summary": "Enhanced Gantt chart and architecture diagrams with visual clarity and team visibility",
+      "detail": "Improved 4 core planning artifacts: (1) gantt-chart.mmd with compact layout, team tags [INFRA][SEC][BE][FE][QA][DEVOPS], status indicators (🟢🟡🔴), legends; (2) current-architecture.mmd with status hierarchy and detailed annotations; (3) target-multi-tenant-architecture.mmd highlighting security boundaries and RLS enforcement; (4) diagrams/README.md with comprehensive rendering guide (5+ methods). Created 3 supporting docs: GANTT_IMPROVEMENTS_SUMMARY.md (executive overview), DIAGRAMS_QUICK_REFERENCE.md (team quick-ref), VALIDATION_CHECKLIST.md (QA sign-off).",
+      "ttl_days": 365
     }
   ]
 }

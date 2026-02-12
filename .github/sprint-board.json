@@ -1,0 +1,486 @@
+{
+  "project": "Cape Town GeoHub - Enterprise GIS Platform",
+  "version": "1.0",
+  "sprints": [
+    {
+      "sprint_id": "sprint-1",
+      "name": "Sprint 1: Foundation & Security",
+      "start_date": "2026-02-11",
+      "end_date": "2026-02-24",
+      "goals": [
+        "Complete Phase B (Infrastructure Stabilization)",
+        "Complete Phase C (Security & Multi-Tenant Auth)",
+        "Fix critical vulnerabilities (SECRET_KEY, CSRF)"
+      ],
+      "stories": [
+        {
+          "id": "S1.1",
+          "title": "Fix Docker Compose to run without errors",
+          "type": "story",
+          "points": 5,
+          "priority": "critical",
+          "labels": ["infrastructure", "docker", "devops"],
+          "assignee": "devops",
+          "description": "As a DevOps engineer, I need Docker Compose to run without errors so that the development environment is stable.",
+          "acceptance_criteria": [
+            "`docker compose up` succeeds without volume permission errors",
+            "PostGIS container accepts connections on port 5432",
+            "API container can connect to PostGIS and run migrations",
+            "Frontend container builds and serves on port 3000"
+          ],
+          "tasks": [
+            {"id": "B.1", "title": "Fix PostGIS volume permissions", "estimate": "1d"},
+            {"id": "B.2", "title": "Create health check scripts", "estimate": "0.5d"}
+          ]
+        },
+        {
+          "id": "S1.2",
+          "title": "Move SECRET_KEY to environment variables",
+          "type": "story",
+          "points": 8,
+          "priority": "critical",
+          "labels": ["security", "backend", "vulnerability"],
+          "assignee": "backend",
+          "description": "As a security analyst, I need SECRET_KEY in environment variables so that credentials are not exposed in source code.",
+          "acceptance_criteria": [
+            "SECRET_KEY removed from app/core/security.py",
+            "SECRET_KEY loaded from .env file",
+            "Application fails to start if SECRET_KEY is missing or < 32 characters",
+            "Documentation added for key rotation process"
+          ],
+          "tasks": [
+            {"id": "C.1.1", "title": "Move SECRET_KEY to .env", "estimate": "0.5d"},
+            {"id": "C.1.2", "title": "Generate secure random SECRET_KEY", "estimate": "0.25d"},
+            {"id": "C.1.3", "title": "Add SECRET_KEY validation on startup", "estimate": "0.5d"},
+            {"id": "C.1.4", "title": "Document key rotation process", "estimate": "0.5d"}
+          ]
+        },
+        {
+          "id": "S1.3",
+          "title": "Implement CSRF protection on all mutations",
+          "type": "story",
+          "points": 8,
+          "priority": "critical",
+          "labels": ["security", "backend", "csrf"],
+          "assignee": "backend",
+          "description": "As a backend developer, I need CSRF protection on all mutations so that cross-site attacks are prevented.",
+          "acceptance_criteria": [
+            "FastAPI CSRF middleware installed and configured",
+            "POST/PUT/DELETE endpoints return 403 without valid CSRF token",
+            "Frontend receives CSRF token on initial load",
+            "CSRF token included in all mutation requests"
+          ],
+          "tasks": [
+            {"id": "C.3.1", "title": "Add FastAPI CSRF middleware", "estimate": "1d"},
+            {"id": "C.3.2", "title": "Generate CSRF tokens for frontend", "estimate": "0.5d"},
+            {"id": "C.3.3", "title": "Validate CSRF on POST/PUT/DELETE", "estimate": "0.5d"}
+          ]
+        },
+        {
+          "id": "S1.4",
+          "title": "Create tenants table and migrations",
+          "type": "story",
+          "points": 5,
+          "priority": "high",
+          "labels": ["backend", "database", "migrations"],
+          "assignee": "backend",
+          "description": "As a backend developer, I need tenant table and migrations so that multi-tenant architecture is supported.",
+          "acceptance_criteria": [
+            "Alembic migration created for tenants table",
+            "`alembic upgrade head` runs successfully",
+            "Tenants table has columns: id, name, domain, created_at",
+            "Foreign key constraints added to spatial tables"
+          ],
+          "tasks": [
+            {"id": "B.6", "title": "Review Alembic migration status", "estimate": "0.5d"},
+            {"id": "B.7", "title": "Create tenants table migration", "estimate": "1d"},
+            {"id": "B.8", "title": "Add tenant_id indexes", "estimate": "0.5d"}
+          ]
+        },
+        {
+          "id": "S1.5",
+          "title": "Implement JWT token refresh endpoint",
+          "type": "story",
+          "points": 5,
+          "priority": "high",
+          "labels": ["backend", "auth", "jwt"],
+          "assignee": "backend",
+          "description": "As a user, I need JWT token refresh to stay logged in so that I don't have to re-authenticate frequently.",
+          "acceptance_criteria": [
+            "POST /api/auth/refresh endpoint created",
+            "Refresh endpoint accepts refresh_token and returns new access_token",
+            "Old access tokens are invalidated after refresh",
+            "Refresh tokens have 7-day expiry"
+          ],
+          "tasks": [
+            {"id": "C.2.1", "title": "Add token refresh endpoint", "estimate": "1d"},
+            {"id": "C.2.2", "title": "Implement token blacklist table", "estimate": "1.5d"},
+            {"id": "C.2.3", "title": "Set secure cookie options", "estimate": "0.5d"}
+          ]
+        }
+      ],
+      "velocity": 31,
+      "capacity": "3 engineers × 10 days = 30 story points"
+    },
+    {
+      "sprint_id": "sprint-2",
+      "name": "Sprint 2: Multi-Tenant RBAC & Database Hardening",
+      "start_date": "2026-02-25",
+      "end_date": "2026-03-07",
+      "goals": [
+        "Complete Phase C.4 (Multi-Tenant RBAC)",
+        "Complete Phase D (Backend & Database Hardening)",
+        "Implement PostgreSQL RLS policies"
+      ],
+      "stories": [
+        {
+          "id": "S2.1",
+          "title": "Create super_admin tenant management endpoints",
+          "type": "story",
+          "points": 8,
+          "priority": "high",
+          "labels": ["backend", "rbac", "multi-tenant"],
+          "assignee": "backend",
+          "description": "As a super_admin, I need to create/manage tenants so that I can onboard new organizations.",
+          "acceptance_criteria": [
+            "POST /api/tenants creates new tenant (super_admin only)",
+            "GET /api/tenants lists all tenants (super_admin only)",
+            "PUT /api/tenants/{id} updates tenant (super_admin only)",
+            "DELETE /api/tenants/{id} soft-deletes tenant (super_admin only)",
+            "Non-super_admin users receive 403 Forbidden"
+          ],
+          "tasks": [
+            {"id": "C.4.1", "title": "Define RBAC roles", "estimate": "0.5d"},
+            {"id": "C.4.2", "title": "Create permission matrix", "estimate": "1d"},
+            {"id": "C.4.3", "title": "Implement role decorators", "estimate": "1.5d"}
+          ]
+        },
+        {
+          "id": "S2.2",
+          "title": "Implement tenant-scoped user management",
+          "type": "story",
+          "points": 8,
+          "priority": "high",
+          "labels": ["backend", "rbac", "multi-tenant"],
+          "assignee": "backend",
+          "description": "As a tenant_admin, I need to manage users in my tenant so that I can control access.",
+          "acceptance_criteria": [
+            "GET /api/users only returns users in current user's tenant",
+            "POST /api/users creates user in current tenant",
+            "tenant_admin cannot see/edit users from other tenants",
+            "All user queries auto-filter by tenant_id"
+          ],
+          "tasks": [
+            {"id": "C.4.4", "title": "Add tenant context middleware", "estimate": "1d"}
+          ]
+        },
+        {
+          "id": "S2.3",
+          "title": "Implement PostgreSQL RLS policies on spatial tables",
+          "type": "story",
+          "points": 13,
+          "priority": "critical",
+          "labels": ["backend", "database", "security", "rls"],
+          "assignee": "backend",
+          "description": "As a backend developer, I need RLS policies on all spatial tables so that tenant data is isolated at the database level.",
+          "acceptance_criteria": [
+            "RLS enabled on all 8+ spatial tables",
+            "Policy: SELECT WHERE tenant_id = current_setting('app.current_tenant_id')",
+            "All queries auto-filter by tenant_id via RLS",
+            "Integration tests verify no cross-tenant data leakage"
+          ],
+          "tasks": [
+            {"id": "D.4.1", "title": "Implement RLS policies", "estimate": "2d"}
+          ]
+        },
+        {
+          "id": "S2.4",
+          "title": "Fix TypeScript errors blocking CI",
+          "type": "story",
+          "points": 8,
+          "priority": "critical",
+          "labels": ["frontend", "typescript", "technical-debt"],
+          "assignee": "frontend",
+          "description": "As a frontend developer, I need TypeScript errors fixed so that CI type-check passes.",
+          "acceptance_criteria": [
+            "`npx tsc --noEmit` returns zero errors",
+            "Strict mode enabled in tsconfig.json",
+            "All 18 errors in DataStatusPanel, MapView, etc. resolved"
+          ],
+          "tasks": [
+            {"id": "D.1.1", "title": "Fix TypeScript errors", "estimate": "2d"},
+            {"id": "D.1.2", "title": "Enable strict mode", "estimate": "0.5d"}
+          ]
+        },
+        {
+          "id": "S2.5",
+          "title": "Add composite indexes for spatial queries",
+          "type": "story",
+          "points": 3,
+          "priority": "medium",
+          "labels": ["backend", "database", "performance"],
+          "assignee": "backend",
+          "description": "As a backend developer, I need composite indexes on (tenant_id, geom) so that spatial queries are fast.",
+          "acceptance_criteria": [
+            "GIST indexes verified on all geometry columns",
+            "Composite indexes created on (tenant_id, geom)",
+            "EXPLAIN shows index usage for tenant-scoped spatial queries"
+          ],
+          "tasks": [
+            {"id": "D.3.1", "title": "Verify GIST indexes", "estimate": "0.5d"},
+            {"id": "D.3.2", "title": "Add composite indexes", "estimate": "1d"},
+            {"id": "D.3.3", "title": "Analyze query performance", "estimate": "0.5d"}
+          ]
+        }
+      ],
+      "velocity": 40,
+      "capacity": "4 engineers × 10 days = 40 story points"
+    },
+    {
+      "sprint_id": "sprint-3",
+      "name": "Sprint 3: Frontend UX & Auth Integration",
+      "start_date": "2026-03-08",
+      "end_date": "2026-03-18",
+      "goals": [
+        "Complete Phase E (Frontend UX & GIS Modernization)",
+        "Integrate auth flows (login, register, protected routes)",
+        "Improve performance and accessibility"
+      ],
+      "stories": [
+        {
+          "id": "S3.1",
+          "title": "Create login page for authentication",
+          "type": "story",
+          "points": 5,
+          "priority": "high",
+          "labels": ["frontend", "auth", "ui"],
+          "assignee": "frontend",
+          "description": "As a user, I need a login page to access the platform so that I can authenticate securely.",
+          "acceptance_criteria": [
+            "Login form with email/password fields",
+            "Client-side validation (email format, password length)",
+            "Error messages for invalid credentials",
+            "Redirect to dashboard on successful login"
+          ],
+          "tasks": [
+            {"id": "E.1.1", "title": "Complete Login component", "estimate": "1d"}
+          ]
+        },
+        {
+          "id": "S3.2",
+          "title": "Implement protected routes",
+          "type": "story",
+          "points": 3,
+          "priority": "high",
+          "labels": ["frontend", "auth", "routing"],
+          "assignee": "frontend",
+          "description": "As a user, I need protected routes for authenticated pages so that unauthenticated users cannot access secure content.",
+          "acceptance_criteria": [
+            "ProtectedRoute component created",
+            "Unauthenticated users redirected to /login",
+            "Authenticated users can access /dashboard, /map, /settings"
+          ],
+          "tasks": [
+            {"id": "E.1.2", "title": "Add auth context provider", "estimate": "1d"},
+            {"id": "E.1.3", "title": "Implement protected routes", "estimate": "0.5d"}
+          ]
+        },
+        {
+          "id": "S3.3",
+          "title": "Implement automatic token refresh",
+          "type": "story",
+          "points": 8,
+          "priority": "high",
+          "labels": ["frontend", "auth", "jwt"],
+          "assignee": "frontend",
+          "description": "As a user, I need automatic token refresh to stay logged in so that my session doesn't expire unexpectedly.",
+          "acceptance_criteria": [
+            "Tokens refresh silently 5 minutes before expiry",
+            "Refresh logic integrated with TanStack Query",
+            "Failed refresh redirects to login page"
+          ],
+          "tasks": [
+            {"id": "E.1.4", "title": "Add token refresh logic", "estimate": "1d"}
+          ]
+        },
+        {
+          "id": "S3.4",
+          "title": "Optimize map rendering with 100k+ features",
+          "type": "story",
+          "points": 13,
+          "priority": "high",
+          "labels": ["frontend", "performance", "gis"],
+          "assignee": "frontend",
+          "description": "As a user, I need fast map rendering with 100k+ features so that the interface is responsive.",
+          "acceptance_criteria": [
+            "Clustering enabled for point layers",
+            "Initial render time < 1s for 100k features",
+            "Smooth pan/zoom with no lag",
+            "Virtual scrolling for layer list"
+          ],
+          "tasks": [
+            {"id": "E.2.1", "title": "Virtual scrolling for layers", "estimate": "1d"},
+            {"id": "E.2.2", "title": "Optimize GeoJSON clustering", "estimate": "1.5d"},
+            {"id": "E.2.3", "title": "Progressive tile loading", "estimate": "1d"}
+          ]
+        },
+        {
+          "id": "S3.5",
+          "title": "Achieve WCAG 2.1 AA compliance",
+          "type": "story",
+          "points": 8,
+          "priority": "high",
+          "labels": ["frontend", "accessibility", "wcag"],
+          "assignee": "frontend",
+          "description": "As a user with disabilities, I need WCAG 2.1 AA compliance so that the platform is accessible.",
+          "acceptance_criteria": [
+            "axe-core reports zero critical violations",
+            "All interactive elements keyboard-accessible",
+            "Screen reader announcements for map updates",
+            "High-contrast mode support"
+          ],
+          "tasks": [
+            {"id": "E.3.1", "title": "WCAG 2.1 AA compliance", "estimate": "1.5d"},
+            {"id": "E.3.2", "title": "Keyboard navigation", "estimate": "1d"},
+            {"id": "E.3.3", "title": "Screen reader announcements", "estimate": "0.5d"}
+          ]
+        }
+      ],
+      "velocity": 37,
+      "capacity": "3 engineers × 12 days = 36 story points"
+    },
+    {
+      "sprint_id": "sprint-4",
+      "name": "Sprint 4: QA & CI/CD Automation",
+      "start_date": "2026-03-19",
+      "end_date": "2026-03-28",
+      "goals": [
+        "Complete Phase F (QA Verification & Automation)",
+        "Complete Phase G (Continuous Deployment)",
+        "Launch staging environment"
+      ],
+      "stories": [
+        {
+          "id": "S4.1",
+          "title": "Achieve 80%+ test coverage",
+          "type": "story",
+          "points": 13,
+          "priority": "critical",
+          "labels": ["qa", "testing", "coverage"],
+          "assignee": "qa",
+          "description": "As a QA engineer, I need 80%+ test coverage so that the codebase is reliable.",
+          "acceptance_criteria": [
+            "Backend coverage ≥ 80% (pytest-cov)",
+            "Frontend coverage ≥ 80% (vitest coverage)",
+            "Coverage report uploaded to Codecov",
+            "All critical paths covered with tests"
+          ],
+          "tasks": [
+            {"id": "F.1.1", "title": "Unit tests for auth flows", "estimate": "1.5d"},
+            {"id": "F.1.2", "title": "Tenant isolation integration tests", "estimate": "1.5d"},
+            {"id": "F.1.3", "title": "Spatial query PostGIS tests", "estimate": "1d"},
+            {"id": "F.2.1", "title": "Vitest component tests", "estimate": "1d"}
+          ]
+        },
+        {
+          "id": "S4.2",
+          "title": "Implement OWASP Top 10 scanning",
+          "type": "story",
+          "points": 5,
+          "priority": "high",
+          "labels": ["security", "owasp", "testing"],
+          "assignee": "security",
+          "description": "As a security analyst, I need automated OWASP Top 10 scanning so that vulnerabilities are detected early.",
+          "acceptance_criteria": [
+            "ZAP baseline scan runs in CI",
+            "CI fails on high-severity vulnerabilities",
+            "SQL injection tests for spatial queries",
+            "Cross-tenant data leakage tests pass"
+          ],
+          "tasks": [
+            {"id": "F.3.1", "title": "OWASP Top 10 ZAP scanning", "estimate": "1d"},
+            {"id": "F.3.2", "title": "SQL injection tests", "estimate": "1d"},
+            {"id": "F.3.3", "title": "Cross-tenant leakage tests", "estimate": "1d"}
+          ]
+        },
+        {
+          "id": "S4.3",
+          "title": "Create CI/CD pipeline for staging",
+          "type": "story",
+          "points": 8,
+          "priority": "critical",
+          "labels": ["devops", "ci-cd", "github-actions"],
+          "assignee": "devops",
+          "description": "As a DevOps engineer, I need CI/CD pipeline for staging so that deployments are automated.",
+          "acceptance_criteria": [
+            "Merge to `develop` triggers staging deployment",
+            "Lint, test, security audit run before deploy",
+            "Health checks verify successful deployment",
+            "Failed deployments trigger Slack alert"
+          ],
+          "tasks": [
+            {"id": "G.1.1", "title": "Lint & type check workflow", "estimate": "0.5d"},
+            {"id": "G.1.2", "title": "Test suite workflow", "estimate": "0.5d"},
+            {"id": "G.1.3", "title": "Security audit workflow", "estimate": "0.5d"},
+            {"id": "G.1.5", "title": "Deploy to staging workflow", "estimate": "1d"}
+          ]
+        },
+        {
+          "id": "S4.4",
+          "title": "Implement blue-green production deployment",
+          "type": "story",
+          "points": 13,
+          "priority": "critical",
+          "labels": ["devops", "deployment", "production"],
+          "assignee": "devops",
+          "description": "As a DevOps engineer, I need blue-green production deployment so that releases are zero-downtime.",
+          "acceptance_criteria": [
+            "Tag triggers production deployment",
+            "Green environment deployed behind load balancer",
+            "Health checks enable traffic switch (10% → 50% → 100%)",
+            "Failed health checks keep traffic on blue",
+            "Rollback procedures documented"
+          ],
+          "tasks": [
+            {"id": "G.1.6", "title": "Deploy to production workflow", "estimate": "1d"},
+            {"id": "G.2.1", "title": "Blue-green deployment", "estimate": "1d"},
+            {"id": "G.2.2", "title": "Database migration automation", "estimate": "0.5d"},
+            {"id": "G.2.3", "title": "Rollback procedures docs", "estimate": "0.5d"}
+          ]
+        },
+        {
+          "id": "S4.5",
+          "title": "Configure production monitoring with Sentry",
+          "type": "story",
+          "points": 5,
+          "priority": "medium",
+          "labels": ["devops", "monitoring", "sentry"],
+          "assignee": "devops",
+          "description": "As a stakeholder, I need production monitoring with Sentry so that errors are tracked.",
+          "acceptance_criteria": [
+            "Sentry configured for backend (FastAPI)",
+            "Sentry configured for frontend (React)",
+            "Error tracking dashboard accessible",
+            "Performance monitoring (APM) enabled"
+          ],
+          "tasks": [
+            {"id": "G.3.1", "title": "Sentry error tracking config", "estimate": "0.5d"},
+            {"id": "G.3.2", "title": "DB query monitoring setup", "estimate": "0.5d"},
+            {"id": "G.3.3", "title": "Security event alerts", "estimate": "0.5d"}
+          ]
+        }
+      ],
+      "velocity": 44,
+      "capacity": "4 engineers × 11 days = 44 story points"
+    }
+  ],
+  "metadata": {
+    "total_sprints": 4,
+    "total_story_points": 152,
+    "estimated_duration": "8 weeks",
+    "team_size": "2-4 engineers",
+    "created_at": "2026-02-11",
+    "project_manager": "TBD",
+    "tech_lead": "TBD"
+  }
+}

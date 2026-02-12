@@ -7,7 +7,7 @@
 import { useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
-import 'leaflet.heat';
+import 'leaflet.heat/dist/leaflet-heat.js';
 
 // Extend Leaflet types for heatLayer
 declare module 'leaflet' {
@@ -109,7 +109,7 @@ export function extractHeatmapPoints(
         ? feature.properties[intensityProperty]
         : 1.0;
 
-      points.push({ lat, lng, intensity });
+      points.push({ lat: lat ?? 0, lng: lng ?? 0, intensity });
     }
   });
 

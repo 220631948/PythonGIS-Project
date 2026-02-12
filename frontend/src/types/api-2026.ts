@@ -65,6 +65,9 @@ export interface ShadowAnalysisResponse {
   time: string;
 }
 
+// Alias for backward compatibility
+export type ShadowAnalysisResult = ShadowAnalysisResponse;
+
 export interface ViewshedRequest {
   lat: number;
   lng: number;
@@ -78,6 +81,17 @@ export interface ViewshedResponse {
   visibility_percentage: number;
   total_area_analyzed: number;
   observer_location: { lat: number; lng: number };
+}
+
+export interface InteractiveShadowRequest {
+  geometry: any;
+  height: number;
+  datetime: string;
+}
+
+export interface InteractiveShadowResponse {
+  status: string;
+  shadow: any;
 }
 
 // ==========================================
@@ -716,6 +730,80 @@ export interface CacheStats {
   cache_misses: number;
   size_mb: number;
   avg_response_time_ms: number;
+}
+
+// ==========================================
+// COMPARATIVE ANALYSIS TYPES (Added for DashboardBuilder integration)
+// ==========================================
+
+export interface Dataset {
+  id: string;
+  name: string;
+  description?: string;
+  created_at: string;
+  feature_count: number;
+  type?: string;
+  recordCount?: number;
+  lastUpdated?: string;
+  filters?: Record<string, any>;
+}
+
+export interface ComparisonRequest {
+  dataset_ids: string[];
+  metrics?: string[];
+}
+
+export interface ComparisonResult {
+  datasets: Dataset[];
+  comparison_data: Record<string, any>;
+  metrics: ComparisonMetric[];
+}
+
+export interface ComparisonMetric {
+  id?: string;
+  name: string;
+  values: Record<string, number>;
+  aggregation?: string;
+  type?: string;
+  icon?: string;
+  format?: string;
+}
+
+// ==========================================
+// DASHBOARD BUILDER TYPES (Added for widget configuration)
+// ==========================================
+
+export type WidgetType = 'text' | 'map' | 'table' | 'chart' | 'metric' |
+                         'bar_chart' | 'line_chart' | 'pie_chart' | 'metric_card' |
+                         'trend_indicator' | 'user_count' | 'data_table' | 'map_view' |
+                         'search_widget' | 'text_content' | 'image_widget' | 'recent_activity';
+
+export interface WidgetConfig {
+  id: string;
+  type: WidgetType;
+  title: string;
+  config: Record<string, any>;
+  position: { x: number; y: number; w: number; h: number };
+}
+
+export interface DashboardLayout {
+  id: string;
+  name: string;
+  widgets: WidgetConfig[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ==========================================
+// 3D VISUALIZATION TYPES (ViewState)
+// ==========================================
+
+export interface ViewState3D {
+  longitude: number;
+  latitude: number;
+  zoom: number;
+  pitch?: number;
+  bearing?: number;
 }
 
 // ==========================================

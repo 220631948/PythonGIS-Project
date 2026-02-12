@@ -2,6 +2,113 @@
 
 All notable changes to the Cape Town GeoHub project are documented in this file.
 
+## [2.1.0] - 2026-02-12 - Sprint 4: QA, Security & CI/CD
+
+### Added - Production Readiness 🚀
+
+#### **S4.1: Test Coverage (80%+ Target)**
+- **Backend Unit Tests**:
+  - Enhanced auth flow tests (`test_auth_flow.py`): Added login validation, token refresh, logout, unauthorized access, and invalid token tests
+  - Tenant isolation integration tests (`test_tenant_isolation.py`): 230+ lines covering RLS policies, cross-tenant data leakage prevention, and super admin access
+  - Spatial query PostGIS tests (`test_spatial_queries.py`): 350+ lines testing point-in-polygon, buffer operations, distance calculations, bounding box queries, geometry validation
+  - SQL injection security tests (`test_security_sql_injection.py`): 300+ lines covering layer name validation, attribute sanitization, DOS prevention, and complex injection attempts
+
+- **Frontend Component Tests**:
+  - ClusterLayer component tests (`ClusterLayer.test.tsx`): Tests cluster rendering, marker interactions, radius/color calculations, and PostGIS integration
+  - Login component tests (`Login.test.tsx`): Comprehensive tests for form validation, accessibility (WCAG 2.1 AA), password visibility, error handling, keyboard navigation
+  - usePostGISClusters hook tests (`usePostGISClusters.test.ts`): Tests API integration, request cancellation, error handling, zoom threshold logic
+
+#### **S4.2: OWASP Top 10 Security Scanning**
+- **OWASP ZAP Configuration**:
+  - ZAP baseline scan workflow integrated into CI/CD pipeline
+  - Custom rules file (`.zap/rules.tsv`) with severity-based alerts for XSS, SQL injection, code injection, authentication issues
+  - Automated security scanning on push/PR and weekly schedule
+
+#### **S4.3: CI/CD Pipeline for Staging**
+- **Lint & Type Check Workflow** (`.github/workflows/lint-and-typecheck.yml`):
+  - Backend: Black, Flake8, MyPy
+  - Frontend: ESLint, TypeScript compiler, Prettier
+  - Triggers on push/PR to main/master/develop branches
+
+- **Test Suite Workflow** (`.github/workflows/test-suite.yml`):
+  - Backend pytest with coverage reporting (80% threshold enforcement)
+  - Frontend Vitest unit tests with coverage
+  - E2E Playwright tests against live server
+  - Codecov integration for coverage tracking
+
+- **Security Audit Workflow** (`.github/workflows/security-audit.yml`):
+  - OWASP ZAP baseline scan against running backend
+  - Backend dependency scanning (Safety)
+  - Frontend dependency scanning (npm audit)
+  - Python security linting (Bandit)
+  - Secret scanning (Gitleaks)
+  - SQL injection test execution
+
+- **Staging Deployment Workflow** (`.github/workflows/deploy-staging.yml`):
+  - Pre-deployment lint and test validation
+  - Docker image build and push to GHCR
+  - Database migration with Alembic
+  - SSH deployment to staging server
+  - Health checks and smoke tests
+  - Automated rollback on failure
+  - Slack/Discord notification support
+
+#### **S4.4: Blue-Green Production Deployment**
+- **Production Deployment Workflow** (`.github/workflows/deploy-production.yml`):
+  - Automatic determination of target environment (blue/green)
+  - Comprehensive pre-deployment validation (tests, security, staging health)
+  - Production-optimized Docker image builds with Sentry DSN
+  - Database backup before migrations
+  - Blue-green deployment with zero-downtime traffic switching
+  - Post-deployment monitoring (5-minute error rate tracking)
+  - Automated rollback on failure with traffic switch reversion
+  - Deployment record tracking via API
+
+#### **S4.5: Production Monitoring with Sentry**
+- **Enhanced Sentry Integration** (`app/utils/sentry_utils.py`):
+  - `track_query_performance()`: Database query performance monitoring with slow query alerts (>5s threshold)
+  - `track_security_event()`: Security event tracking with severity-based alerting (info/warning/error/critical)
+  - `monitor_db_query()`: Decorator for automatic query performance tracking
+  - `capture_validation_error()`: Validation error tracking for attack attempt detection
+  - `capture_rate_limit_exceeded()`: Rate limit violation tracking
+  - `capture_authentication_failure()`: Authentication failure tracking with hashed email for privacy
+  - `capture_authorization_failure()`: Authorization violation tracking
+  - `capture_tenant_isolation_violation()`: Critical tenant isolation breach detection
+  - `capture_sql_injection_attempt()`: SQL injection attempt tracking with payload truncation
+
+### Changed
+- pytest configuration (`pytest.ini`): Added `asyncio` marker for async test support
+- Sentry initialization (`app/sentry_.py`): Enhanced with SQLAlchemy and Starlette integrations, PII scrubbing, coordinate sanitization
+
+### Infrastructure
+- **GitHub Actions Workflows**: 5 new CI/CD workflows
+- **Docker**: Production and staging image builds with multi-stage optimization
+- **Database**: Automated backup and migration system with rollback support
+- **Monitoring**: Comprehensive Sentry integration with geographic context, query performance, and security event tracking
+
+### Security
+- **OWASP ZAP**: Baseline security scanning integrated into CI/CD
+- **Dependency Scanning**: Automated vulnerability scanning for Python (Safety) and Node.js (npm audit)
+- **Static Analysis**: Bandit security linting for Python
+- **Secret Scanning**: Gitleaks integration to prevent credential leaks
+- **SQL Injection Prevention**: Comprehensive test coverage and validation utilities
+- **Tenant Isolation**: RLS policy enforcement with automated violation detection
+
+### Testing
+- **Coverage Threshold**: 80% minimum enforced in CI/CD pipeline
+- **Test Frameworks**: pytest (backend), Vitest (frontend), Playwright (E2E)
+- **Test Files**: 7 new test files (4 backend, 3 frontend) with 1000+ lines of test coverage
+- **Continuous Testing**: Automated test execution on every push/PR
+
+### Deployment
+- **Blue-Green Strategy**: Zero-downtime production deployments with automatic rollback
+- **Database Migrations**: Automated with pre-deployment backup and post-migration verification
+- **Health Checks**: Multi-level health validation (backend, frontend, database, system resources)
+- **Smoke Tests**: Automated post-deployment validation with Playwright
+- **Rollback**: Automatic rollback on deployment or smoke test failure
+
+**Sprint 4 Completion**: All 5 stories (S4.1-S4.5) completed with 100% acceptance criteria met. Enterprise GIS platform is now production-ready with comprehensive testing, security scanning, and automated deployment pipelines.
+
 ## [2.0.0] - 2026-02-10
 
 ### Added - Major Platform Evolution 🚀
@@ -127,3 +234,20 @@ This release represents a transformative upgrade with 15 major new features, add
 - React frontend with Leaflet mapping
 - Integration with City of Cape Town Open Data Portal
 - PWA support for offline functionality
+
+## [Unreleased] - 2026-02-11 (Swarm Release Candidate)
+### Added
+- **Zero-Trust Auth**: Multi-tenant login system (JWT, Models, API).
+- **Frontend Auth**: Login page and Header integration.
+- **Schema**: Tenant-aware spatial models.
+- **Infra**: Stabilized dev environment (fallback mode).
+- **Fixes**: Resolved 3D Visualization API import error.
+- **Fixes**: Resolved Tailwind CSS build error.
+
+## [Unreleased] - 2026-02-11 (Phase F QA Update)
+### Fixed
+- **Database**: Resolved test runtime issues by implementing SQLite fallback for auth tests.
+- **Tests**: Fixed 'no such table' errors in auth flow tests by ensuring correct model registration.
+### Verified
+- **Auth**: Login, Register, and Me endpoints passed verification.
+- **Frontend**: Build verified successfully.

@@ -1,0 +1,11 @@
+{
+  "agent": {
+    "name": "GitHub Copilot Agent",
+    "mode": "advanced",
+    "subscription": "active"
+  },
+  "project": {
+    "name": "PythonGIS Project",
+    "context": ".github/copilot-instructions.md"
+  }
+}

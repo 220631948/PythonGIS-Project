@@ -37,3 +37,5 @@ weasyprint>=60.0  # Alternative PDF generation
 redis>=5.0.0  # Caching and performance optimization
 celery>=5.3.0  # Background task processing
 python-jose>=3.3.0  # JWT tokens for API authentication
+email-validator
+passlib[bcrypt]

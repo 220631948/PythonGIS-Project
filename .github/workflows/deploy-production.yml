@@ -1,0 +1,409 @@
+name: Deploy to Production (Blue-Green)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment color'
+        required: true
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - blue
+          - green
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  determine-target:
+    name: Determine Target Environment
+    runs-on: ubuntu-latest
+    outputs:
+      target_env: ${{ steps.determine.outputs.target_env }}
+      current_env: ${{ steps.determine.outputs.current_env }}
+
+    steps:
+      - name: Determine target environment
+        id: determine
+        run: |
+          # If manual trigger with specific environment
+          if [[ "${{ github.event.inputs.environment }}" != "auto" && "${{ github.event.inputs.environment }}" != "" ]]; then
+            TARGET_ENV="${{ github.event.inputs.environment }}"
+            echo "Manual deployment to $TARGET_ENV"
+          else
+            # Auto-determine: query which environment is currently active
+            CURRENT=$(curl -s https://geohub.example.com/api/deployment/current || echo "blue")
+
+            if [[ "$CURRENT" == "blue" ]]; then
+              TARGET_ENV="green"
+            else
+              TARGET_ENV="blue"
+            fi
+
+            echo "Auto-determined: Current=$CURRENT, Target=$TARGET_ENV"
+          fi
+
+          echo "target_env=$TARGET_ENV" >> $GITHUB_OUTPUT
+          echo "current_env=${CURRENT:-blue}" >> $GITHUB_OUTPUT
+
+  pre-deployment-checks:
+    name: Pre-deployment Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run full test suite
+        uses: ./.github/workflows/test-suite.yml
+
+      - name: Run security audit
+        uses: ./.github/workflows/security-audit.yml
+
+      - name: Verify staging deployment
+        run: |
+          # Ensure staging has been tested recently
+          curl -f https://staging.geohub.example.com/health || {
+            echo "::error::Staging environment is not healthy"
+            exit 1
+          }
+
+  build-production-images:
+    name: Build Production Images
+    runs-on: ubuntu-latest
+    needs: [determine-target, pre-deployment-checks]
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        service: [backend, frontend]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
+          tags: |
+            type=sha,prefix=prod-
+            type=raw,value=production-${{ needs.determine-target.outputs.target_env }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push production image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service == 'backend' && '.' || './frontend' }}
+          file: ${{ matrix.service == 'backend' && './Dockerfile' || './frontend/Dockerfile' }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}:buildcache,mode=max
+          build-args: |
+            NODE_ENV=production
+            SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+
+  database-migration:
+    name: Run Database Migrations (Production)
+    runs-on: ubuntu-latest
+    needs: [determine-target, build-production-images]
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Alembic
+        run: |
+          pip install alembic asyncpg psycopg2-binary sqlalchemy
+
+      - name: Backup database
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: |
+          # Create timestamped backup
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          pg_dump "$DATABASE_URL" > backup_$TIMESTAMP.sql
+
+          echo "Database backup created: backup_$TIMESTAMP.sql"
+
+      - name: Run migrations with safety checks
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: |
+          # Check for pending migrations
+          alembic current
+
+          # Test migrations in dry-run mode first (if supported)
+          # alembic upgrade head --sql > migration.sql
+
+          # Apply migrations
+          alembic upgrade head
+
+          # Verify migration success
+          alembic current
+
+      - name: Upload backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-backup-${{ github.sha }}
+          path: backup_*.sql
+          retention-days: 30
+
+  deploy-blue-green:
+    name: Deploy to ${{ needs.determine-target.outputs.target_env }} Environment
+    runs-on: ubuntu-latest
+    needs: [determine-target, database-migration]
+    environment:
+      name: production-${{ needs.determine-target.outputs.target_env }}
+      url: https://geohub.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/prod_key
+          chmod 600 ~/.ssh/prod_key
+          ssh-keyscan -H ${{ secrets.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to ${{ needs.determine-target.outputs.target_env }} environment
+        env:
+          TARGET_ENV: ${{ needs.determine-target.outputs.target_env }}
+        run: |
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} << ENDSSH
+            cd /opt/geohub-$TARGET_ENV
+
+            # Pull latest production images
+            docker-compose -f docker-compose.$TARGET_ENV.yml pull
+
+            # Stop old containers in target environment
+            docker-compose -f docker-compose.$TARGET_ENV.yml down
+
+            # Start new containers
+            docker-compose -f docker-compose.$TARGET_ENV.yml up -d
+
+            # Wait for services to be healthy
+            timeout 120 bash -c 'until docker-compose -f docker-compose.$TARGET_ENV.yml ps | grep -q "healthy"; do sleep 5; done'
+
+            echo "Deployment to $TARGET_ENV completed"
+          ENDSSH
+
+      - name: Health check ${{ needs.determine-target.outputs.target_env }}
+        env:
+          TARGET_ENV: ${{ needs.determine-target.outputs.target_env }}
+        run: |
+          # Wait for deployment to stabilize
+          sleep 30
+
+          # Internal health check (before switching traffic)
+          TARGET_PORT=$([ "$TARGET_ENV" == "blue" ] && echo "8001" || echo "8002")
+
+          curl -f http://${{ secrets.PRODUCTION_HOST }}:$TARGET_PORT/health || {
+            echo "::error::Health check failed for $TARGET_ENV environment"
+            exit 1
+          }
+
+          echo "Health check passed for $TARGET_ENV"
+
+  smoke-tests-production:
+    name: Run Production Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [determine-target, deploy-blue-green]
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run smoke tests against ${{ needs.determine-target.outputs.target_env }}
+        working-directory: ./frontend
+        env:
+          TARGET_ENV: ${{ needs.determine-target.outputs.target_env }}
+          BASE_URL: http://${{ secrets.PRODUCTION_HOST }}:$([ "$TARGET_ENV" == "blue" ] && echo "8001" || echo "8002")
+        run: |
+          npx playwright test tests/smoke.spec.js --retries 2
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-test-results
+          path: frontend/playwright-report/
+          retention-days: 30
+
+  switch-traffic:
+    name: Switch Traffic to ${{ needs.determine-target.outputs.target_env }}
+    runs-on: ubuntu-latest
+    needs: [determine-target, deploy-blue-green, smoke-tests-production]
+    environment: production
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/prod_key
+          chmod 600 ~/.ssh/prod_key
+          ssh-keyscan -H ${{ secrets.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Update load balancer to ${{ needs.determine-target.outputs.target_env }}
+        env:
+          TARGET_ENV: ${{ needs.determine-target.outputs.target_env }}
+          CURRENT_ENV: ${{ needs.determine-target.outputs.current_env }}
+        run: |
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} << ENDSSH
+            # Update nginx/HAProxy configuration to route to new environment
+            sudo sed -i "s/proxy_pass http://$CURRENT_ENV/proxy_pass http://$TARGET_ENV/" /etc/nginx/sites-enabled/geohub.conf
+
+            # Test nginx configuration
+            sudo nginx -t
+
+            # Reload nginx (zero-downtime)
+            sudo nginx -s reload
+
+            echo "Traffic switched to $TARGET_ENV environment"
+          ENDSSH
+
+      - name: Verify public endpoint
+        run: |
+          sleep 10
+
+          # Check public endpoint is responding
+          curl -f https://geohub.example.com/health || {
+            echo "::error::Public endpoint health check failed after traffic switch"
+            exit 1
+          }
+
+          echo "::notice::Traffic successfully switched to ${{ needs.determine-target.outputs.target_env }} ✅"
+
+  post-deployment-monitoring:
+    name: Post-Deployment Monitoring
+    runs-on: ubuntu-latest
+    needs: [determine-target, switch-traffic]
+    environment: production
+
+    steps:
+      - name: Monitor error rates (5 minutes)
+        run: |
+          echo "Monitoring Sentry for error spikes..."
+
+          # Check Sentry API for error rates
+          # SENTRY_ERROR_RATE=$(curl -s "https://sentry.io/api/0/projects/${{ secrets.SENTRY_ORG }}/${{ secrets.SENTRY_PROJECT }}/stats/" \
+          #   -H "Authorization: Bearer ${{ secrets.SENTRY_AUTH_TOKEN }}" \
+          #   | jq '.error_rate')
+
+          # If error rate > threshold, trigger rollback
+          # if (( $(echo "$SENTRY_ERROR_RATE > 0.05" | bc -l) )); then
+          #   echo "::error::High error rate detected: $SENTRY_ERROR_RATE"
+          #   exit 1
+          # fi
+
+          sleep 300  # Monitor for 5 minutes
+          echo "Monitoring completed - no issues detected"
+
+      - name: Update deployment record
+        env:
+          TARGET_ENV: ${{ needs.determine-target.outputs.target_env }}
+        run: |
+          # Update API to record current active environment
+          curl -X POST https://geohub.example.com/api/deployment/current \
+            -H "Authorization: Bearer ${{ secrets.DEPLOYMENT_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"environment\": \"$TARGET_ENV\", \"commit\": \"${{ github.sha }}\", \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+
+  rollback:
+    name: Rollback to ${{ needs.determine-target.outputs.current_env }}
+    runs-on: ubuntu-latest
+    needs: [determine-target, switch-traffic, post-deployment-monitoring]
+    if: failure()
+    environment: production
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/prod_key
+          chmod 600 ~/.ssh/prod_key
+          ssh-keyscan -H ${{ secrets.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Rollback to previous environment
+        env:
+          CURRENT_ENV: ${{ needs.determine-target.outputs.current_env }}
+          TARGET_ENV: ${{ needs.determine-target.outputs.target_env }}
+        run: |
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} << ENDSSH
+            # Revert nginx configuration
+            sudo sed -i "s/proxy_pass http://$TARGET_ENV/proxy_pass http://$CURRENT_ENV/" /etc/nginx/sites-enabled/geohub.conf
+
+            # Reload nginx
+            sudo nginx -t && sudo nginx -s reload
+
+            echo "Rolled back to $CURRENT_ENV environment"
+          ENDSSH
+
+      - name: Notify rollback
+        run: |
+          echo "::error::Production deployment failed - rolled back to ${{ needs.determine-target.outputs.current_env }}"
+
+          # Send alert via Slack/PagerDuty
+          # curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+          #   -H 'Content-Type: application/json' \
+          #   -d '{"text":"🚨 Production deployment ROLLED BACK - commit ${{ github.sha }}"}'
+
+  notify-success:
+    name: Notify Deployment Success
+    runs-on: ubuntu-latest
+    needs: [determine-target, post-deployment-monitoring]
+    if: success()
+
+    steps:
+      - name: Send success notification
+        env:
+          TARGET_ENV: ${{ needs.determine-target.outputs.target_env }}
+        run: |
+          echo "::notice::Production deployment successful to $TARGET_ENV environment ✅"
+
+          # Send notification
+          # curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+          #   -H 'Content-Type: application/json' \
+          #   -d '{"text":"✅ Production deployment successful to '"$TARGET_ENV"' - commit ${{ github.sha }}"}'

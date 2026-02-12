@@ -23,6 +23,13 @@ interface SourcesMap {
   [key: string]: SourceStatus;
 }
 
+interface DataSourceMetadata {
+  name: string;
+  category: string;
+  last_synced: string | null;
+  url: string;
+}
+
 interface HealthData {
   summary: HealthSummary;
   sources: SourcesMap;
@@ -54,6 +61,7 @@ interface DataStatusPanelProps {
 const DataStatusPanel: React.FC<DataStatusPanelProps> = ({ isOpen, onClose }) => {
     const [healthData, setHealthData] = useState<HealthData | null>(null);
     const [retrievalLog, setRetrievalLog] = useState<RetrievalLog | null>(null);
+    const [sourceMetadata, setSourceMetadata] = useState<DataSourceMetadata[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'health' | 'log'>('health');
@@ -69,12 +77,14 @@ const DataStatusPanel: React.FC<DataStatusPanelProps> = ({ isOpen, onClose }) =>
         setError(null);
 
         try {
-            const [health, log] = await Promise.all([
+            const [health, log, meta] = await Promise.all([
                 apiClient.getDataSourcesHealth() as Promise<HealthData>,
-                apiClient.getRetrievalLog(20) as Promise<RetrievalLog>
+                apiClient.getRetrievalLog(20) as Promise<RetrievalLog>,
+                apiClient.getDataSources() as Promise<{ sources: DataSourceMetadata[] }>
             ]);
             setHealthData(health);
             setRetrievalLog(log);
+            setSourceMetadata(meta.sources);
         } catch (err: any) {
             setError(err.message || 'Failed to load status');
         } finally {
@@ -86,6 +96,12 @@ const DataStatusPanel: React.FC<DataStatusPanelProps> = ({ isOpen, onClose }) =>
 
     const getStatusColor = (accessible: boolean) => {
         return accessible ? '#10b981' : '#ef4444';
+    };
+
+    const formatLastSynced = (name: string) => {
+        const meta = sourceMetadata.find(m => m.name === name);
+        if (!meta || !meta.last_synced) return 'Never';
+        return new Date(meta.last_synced).toLocaleString();
     };
 
     const getStatusBadge = (status: 'ok' | 'error' | 'pending') => {
@@ -266,7 +282,10 @@ const DataStatusPanel: React.FC<DataStatusPanelProps> = ({ isOpen, onClose }) =>
                                             {name.replace(/_/g, ' ')}
                                         </div>
                                         <div style={{ fontSize: '11px', color: '#6b7280' }}>
-                                            {status.url?.substring(0, 50)}...
+                                            Last Synced: <strong>{formatLastSynced(name)}</strong>
+                                        </div>
+                                        <div style={{ fontSize: '10px', color: '#9ca3af' }}>
+                                            {status.url?.substring(0, 40)}...
                                         </div>
                                     </div>
                                     <div>
