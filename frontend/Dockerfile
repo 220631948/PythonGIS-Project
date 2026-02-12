@@ -4,6 +4,7 @@ FROM node:20-alpine AS builder
 # Allow passing release info at build time
 ARG SENTRY_RELEASE=""
 ENV VITE_SENTRY_RELEASE=${SENTRY_RELEASE}
+ENV NODE_ENV=production
 
 WORKDIR /build
 

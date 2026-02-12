@@ -29,12 +29,13 @@ ENV SENTRY_RELEASE=${SENTRY_RELEASE}
 ENV SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
 
 # Install only runtime dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gdal-bin \
     libgdal28 \
     libgeos-c1v5 \
     libproj19 \
     postgresql-client \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user geohub
@@ -53,6 +54,7 @@ COPY --from=builder /root/.local /home/geohub/.local
 
 # Update PATH environment variable
 ENV PATH=/home/geohub/.local/bin:$PATH
+ENV PYTHONUNBUFFERED=1
 
 # Copy application code setting ownership to geohub
 COPY --chown=geohub:geohub . .
@@ -60,9 +62,9 @@ COPY --chown=geohub:geohub . .
 # Switch to geohub user
 USER geohub
 
-# Add healthcheck calling python script
+# Add healthcheck calling lightweight API endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; exit(0 if requests.get('http://localhost:8000/health').ok else 1)"
+    CMD curl -f http://localhost:8000/api/health || exit 1
 
 EXPOSE 8000
 

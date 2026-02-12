@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgis/postgis:15-3.4
+    image: kartoza/postgis:15-3.4
     container_name: geohub_postgis
     restart: unless-stopped
     environment:
@@ -26,6 +26,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: geohub_api
+    env_file:
+      - .env
     restart: unless-stopped
     depends_on:
       db:
@@ -56,6 +58,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     container_name: geohub_frontend
+    env_file:
+      - .env
     restart: unless-stopped
     depends_on:
       - api

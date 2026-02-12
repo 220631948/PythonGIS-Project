@@ -64,7 +64,7 @@ TL;DR: Convert the repo from a double-root (outer “PythonGIS Project” with i
 
 **Verification**
 
-- Directory root contains app/, frontend/, tests/, scripts/, docs/, alembic/, data/, static/, .github/, Makefile, pytest.ini, requirements.txt, docker-compose.yml, Dockerfile, .gitignore/.dockerignore; no cape_town_geohub/ dir.
+- Directory root contains app/, frontend/, tests/, scripts/, docs/, alembic/, data/, static/, .github/, Makefile, pytest.ini, requirements.txt, compose.yaml, Dockerfile, .gitignore/.dockerignore; no cape_town_geohub/ dir.
 - No code/workflow references to cape_town_geohub paths.
 - python -c "from app.main import app" succeeds.
 - pytest tests/ passes.

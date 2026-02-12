@@ -1,13 +1,13 @@
 services:
   db:
-    image: postgis/postgis:15-3.4
-    container_name: geohub_postgis_prod
+    image: kartoza/postgis:15-3.4
+    container_name: geohub_postgis
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?database user required}
       POSTGRES_DB: ${POSTGRES_DB:?database name required}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?database password required}
     volumes:
-      - postgres_data_prod:/var/lib/postgresql
+      - postgres_data_prod:/var/lib/postgresql/data
       - ./backups:/backups
     networks:
       - geohub-prod

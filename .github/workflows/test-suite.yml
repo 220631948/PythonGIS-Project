@@ -1,0 +1,227 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  backend-tests:
+    name: Backend Tests (pytest)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: kartoza/postgis:15-3.4
+        env:
+          POSTGRES_DB: geohub_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-asyncio
+
+      - name: Run pytest with coverage
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/geohub_test
+          SECRET_KEY: test-secret-key-for-ci-only-do-not-use-in-production
+          ALGORITHM: HS256
+          ACCESS_TOKEN_EXPIRE_MINUTES: 30
+        run: |
+          pytest tests/ \
+            --cov=app \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --cov-report=html \
+            -v \
+            -ra \
+            --tb=short
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
+
+      - name: Archive coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-report
+          path: htmlcov/
+          retention-days: 7
+
+      - name: Check coverage threshold
+        run: |
+          # Extract coverage percentage from coverage.xml
+          COVERAGE=$(python -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); print(float(root.attrib['line-rate']) * 100)")
+          echo "Coverage: $COVERAGE%"
+
+          # Sprint 4 S4.1 requires 80% coverage
+          THRESHOLD=80
+          if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
+            echo "::error::Coverage $COVERAGE% is below threshold $THRESHOLD%"
+            exit 1
+          else
+            echo "::notice::Coverage $COVERAGE% meets threshold $THRESHOLD%"
+          fi
+
+  frontend-tests:
+    name: Frontend Tests (Vitest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Vitest
+        run: npm run test:unit -- --coverage --run
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./frontend/coverage/coverage-final.json
+          flags: frontend
+          name: frontend-coverage
+          fail_ci_if_error: false
+
+      - name: Archive coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage-report
+          path: frontend/coverage/
+          retention-days: 7
+
+  e2e-tests:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: kartoza/postgis:15-3.4
+        env:
+          POSTGRES_DB: geohub_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: ./frontend
+        run: npx playwright install --with-deps
+
+      - name: Start backend server
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/geohub_test
+          SECRET_KEY: test-secret-key-for-ci-only-do-not-use-in-production
+        run: |
+          python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          # Wait for backend to be ready
+          timeout 30 bash -c 'until curl -s http://localhost:8000/health; do sleep 1; done'
+
+      - name: Start frontend dev server
+        working-directory: ./frontend
+        run: |
+          npm run dev &
+          # Wait for frontend to be ready
+          timeout 30 bash -c 'until curl -s http://localhost:3000; do sleep 1; done'
+
+      - name: Run Playwright tests
+        working-directory: ./frontend
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests, e2e-tests]
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          echo "Backend Tests: ${{ needs.backend-tests.result }}"
+          echo "Frontend Tests: ${{ needs.frontend-tests.result }}"
+          echo "E2E Tests: ${{ needs.e2e-tests.result }}"
+
+          if [[ "${{ needs.backend-tests.result }}" != "success" ]] || \
+             [[ "${{ needs.frontend-tests.result }}" != "success" ]] || \
+             [[ "${{ needs.e2e-tests.result }}" != "success" ]]; then
+            echo "::error::One or more test suites failed"
+            exit 1
+          fi
+
+          echo "::notice::All test suites passed successfully ✅"

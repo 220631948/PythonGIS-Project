@@ -184,7 +184,7 @@ Failed to load resource: net::ERR_CONNECTION_RESET
 - /frontend/src/components/MapView.tsx (or equivalent)
 - /backend/config/** (database, API gateway configs)
 - /.env.example
-- /docker-compose.yml
+- /compose.yaml
 ```
 
 **Deliverable**: 
