@@ -93,11 +93,11 @@ const Sidebar: React.FC<SidebarProps> = ({
       case 'utilities': return <UtilitiesModule onLayerUpdate={onLayerUpdate} clickedLocation={clickedLocation} />;
       case 'data': return (
         <div className="module-content">
-          <LayerPanel 
-            activeLayers={activeLayers} 
-            onLayerToggle={onLayerToggle} 
-            metadata={metadata} 
-            loadingLayers={loadingLayers} 
+          <LayerPanel
+            activeLayers={activeLayers}
+            onLayerToggle={onLayerToggle}
+            metadata={metadata}
+            loadingLayers={loadingLayers}
           />
           <Legend activeLayers={activeLayers} />
         </div>
@@ -110,54 +110,85 @@ const Sidebar: React.FC<SidebarProps> = ({
     <>
       {/* Mobile Overlay */}
       {isOpen && window.innerWidth <= 768 && (
-        <div className="sidebar-overlay" onClick={() => onClose && onClose()} />
+        <div
+          className="fixed inset-0 bg-black/50 z-[999] md:hidden animate-fade-in"
+          onClick={() => onClose && onClose()}
+        />
       )}
 
-      <nav id="sidebar-navigation" className={`sidebar ${isOpen ? 'open' : 'closed'} ${isLoading ? 'loading' : ''}`} aria-label="Main navigation">
-        <div className="sidebar-tabs" role="tablist" style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          borderBottom: '1px solid var(--color-border)',
-          backgroundColor: 'var(--color-bg-secondary)'
-        }}>
+      <nav
+        id="sidebar-navigation"
+        className={`
+          fixed md:relative top-0 left-0 h-full
+          w-80 md:w-96
+          bg-slate-900 text-slate-100
+          flex flex-col
+          shadow-xl md:shadow-none
+          z-[1000] md:z-auto
+          transition-transform duration-300 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          ${isLoading ? 'opacity-75 pointer-events-none' : ''}
+        `}
+        aria-label="Main navigation"
+        aria-busy={isLoading}
+      >
+        {/* Tab Navigation */}
+        <div
+          className="flex flex-wrap border-b border-slate-700 bg-slate-800/50"
+          role="tablist"
+        >
           {tabs.map(tab => (
             <button
               key={tab.id}
-              className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+              id={`${tab.id}-tab`}
+              className={`
+                flex-1 min-w-[42px] px-1.5 py-2.5
+                flex flex-col items-center gap-1
+                border-none cursor-pointer
+                transition-all duration-200
+                ${activeTab === tab.id
+                  ? 'bg-slate-900 border-b-2'
+                  : 'bg-transparent border-b-2 border-transparent hover:bg-slate-800'
+                }
+              `}
               onClick={() => setActiveTab(tab.id)}
               title={tab.label}
               role="tab"
               aria-selected={activeTab === tab.id}
               aria-label={`${tab.label} module`}
-              aria-controls={`${tab.id}-panel`}
+              aria-controls="module-panel"
+              tabIndex={activeTab === tab.id ? 0 : -1}
               style={{
-                flex: '1 1 auto',
-                minWidth: '42px',
-                padding: '10px 6px',
-                border: 'none',
-                backgroundColor: activeTab === tab.id ? 'var(--color-surface)' : 'transparent',
-                borderBottom: activeTab === tab.id ? `2px solid ${tab.color}` : '2px solid transparent',
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '4px',
-                transition: 'all 0.2s'
+                borderBottomColor: activeTab === tab.id ? tab.color : 'transparent'
               }}
             >
-              <tab.icon size={18} style={{ color: activeTab === tab.id ? tab.color : 'var(--color-text-muted)' }} aria-hidden="true" />
-              <span style={{ fontSize: '10px', color: activeTab === tab.id ? tab.color : 'var(--color-text-muted)', fontWeight: activeTab === tab.id ? '600' : '400' }}>
+              <tab.icon
+                size={18}
+                className={activeTab === tab.id ? '' : 'text-slate-400'}
+                style={{ color: activeTab === tab.id ? tab.color : undefined }}
+                aria-hidden="true"
+              />
+              <span
+                className={`text-[10px] ${activeTab === tab.id ? 'font-semibold' : 'font-normal text-slate-400'}`}
+                style={{ color: activeTab === tab.id ? tab.color : undefined }}
+              >
                 {tab.label}
               </span>
             </button>
           ))}
         </div>
 
-        <div className="sidebar-content" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-          
+        {/* Sidebar Content */}
+        <div className="flex-1 overflow-y-auto flex flex-col">
+
           <OpsStatus />
 
-          <div style={{ flex: 1 }}>
+          <div
+            id="module-panel"
+            role="tabpanel"
+            aria-labelledby={`${activeTab}-tab`}
+            className="flex-1"
+          >
             <LoadingBoundary
               key={activeTab}
               fallback={<ModuleSkeleton />}
@@ -167,20 +198,33 @@ const Sidebar: React.FC<SidebarProps> = ({
             </LoadingBoundary>
           </div>
 
-          <div className="sidebar-section about" style={{ padding: '12px 16px', borderTop: '1px solid var(--color-border)', marginTop: 'auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <Info size={14} style={{ color: 'var(--color-text-muted)' }} />
-              <span style={{ fontSize: '12px', fontWeight: '500', color: 'var(--color-text-primary)' }}>About</span>
+          {/* About Section */}
+          <div className="px-4 py-3 border-t border-slate-700 mt-auto bg-slate-800/30">
+            <div className="flex items-center gap-2 mb-2">
+              <Info size={14} className="text-slate-400" aria-hidden="true" />
+              <span className="text-xs font-medium text-slate-200">About</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <a href="https://odp.capetown.gov.za/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <ExternalLink size={12} /> Open Data
+            <div className="flex gap-3">
+              <a
+                href="https://odp.capetown.gov.za/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-teal-400 hover:text-teal-300 flex items-center gap-1 transition-colors"
+                aria-label="Open Data (opens in new tab)"
+              >
+                <ExternalLink size={12} aria-hidden="true" /> Open Data
               </a>
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Github size={12} /> Source
+              <a
+                href="https://github.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-teal-400 hover:text-teal-300 flex items-center gap-1 transition-colors"
+                aria-label="Source code (opens in new tab)"
+              >
+                <Github size={12} aria-hidden="true" /> Source
               </a>
             </div>
-            <p style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '8px' }}>
+            <p className="text-[10px] text-slate-500 mt-2">
               v1.3.0-vibecoding • 100% Real Open Data
             </p>
           </div>

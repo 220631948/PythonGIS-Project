@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   BarChart3,
   PieChart,
@@ -11,6 +11,7 @@ import {
   Square,
   X
 } from 'lucide-react';
+import { useFocusTrap } from './Accessibility';
 import '../styles/Dashboard.css';
 
 /**
@@ -65,6 +66,30 @@ export default function Dashboard({ isOpen, onClose }: DashboardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedChart, setSelectedChart] = useState<'bar' | 'pie'>('bar');
+  const modalRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<Element | null>(null);
+
+  useFocusTrap(modalRef, isOpen);
+
+  // Store trigger element and restore focus on close
+  useEffect(() => {
+    if (isOpen) {
+      triggerRef.current = document.activeElement;
+    } else if (triggerRef.current && triggerRef.current instanceof HTMLElement) {
+      triggerRef.current.focus();
+      triggerRef.current = null;
+    }
+  }, [isOpen]);
+
+  // Escape key to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   // Load dashboard data with retry logic
   const loadDashboardData = useCallback(async (retryCount = 0) => {
@@ -162,57 +187,59 @@ export default function Dashboard({ isOpen, onClose }: DashboardProps) {
   // Get icon for metric
   const getMetricIcon = (icon: string) => {
     const icons: { [key: string]: React.ReactNode } = {
-      database: <Database size={20} />,
-      'map-pin': <MapPin size={20} />,
-      circle: <Circle size={20} />,
-      square: <Square size={20} />
+      database: <Database size={20} aria-hidden="true" />,
+      'map-pin': <MapPin size={20} aria-hidden="true" />,
+      circle: <Circle size={20} aria-hidden="true" />,
+      square: <Square size={20} aria-hidden="true" />
     };
-    return icons[icon] || <Database size={20} />;
+    return icons[icon] || <Database size={20} aria-hidden="true" />;
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="dashboard-overlay">
-      <div className="dashboard-modal">
+    <div className="dashboard-overlay" role="dialog" aria-modal="true" aria-labelledby="dashboard-title">
+      <div className="dashboard-modal" ref={modalRef}>
         <div className="dashboard-header">
           <div className="header-title">
-            <BarChart3 size={24} />
-            <h2>Analytics Dashboard</h2>
+            <BarChart3 size={24} aria-hidden="true" />
+            <h2 id="dashboard-title">Analytics Dashboard</h2>
           </div>
           <div className="header-actions">
             <button
               className="action-btn"
-              onClick={loadDashboardData}
+              onClick={() => loadDashboardData()}
               disabled={isLoading}
+              aria-label="Refresh dashboard data"
               title="Refresh data"
             >
-              <RefreshCw size={18} className={isLoading ? 'spin' : ''} />
+              <RefreshCw size={18} className={isLoading ? 'spin' : ''} aria-hidden="true" />
             </button>
             <button
               className="action-btn"
               onClick={exportToCSV}
               disabled={!dashboardData}
+              aria-label="Export data to CSV"
               title="Export to CSV"
             >
-              <Download size={18} />
+              <Download size={18} aria-hidden="true" />
             </button>
             <button className="close-btn" onClick={onClose} aria-label="Close dashboard">
-              <X size={20} />
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
         </div>
 
         <div className="dashboard-content">
           {isLoading ? (
-            <div className="loading-state">
-              <RefreshCw className="spin" size={32} />
+            <div className="loading-state" role="status" aria-live="polite">
+              <RefreshCw className="spin" size={32} aria-hidden="true" />
               <span>Loading dashboard data...</span>
             </div>
           ) : error ? (
-            <div className="error-state">
+            <div className="error-state" role="alert">
               <span>⚠️ {error}</span>
-              <button onClick={loadDashboardData}>Retry</button>
+              <button onClick={() => loadDashboardData()} aria-label="Retry loading dashboard data">Retry</button>
             </div>
           ) : dashboardData ? (
             <>
@@ -232,19 +259,21 @@ export default function Dashboard({ isOpen, onClose }: DashboardProps) {
               </div>
 
               {/* Chart Controls */}
-              <div className="chart-controls">
+              <div className="chart-controls" role="group" aria-label="Chart type">
                 <button
                   className={`chart-btn ${selectedChart === 'bar' ? 'active' : ''}`}
                   onClick={() => setSelectedChart('bar')}
+                  aria-pressed={selectedChart === 'bar'}
                 >
-                  <BarChart3 size={16} />
+                  <BarChart3 size={16} aria-hidden="true" />
                   <span>Features by Dataset</span>
                 </button>
                 <button
                   className={`chart-btn ${selectedChart === 'pie' ? 'active' : ''}`}
                   onClick={() => setSelectedChart('pie')}
+                  aria-pressed={selectedChart === 'pie'}
                 >
-                  <PieChart size={16} />
+                  <PieChart size={16} aria-hidden="true" />
                   <span>Geometry Types</span>
                 </button>
               </div>
@@ -261,7 +290,7 @@ export default function Dashboard({ isOpen, onClose }: DashboardProps) {
               {/* Summary Stats */}
               <div className="summary-section">
                 <h3>
-                  <TrendingUp size={18} />
+                  <TrendingUp size={18} aria-hidden="true" />
                   Summary Statistics
                 </h3>
                 <div className="summary-grid">

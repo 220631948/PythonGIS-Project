@@ -1,10 +1,32 @@
 /* Accessibility — Skip link, visually hidden, focus styles, high contrast, reduced motion */
 
-.skip-link:focus {
-    left: 16px !important;
-    top: 16px;
+/* Skip link: off-screen by default, visible on focus */
+.skip-link {
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
     z-index: 10000;
+}
+
+.skip-link:focus {
+    position: fixed;
+    left: 16px;
+    top: 16px;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    background: var(--accent, #0072B2);
+    color: #ffffff;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
     border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
 }
 
 .visually-hidden {
@@ -21,7 +43,7 @@
 
 /* Focus styles */
 *:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--accent, #0072B2);
     outline-offset: 2px;
 }
 
@@ -30,8 +52,21 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--accent, #0072B2);
     outline-offset: 2px;
+}
+
+/* Reusable focus ring utility */
+.focus-ring:focus-visible {
+    outline: 2px solid var(--accent, #0072B2);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+/* Selection color */
+::selection {
+    background: var(--accent, #0072B2);
+    color: #fff;
 }
 
 /* High contrast mode */
@@ -43,6 +78,22 @@ textarea:focus-visible {
 
     .layer-card, .dataset-card, .setting-item {
         border-width: 2px;
+    }
+}
+
+/* Windows High Contrast / forced-colors mode */
+@media (forced-colors: active) {
+    *:focus-visible {
+        outline: 2px solid Highlight;
+    }
+
+    .skip-link:focus {
+        background: Highlight;
+        color: HighlightText;
+    }
+
+    button, a, input, select, textarea {
+        border: 1px solid ButtonText;
     }
 }
 
