@@ -1,0 +1,94 @@
+{
+  "budgets": {
+    "frontend": {
+      "pageLoad": {
+        "warn": 3000,
+        "fail": 5000,
+        "description": "Initial page load time in milliseconds"
+      },
+      "mapReady": {
+        "warn": 2000,
+        "fail": 4000,
+        "description": "Time until map is fully interactive"
+      },
+      "firstLayerRender": {
+        "warn": 1500,
+        "fail": 3000,
+        "description": "Time to render first data layer"
+      },
+      "interactionReady": {
+        "warn": 1000,
+        "fail": 2000,
+        "description": "Time for interactions to respond"
+      },
+      "bundleSize": {
+        "warn": 1024,
+        "fail": 2048,
+        "description": "Main bundle size in KB"
+      },
+      "totalBundleSize": {
+        "warn": 3072,
+        "fail": 5120,
+        "description": "Total bundle size including chunks in KB"
+      }
+    },
+    "backend": {
+      "spatialQueryAvg": {
+        "warn": 100,
+        "fail": 200,
+        "description": "Average spatial query response time in ms"
+      },
+      "clusterQueryAvg": {
+        "warn": 200,
+        "fail": 500,
+        "description": "Average cluster query response time in ms"
+      },
+      "apiResponseP95": {
+        "warn": 500,
+        "fail": 1000,
+        "description": "95th percentile API response time in ms"
+      },
+      "indexCoverage": {
+        "warn": 80,
+        "fail": 60,
+        "description": "Percentage of queries using indexes"
+      },
+      "slowQueryCount": {
+        "warn": 5,
+        "fail": 10,
+        "description": "Number of queries taking over 1 second"
+      }
+    }
+  },
+  "targets": {
+    "desktop": {
+      "pageLoad": 2000,
+      "mapReady": 1500
+    },
+    "mobile": {
+      "pageLoad": 4000,
+      "mapReady": 3000
+    }
+  },
+  "baseline": {
+    "lastUpdated": "2026-02-12",
+    "commit": "a7b24cd",
+    "metrics": {
+      "pageLoad": 2500,
+      "mapReady": 1800,
+      "spatialQueryAvg": 45,
+      "clusterQueryAvg": 120
+    }
+  },
+  "notifications": {
+    "warnOnly": [
+      "bundleSize",
+      "totalBundleSize"
+    ],
+    "failCi": [
+      "pageLoad",
+      "spatialQueryAvg",
+      "clusterQueryAvg"
+    ]
+  }
+}
