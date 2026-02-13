@@ -20,8 +20,6 @@ from dataclasses import dataclass
 from enum import Enum
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
-from geoalchemy2.shape import to_shape
 
 from app.core.database import get_engine, DatabaseConnectionError
 
