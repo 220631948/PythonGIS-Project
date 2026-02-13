@@ -74,7 +74,8 @@ class BuildingExtrusionLayer extends CompositeLayer<BuildingExtrusionLayerProps>
             other: [180, 180, 180],
           };
 
-          const baseColor = colorSchemes[usage] || colorSchemes.other;
+          const defaultColor: [number, number, number] = [180, 180, 180];
+          const baseColor = colorSchemes[usage] ?? colorSchemes.other ?? defaultColor;
 
           // Adjust brightness based on height
           const heightFactor = Math.min(height / 100, 1);

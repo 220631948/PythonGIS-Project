@@ -151,7 +151,7 @@ export default function CommunityDashboard({
         </h3>
         <div className="status-grid">
           {Object.entries(stats.issues_by_status).map(([status, count]) => {
-            const statusConfig: Record<string, { icon: any; color: string; label: string }> = {
+            const statusConfig: Record<string, { icon: typeof AlertCircle; color: string; label: string }> = {
               new: { icon: AlertCircle, color: '#3b82f6', label: 'New' },
               acknowledged: { icon: Clock, color: '#f59e0b', label: 'Acknowledged' },
               in_progress: { icon: TrendingUp, color: '#8b5cf6', label: 'In Progress' },
@@ -159,7 +159,8 @@ export default function CommunityDashboard({
               closed: { icon: CheckCircle, color: '#6b7280', label: 'Closed' }
             };
 
-            const config = statusConfig[status] || statusConfig.new;
+            const defaultConfig = { icon: AlertCircle, color: '#3b82f6', label: 'New' };
+            const config = statusConfig[status] ?? defaultConfig;
             const Icon = config.icon;
 
             return (

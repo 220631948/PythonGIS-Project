@@ -310,7 +310,7 @@ const MapView = ({
             ))}
 
           {/* Data Layers from API */}
-          {dataLayerElements}
+          {...dataLayerElements}
 
           {/* Route Layer */}
           {routeOrigin && routeDestination && routeData?.route_geojson && (

@@ -183,7 +183,7 @@ export default function Dashboard({ isOpen, onClose }: DashboardProps) {
           <div className="header-actions">
             <button
               className="action-btn"
-              onClick={loadDashboardData}
+              onClick={() => void loadDashboardData()}
               disabled={isLoading}
               title="Refresh data"
             >
@@ -212,7 +212,7 @@ export default function Dashboard({ isOpen, onClose }: DashboardProps) {
           ) : error ? (
             <div className="error-state">
               <span>⚠️ {error}</span>
-              <button onClick={loadDashboardData}>Retry</button>
+              <button onClick={() => void loadDashboardData()}>Retry</button>
             </div>
           ) : dashboardData ? (
             <>

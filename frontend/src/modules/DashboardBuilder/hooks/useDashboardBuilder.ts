@@ -44,7 +44,15 @@ interface UseDashboardBuilderReturn {
   hasUnsavedChanges: boolean;
 }
 
-const DEFAULT_LAYOUT: DashboardLayout = {
+// Responsive grid layout configuration
+interface ResponsiveLayout {
+  lg: Array<{ i: string; x: number; y: number; w: number; h: number }>;
+  md: Array<{ i: string; x: number; y: number; w: number; h: number }>;
+  sm: Array<{ i: string; x: number; y: number; w: number; h: number }>;
+  xs: Array<{ i: string; x: number; y: number; w: number; h: number }>;
+}
+
+const DEFAULT_LAYOUT: ResponsiveLayout = {
   lg: [],
   md: [],
   sm: [],
@@ -56,7 +64,7 @@ export function useDashboardBuilder(options: UseDashboardBuilderOptions = {}): U
 
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [widgets, setWidgets] = useState<DashboardWidget[]>([]);
-  const [layout, setLayout] = useState<DashboardLayout>(DEFAULT_LAYOUT);
+  const [layout, setLayout] = useState<ResponsiveLayout>(DEFAULT_LAYOUT);
   const [savedDashboards, setSavedDashboards] = useState<Dashboard[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -88,6 +96,7 @@ export function useDashboardBuilder(options: UseDashboardBuilderOptions = {}): U
         if (timeout) clearTimeout(timeout);
       };
     }
+    return undefined; // Explicit return for else case
   }, [autoSave, hasUnsavedChanges, dashboard, widgets, layout, autoSaveDelay]);
 
   const createDashboard = useCallback(async (name: string, description?: string): Promise<Dashboard> => {
@@ -99,9 +108,9 @@ export function useDashboardBuilder(options: UseDashboardBuilderOptions = {}): U
         name,
         description,
         widgets: [],
-        layout: DEFAULT_LAYOUT,
+        layout: 'grid' as 'grid' | 'flex',
         settings: {},
-      });
+      }) as Dashboard;
 
       setDashboard(result);
       setWidgets([]);
@@ -192,13 +201,14 @@ export function useDashboardBuilder(options: UseDashboardBuilderOptions = {}): U
   const addWidget = useCallback((widgetType: string, config: WidgetConfig) => {
     const newWidget: DashboardWidget = {
       id: `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      type: widgetType,
-      config,
+      type: widgetType as 'chart' | 'map' | 'metric' | 'table' | 'text',
+      title: config.title || 'New Widget',
+      config: config.config || {},
       position: {
         x: 0,
         y: Infinity, // Will be placed at the bottom
-        w: config.defaultWidth || 4,
-        h: config.defaultHeight || 4,
+        w: 4,
+        h: 4,
       },
     };
 

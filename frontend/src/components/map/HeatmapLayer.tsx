@@ -105,11 +105,14 @@ export function extractHeatmapPoints(
   geojson.features.forEach(feature => {
     if (feature.geometry.type === 'Point') {
       const [lng, lat] = feature.geometry.coordinates;
-      const intensity = intensityProperty && feature.properties
-        ? feature.properties[intensityProperty]
-        : 1.0;
+      // Ensure coordinates are valid numbers
+      if (typeof lat === 'number' && typeof lng === 'number') {
+        const intensity = intensityProperty && feature.properties
+          ? feature.properties[intensityProperty]
+          : 1.0;
 
-      points.push({ lat, lng, intensity });
+        points.push({ lat, lng, intensity });
+      }
     }
   });
 
