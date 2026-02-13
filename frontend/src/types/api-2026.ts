@@ -500,7 +500,15 @@ export interface DashboardTemplate {
 }
 
 // Type aliases for compatibility
-export type WidgetConfig = DashboardWidget;
+// Note: WidgetConfig represents configuration parameters for creating widgets,
+// while DashboardWidget is the complete widget structure
+export interface WidgetConfig {
+  title?: string;
+  defaultWidth?: number;
+  defaultHeight?: number;
+  config?: Record<string, unknown>;
+}
+
 export type DashboardLayout = Dashboard['layout'];
 
 // ==========================================
