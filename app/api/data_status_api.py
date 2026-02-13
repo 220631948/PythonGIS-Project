@@ -107,6 +107,7 @@ async def list_data_sources():
     Includes source URLs, licensing, and update information.
     """
     sources = []
+    sync_times = data_loader.get_last_sync_times()
 
     for name, url in settings.DATA_URLS.items():
         source_info = {
@@ -115,7 +116,8 @@ async def list_data_sources():
             "category": _categorize_dataset(name),
             "provider": _get_provider(url),
             "license": "City of Cape Town Open Data License",
-            "attribution": "City of Cape Town"
+            "attribution": "City of Cape Town",
+            "last_synced": sync_times.get(name)
         }
         sources.append(source_info)
 

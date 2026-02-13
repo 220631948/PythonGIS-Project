@@ -30,7 +30,7 @@ docs/       → technical docs + ethics
 - Languages: Python 3.11+, TypeScript/JavaScript (React 19)
 - Frontend: Vite, React 19, Tailwind (utilities), Leaflet (react-leaflet)
 - Backend: FastAPI, GeoPandas, SQLAlchemy, GeoAlchemy2
-- Database: PostgreSQL 15 + PostGIS (recommended)
+- Database: PostgreSQL 15 + PostGIS (recommended — Docker Compose uses kartoza/postgis:15-3.4)
 - Package managers: npm (frontend), pip (backend)
 - Containers: Docker & Docker Compose
 

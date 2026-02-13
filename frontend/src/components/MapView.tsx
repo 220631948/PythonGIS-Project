@@ -6,8 +6,7 @@
  *
  * ENHANCED: Now supports PostGIS clustering, heatmaps, and advanced layer rendering
  */
-import { useState, useCallback } from 'react';
-import type { ReactElement } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { PathOptions } from 'leaflet';
 import {
   MapContainer,
@@ -22,6 +21,7 @@ import {
   useMap,
   useMapEvents,
 } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 
 import { BASEMAPS, BasemapConfig } from '../config/maps';
@@ -133,6 +133,34 @@ interface MapViewProps {
   moduleLayerData?: ModuleLayerData | null;
 }
 
+/**
+ * Inner component to track map bounds for viewport loading
+ * Must live inside <MapContainer>
+ */
+function ViewportTracker({
+  onViewportChange,
+}: {
+  onViewportChange: (bounds: unknown, zoom: number) => void;
+}) {
+  const map = useMap();
+
+  useMapEvents({
+    moveend: () => {
+      onViewportChange(map.getBounds(), map.getZoom());
+    },
+    zoomend: () => {
+      onViewportChange(map.getBounds(), map.getZoom());
+    },
+  });
+
+  // Initial viewport
+  useEffect(() => {
+    onViewportChange(map.getBounds(), map.getZoom());
+  }, [map, onViewportChange]);
+
+  return null;
+}
+
 const MapView = ({
   center,
   zoom,
@@ -162,12 +190,42 @@ const MapView = ({
 }: MapViewProps) => {
   const [localClickLocation, setLocalClickLocation] = useState<LatLng | null>(null);
   const [userLocation, setUserLocation] = useState<LatLng | null>(null);
+  const [mapBounds, setMapBounds] = useState<unknown>(null);
+  const [mapZoom, setMapZoom] = useState<number>(zoom ?? 11);
+  const lastViewportSignature = useRef<string>('');
 
-  // Data layers hook
+  // Viewport change handler
+  const handleViewportChange = useCallback((bounds: unknown, currentZoom: number) => {
+    const typedBounds = bounds as { getSouthWest: () => { lat: number; lng: number }; getNorthEast: () => { lat: number; lng: number } } | null;
+    if (!typedBounds) return;
+
+    const sw = typedBounds.getSouthWest();
+    const ne = typedBounds.getNorthEast();
+    const signature = [
+      currentZoom,
+      sw.lat.toFixed(4),
+      sw.lng.toFixed(4),
+      ne.lat.toFixed(4),
+      ne.lng.toFixed(4),
+    ].join(':');
+
+    if (signature === lastViewportSignature.current) {
+      return;
+    }
+    lastViewportSignature.current = signature;
+
+    setMapBounds(bounds);
+    setMapZoom(currentZoom);
+  }, []);
+
+  // Data layers hook with viewport loading enabled
   const { geoData } = useMapLayers({
     layers: _layers,
     activeFilters: _activeFilters,
-    onLayerLoading: _onLayerLoading
+    onLayerLoading: _onLayerLoading,
+    enableViewportLoading: true,
+    bounds: mapBounds as never,
+    zoom: mapZoom,
   }) as { geoData: Record<string, { geojson: GeoJSON.FeatureCollection; dataset: { name: string } } | undefined> };
 
   const normalizedCenter = toLatLng(center);
@@ -179,6 +237,7 @@ const MapView = ({
   const routeDestination = toLatLng(routeData?.destination as Record<string, unknown> | null);
   const isochroneGeojson = (isochroneData as Record<string, unknown>)?.isochrone_geojson ?? isochroneData;
 
+  // const hasRouteLayer = Boolean(routeOrigin && routeDestination && routeData?.route_geojson);
   const moduleLayer = moduleLayerData as ModuleLayerData | null;
 
 
@@ -205,14 +264,19 @@ const MapView = ({
   // Data layers rendering temporarily removed to simplify strict typing.
   // TODO: Reintroduce typed layer rendering (follow-up task).
 
-  // Pre-compute data layer elements to avoid TS inference issues with Object.keys in JSX
-  const dataLayerElements: ReactElement[] = [];
-  for (const layerId of Object.keys(geoData)) {
-    const layerData = geoData[layerId];
-    if (!layerData?.geojson) continue;
-    const datasetName = LAYER_TO_DATASET[layerId] || layerId;
-    dataLayerElements.push(
-      <LayersControl.Overlay key={layerId} checked name={datasetName}>
+  const dataLayerElements: React.ReactNode = useMemo(() => {
+    const elements: React.ReactNode[] = [];
+
+    for (const layerId of Object.keys(geoData)) {
+      const layerData = geoData[layerId];
+      if (!layerData?.geojson) continue;
+
+      const datasetName = String(LAYER_TO_DATASET[layerId] ?? layerId);
+      const isPointLayer = layerData.geojson.features?.some(
+        (f) => f.geometry?.type === 'Point' || f.geometry?.type === 'MultiPoint',
+      );
+
+      const geoJsonLayer = (
         <GeoJSON
           data={layerData.geojson}
           style={{
@@ -225,15 +289,12 @@ const MapView = ({
             const props = feature.properties || {};
             const name = props.name || props.NAME || props.label || datasetName;
 
-            // Build popup content
             const popupLines = [`<strong>${String(name)}</strong>`];
             if (props.description) popupLines.push(`<p>${String(props.description)}</p>`);
             if (props.category) popupLines.push(`<p>Category: ${String(props.category)}</p>`);
             if (props.area) popupLines.push(`<p>Area: ${String(props.area)}</p>`);
 
             layer.bindPopup(`<div class="p-2">${popupLines.join('')}</div>`);
-
-            // Attach event handlers
             layer.on({
               click: (e) => _onFeatureClick?.(feature, e),
               mouseover: () => _onFeatureHover?.(feature, true),
@@ -241,15 +302,31 @@ const MapView = ({
             });
           }}
         />
-      </LayersControl.Overlay>
-    );
-  }
+      );
+
+      elements.push(
+        <LayersControl.Overlay key={layerId} checked name={datasetName}>
+          {isPointLayer ? (
+            <MarkerClusterGroup chunkedLoading maxClusterRadius={50} showCoverageOnHover={false}>
+              {geoJsonLayer}
+            </MarkerClusterGroup>
+          ) : (
+            geoJsonLayer
+          )}
+        </LayersControl.Overlay>,
+      );
+    }
+
+    return elements;
+  }, [geoData, _layerOpacity, _onFeatureClick, _onFeatureHover]);
 
   // Fallback when coords are not yet available
   if (!normalizedCenter) {
     return (
       <div
         className="map-error-fallback"
+        role="status"
+        aria-live="polite"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -268,7 +345,8 @@ const MapView = ({
   }
 
   return (
-    <div className="enhanced-map-container">
+    <div className="enhanced-map-container" role="region" aria-label="Interactive map of Cape Town" aria-roledescription="map">
+      <div className="visually-hidden" role="status" aria-live="polite" id="map-live-region"></div>
       <MapContainer
         center={[normalizedCenter.lat, normalizedCenter.lng]}
         zoom={zoom ?? 11}
@@ -298,6 +376,7 @@ const MapView = ({
         {/* Events & Controller */}
         <MapEvents onMove={onMapMove} onClick={handleMapClick} onLocationFound={handleLocationFound} />
         <MapController center={center} zoom={zoom} flyTo={flyTo ?? {}} basemap={basemap} onBasemapChange={onBasemapChange} />
+        <ViewportTracker onViewportChange={handleViewportChange} />
 
         {/* Layer controls */}
         <LayersControl position="topleft">
@@ -310,22 +389,22 @@ const MapView = ({
             ))}
 
           {/* Data Layers from API */}
-          {dataLayerElements}
+          {dataLayerElements as any}
 
           {/* Route Layer */}
           {routeOrigin && routeDestination && routeData?.route_geojson && (
             <LayersControl.Overlay checked name="Active Route">
               <LayerGroup>
                 <GeoJSON
-                  key={`route-${(routeData.route_geojson as GeoJSON.FeatureCollection)?.features?.length ?? 0}`}
-                  data={routeData.route_geojson as GeoJSON.FeatureCollection}
+                  key={`route-${(routeData?.route_geojson as GeoJSON.FeatureCollection)?.features?.length ?? 0}`}
+                  data={routeData?.route_geojson as GeoJSON.FeatureCollection}
                   style={{ color: '#3b82f6', weight: 5, opacity: 0.8 }}
                 />
                 <Marker position={[routeOrigin.lat, routeOrigin.lng]} icon={locationMarkerIcon}>
-                  <Popup>Origin: {String((routeData.origin as Record<string, unknown>)?.name ?? 'Origin')}</Popup>
+                  <Popup>Origin: {String((routeData?.origin as Record<string, unknown>)?.name ?? 'Origin')}</Popup>
                 </Marker>
                 <Marker position={[routeDestination.lat, routeDestination.lng]} icon={locationMarkerIcon}>
-                  <Popup>Destination: {String((routeData.destination as Record<string, unknown>)?.name ?? 'Destination')}</Popup>
+                  <Popup>Destination: {String((routeData?.destination as Record<string, unknown>)?.name ?? 'Destination')}</Popup>
                 </Marker>
               </LayerGroup>
             </LayersControl.Overlay>

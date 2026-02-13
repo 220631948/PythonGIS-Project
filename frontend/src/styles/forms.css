@@ -1,0 +1,45 @@
+/* Forms — Form field styles */
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.form-field label {
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+    border-color: var(--accent);
+    outline: none;
+}
+
+.form-field .help-text {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.form-field .error-message {
+    font-size: 12px;
+    color: var(--danger);
+}
+
+.form-field input[aria-invalid="true"] {
+    border-color: var(--danger);
+}

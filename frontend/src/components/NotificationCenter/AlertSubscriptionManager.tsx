@@ -13,7 +13,6 @@ import {
   Mail,
   Smartphone,
   Trash2,
-  Edit2,
   Clock,
   X
 } from 'lucide-react';

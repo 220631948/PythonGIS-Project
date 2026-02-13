@@ -4,7 +4,9 @@
  */
 
 import { useState, useCallback } from 'react';
-import * as turf from '@turf/turf';
+import { point as turfPoint } from '@turf/helpers';
+import turfBuffer from '@turf/buffer';
+import turfPointsWithinPolygon from '@turf/points-within-polygon';
 import type { Feature, Polygon, Point, FeatureCollection, Position } from 'geojson';
 
 // Types
@@ -68,11 +70,11 @@ export const useTransportAnalysis = () => {
         setTimeout(() => {
             try {
                 const center: Position = [lng, lat];
-                const centerPoint = turf.point(center);
+                const centerPoint = turfPoint(center);
 
                 // Generate walking buffers
                 const buffers: BufferResult[] = BUFFER_CONFIG.map(config => {
-                    const buffer = turf.buffer(centerPoint, config.meters, { units: 'meters' });
+                    const buffer = turfBuffer(centerPoint, config.meters, { units: 'meters' });
                     return {
                         polygon: buffer as Feature<Polygon>,
                         minutes: config.minutes,
@@ -86,7 +88,7 @@ export const useTransportAnalysis = () => {
                 const stopCounts: StopCounts = { 10: 0, 20: 0, 30: 0 };
 
                 buffers.forEach(buffer => {
-                    const stopsWithin = turf.pointsWithinPolygon(stopsData as FeatureCollection<Point>, buffer.polygon);
+                    const stopsWithin = turfPointsWithinPolygon(stopsData as FeatureCollection<Point>, buffer.polygon);
                     stopCounts[buffer.minutes as keyof StopCounts] = stopsWithin.features.length;
                 });
 

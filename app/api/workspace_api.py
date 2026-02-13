@@ -8,112 +8,92 @@ Provides endpoints for:
 - Version control for spatial edits
 """
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, delete
 from typing import List, Optional, Dict, Any
-from datetime import datetime
 import logging
-import uuid
+
+from app.dependencies import get_db_with_rls
+from app.models.sql_models import WorkspaceItem as WorkspaceItemModel
+from app.schemas.workspace import WorkspaceItem, WorkspaceItemCreate, WorkspaceItemUpdate
+from shapely.geometry import shape
+from geoalchemy2.shape import from_shape, to_shape
+from shapely.geometry import mapping
 
 router = APIRouter(prefix="/workspace", tags=["Project Workspace"])
 logger = logging.getLogger(__name__)
 
-workspaces_db = []
-scenarios_db = []
 
-
-class WorkspaceCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    owner_id: str
-    team_members: Optional[List[str]] = []
-    is_public: bool = False
-
-
-class ScenarioCreate(BaseModel):
-    workspace_id: str
-    name: str
-    description: Optional[str] = None
-    layers: List[str]
-    map_state: Dict[str, Any]
-    analysis_results: Optional[Dict[str, Any]] = None
-
-
-@router.post("/workspaces")
-async def create_workspace(workspace: WorkspaceCreate):
-    """Create a new project workspace."""
+@router.post("/items", response_model=WorkspaceItem, status_code=status.HTTP_201_CREATED)
+async def create_workspace_item(
+    item_in: WorkspaceItemCreate,
+    db: AsyncSession = Depends(get_db_with_rls)
+):
+    """
+    Create a new workspace item (analysis result, scenario, etc.)
+    The tenant_id is automatically injected by the TenantContextMiddleware.
+    """
     try:
-        workspace_entry = {
-            "id": str(uuid.uuid4()),
-            "name": workspace.name,
-            "description": workspace.description,
-            "owner_id": workspace.owner_id,
-            "team_members": workspace.team_members or [],
-            "is_public": workspace.is_public,
-            "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat(),
-            "scenarios": [],
-            "folders": []
-        }
-        workspaces_db.append(workspace_entry)
-
-        return {
-            "success": True,
-            "workspace_id": workspace_entry["id"],
-            "message": "Workspace created successfully"
-        }
+        geom = None
+        if item_in.geom:
+            shapely_geom = shape(item_in.geom)
+            geom = from_shape(shapely_geom, srid=4326)
+            
+        db_item = WorkspaceItemModel(
+            name=item_in.name,
+            item_type=item_in.item_type,
+            data=item_in.data,
+            geom=geom
+        )
+        
+        db.add(db_item)
+        await db.commit()
+        await db.refresh(db_item)
+        
+        # Convert back for response
+        response_item = WorkspaceItem.model_validate(db_item)
+        if db_item.geom is not None:
+            response_item.geom = mapping(to_shape(db_item.geom))
+            
+        return response_item
     except Exception as e:
-        logger.error(f"Workspace creation error: {e}")
+        logger.error(f"Workspace item creation error: {e}")
+        await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/workspaces/{user_id}")
-async def get_user_workspaces(user_id: str):
-    """Get workspaces accessible to a user."""
-    try:
-        accessible = [
-            w for w in workspaces_db
-            if w["owner_id"] == user_id or user_id in w["team_members"] or w["is_public"]
-        ]
-        return {"workspaces": accessible, "total": len(accessible)}
-    except Exception as e:
-        logger.error(f"Get workspaces error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+@router.get("/items", response_model=List[WorkspaceItem])
+async def list_workspace_items(
+    item_type: Optional[str] = None,
+    db: AsyncSession = Depends(get_db_with_rls)
+):
+    """List all workspace items for the current tenant."""
+    query = select(WorkspaceItemModel)
+    if item_type:
+        query = query.where(WorkspaceItemModel.item_type == item_type)
+    
+    result = await db.execute(query)
+    items = result.scalars().all()
+    
+    # Map geometry for GeoJSON
+    response_items = []
+    for item in items:
+        valid_item = WorkspaceItem.model_validate(item)
+        if item.geom is not None:
+            valid_item.geom = mapping(to_shape(item.geom))
+        response_items.append(valid_item)
+        
+    return response_items
 
 
-@router.post("/scenarios")
-async def create_scenario(scenario: ScenarioCreate):
-    """Save an analysis scenario."""
-    try:
-        scenario_entry = {
-            "id": str(uuid.uuid4()),
-            "workspace_id": scenario.workspace_id,
-            "name": scenario.name,
-            "description": scenario.description,
-            "layers": scenario.layers,
-            "map_state": scenario.map_state,
-            "analysis_results": scenario.analysis_results,
-            "created_at": datetime.now().isoformat(),
-            "version": 1
-        }
-        scenarios_db.append(scenario_entry)
-
-        return {
-            "success": True,
-            "scenario_id": scenario_entry["id"],
-            "message": "Scenario saved successfully"
-        }
-    except Exception as e:
-        logger.error(f"Scenario creation error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/scenarios/{workspace_id}")
-async def get_workspace_scenarios(workspace_id: str):
-    """Get all scenarios in a workspace."""
-    try:
-        workspace_scenarios = [s for s in scenarios_db if s["workspace_id"] == workspace_id]
-        return {"scenarios": workspace_scenarios, "total": len(workspace_scenarios)}
-    except Exception as e:
-        logger.error(f"Get scenarios error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+@router.delete("/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_workspace_item(
+    item_id: int,
+    db: AsyncSession = Depends(get_db_with_rls)
+):
+    """Delete a workspace item."""
+    stmt = delete(WorkspaceItemModel).where(WorkspaceItemModel.id == item_id)
+    await db.execute(stmt)
+    await db.commit()
+    return None

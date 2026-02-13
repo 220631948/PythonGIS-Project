@@ -1,23 +1,31 @@
 services:
   db:
-    image: postgis/postgis:15-3.4
-    container_name: geohub_postgis_prod
+    image: kartoza/postgis:15-3.4
+    container_name: geohub_postgis
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?database user required}
-      POSTGRES_DB: ${POSTGRES_DB:?database name required}
+      POSTGRES_PASS: ${POSTGRES_PASSWORD:?database password required}
+      POSTGRES_DBNAME: ${POSTGRES_DB:?database name required}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?database password required}
+      POSTGRES_DB: ${POSTGRES_DB:?database name required}
+      ALLOW_IP_RANGE: 0.0.0.0/0
     volumes:
-      - postgres_data_prod:/var/lib/postgresql
-      - ./backups:/backups
+    - postgres_data_prod:/var/lib/postgresql/data
+    - ./backups:/backups
+    - ./scripts/init_db:/docker-entrypoint-initdb.d
     networks:
-      - geohub-prod
+    - geohub-prod
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-geohub}"]
+      test:
+      - CMD
+      - pg_isready
+      - -U
+      - ${POSTGRES_USER:-geohub}
       interval: 10s
       timeout: 5s
       retries: 5
-
+      start_period: 30s
   api:
     build:
       context: .
@@ -27,31 +35,28 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       ENVIRONMENT: production
     volumes:
-      - ./data/cache:/app/data/cache:ro
+    - ./data/cache:/app/data/cache:ro
     networks:
-      - geohub-prod
+    - geohub-prod
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
-
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: geohub_frontend_prod
     ports:
-      - "80:80"
+    - 80:80
     networks:
-      - geohub-prod
+    - geohub-prod
     depends_on:
-      - api
+    - api
     restart: unless-stopped
-
 volumes:
   postgres_data_prod:
     driver: local
-
 networks:
   geohub-prod:
     driver: bridge

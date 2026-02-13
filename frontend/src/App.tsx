@@ -1,13 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import MapView from './components/MapView';
-import Dashboard from './components/Dashboard';
 import NotificationContainer from './components/Notification';
-import OfflineDataManager from './components/OfflineDataManager';
-import DataStatusPanel from './components/DataStatusPanel';
-import { InstallBanner, InstallModal } from './components/InstallPrompt';
+import { InstallBanner } from './components/InstallPrompt';
 import { SkipLink, LiveRegion, useKeyboardShortcuts, announce } from './components/Accessibility';
 import GuidedTour, { useTour, HelpButton } from './components/GuidedTour';
 import { KeyboardShortcutsHelp, useKeyboardShortcuts as useHelpOverlay } from './components/KeyboardShortcutsHelp';
@@ -20,12 +17,30 @@ import './App.css';
 // Phase 5: Spatial Analysis
 import { useSpatialAnalysis } from './modules/Tools';
 
-// Workspace Management
-import { WorkspaceManager } from './modules/Workspace';
+// Authentication (Sprint 2 - Phase E)
+import { Login, AuthProvider, ProtectedRoute } from './modules/Auth';
 
-// Dashboard Builder & Comparative Analysis
-import { DashboardBuilder } from './modules/DashboardBuilder';
-import { ComparativeAnalysis } from './modules/ComparativeAnalysis';
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const OfflineDataManager = lazy(() => import('./components/OfflineDataManager'));
+const DataStatusPanel = lazy(() => import('./components/DataStatusPanel'));
+const InstallModal = lazy(() =>
+    import('./components/InstallPrompt').then((mod) => ({ default: mod.InstallModal })),
+);
+const WorkspaceManager = lazy(() =>
+    import('./modules/Workspace').then((mod) => ({ default: mod.WorkspaceManager })),
+);
+const DashboardBuilder = lazy(() =>
+    import('./modules/DashboardBuilder').then((mod) => ({ default: mod.DashboardBuilder })),
+);
+const ComparativeAnalysis = lazy(() =>
+    import('./modules/ComparativeAnalysis').then((mod) => ({ default: mod.ComparativeAnalysis })),
+);
+
+const LazyPanelFallback = () => (
+    <div className="visually-hidden" role="status" aria-live="polite">
+        Loading panel…
+    </div>
+);
 
 const DEFAULT_STATE: UrlState = {
     lat: -33.9249,
@@ -69,7 +84,7 @@ function MainApp() {
     const [isDashboardBuilderOpen, setIsDashboardBuilderOpen] = useState(false);
     const [isComparativeAnalysisOpen, setIsComparativeAnalysisOpen] = useState(false);
     const [currentWorkspace, setCurrentWorkspace] = useState<any>(null);
-    const [currentScenario, setCurrentScenario] = useState<any>(null);
+    const [, setCurrentScenario] = useState<any>(null);
     // Route/Isochrone data can be wired when RoutePanel is integrated
     const [routeData] = useState<any>(null);
     const [isochroneData] = useState<any>(null);
@@ -246,7 +261,7 @@ function MainApp() {
 
     return (
         <div className={`app-container ${isDarkMode ? 'dark' : ''}`}>
-            <SkipLink targetId="main-map" />
+            <SkipLink targetId="main-content" />
             <LiveRegion message={notifications[notifications.length - 1]?.message} />
 
             <Header
@@ -313,20 +328,26 @@ function MainApp() {
             </main>
 
             {isDashboardOpen && (
-                <Dashboard
-                    isOpen={isDashboardOpen}
-                    onClose={() => setIsDashboardOpen(false)}
-                />
+                <Suspense fallback={<LazyPanelFallback />}>
+                    <Dashboard
+                        isOpen={isDashboardOpen}
+                        onClose={() => setIsDashboardOpen(false)}
+                    />
+                </Suspense>
             )}
 
             {isOfflineManagerOpen && (
-                <OfflineDataManager isOpen={true} onClose={() => setIsOfflineManagerOpen(false)} />
+                <Suspense fallback={<LazyPanelFallback />}>
+                    <OfflineDataManager isOpen={true} onClose={() => setIsOfflineManagerOpen(false)} />
+                </Suspense>
             )}
 
-            <DataStatusPanel
-                isOpen={isDataStatusOpen}
-                onClose={() => setIsDataStatusOpen(false)}
-            />
+            <Suspense fallback={<LazyPanelFallback />}>
+                <DataStatusPanel
+                    isOpen={isDataStatusOpen}
+                    onClose={() => setIsDataStatusOpen(false)}
+                />
+            </Suspense>
 
             <NotificationContainer
                 notifications={notifications}
@@ -348,30 +369,38 @@ function MainApp() {
             )}
 
             <InstallBanner />
-            <InstallModal isOpen={isInstallModalOpen} onClose={() => setIsInstallModalOpen(false)} />
+            <Suspense fallback={<LazyPanelFallback />}>
+                <InstallModal isOpen={isInstallModalOpen} onClose={() => setIsInstallModalOpen(false)} />
+            </Suspense>
 
             {/* Workspace Manager */}
-            <WorkspaceManager
-                isOpen={isWorkspaceManagerOpen}
-                onClose={() => setIsWorkspaceManagerOpen(false)}
-                onWorkspaceChange={handleWorkspaceChange}
-                onScenarioLoad={handleScenarioLoad}
-                currentWorkspace={currentWorkspace}
-                currentUserId="user-1" // Should come from auth context
-            />
+            <Suspense fallback={<LazyPanelFallback />}>
+                <WorkspaceManager
+                    isOpen={isWorkspaceManagerOpen}
+                    onClose={() => setIsWorkspaceManagerOpen(false)}
+                    onWorkspaceChange={handleWorkspaceChange}
+                    onScenarioLoad={handleScenarioLoad}
+                    currentWorkspace={currentWorkspace}
+                    currentUserId="user-1" // Should come from auth context
+                />
+            </Suspense>
 
             {/* Dashboard Builder */}
             {isDashboardBuilderOpen && (
-                <DashboardBuilder
-                    onClose={() => setIsDashboardBuilderOpen(false)}
-                />
+                <Suspense fallback={<LazyPanelFallback />}>
+                    <DashboardBuilder
+                        onClose={() => setIsDashboardBuilderOpen(false)}
+                    />
+                </Suspense>
             )}
 
             {/* Comparative Analysis */}
             {isComparativeAnalysisOpen && (
-                <ComparativeAnalysis
-                    onClose={() => setIsComparativeAnalysisOpen(false)}
-                />
+                <Suspense fallback={<LazyPanelFallback />}>
+                    <ComparativeAnalysis
+                        onClose={() => setIsComparativeAnalysisOpen(false)}
+                    />
+                </Suspense>
             )}
         </div>
     );
@@ -381,9 +410,19 @@ function App() {
     return (
         <ToastProvider>
             <Router>
-                <Routes>
-                    <Route path="/" element={<MainApp />} />
-                </Routes>
+                <AuthProvider>
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route
+                            path="/"
+                            element={
+                                <ProtectedRoute>
+                                    <MainApp />
+                                </ProtectedRoute>
+                            }
+                        />
+                    </Routes>
+                </AuthProvider>
             </Router>
         </ToastProvider>
     );

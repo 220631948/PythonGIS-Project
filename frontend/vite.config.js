@@ -120,8 +120,6 @@ export default defineConfig(({ mode }) => {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           // Vendor: Leaflet ecosystem
           'vendor-leaflet': ['leaflet', 'react-leaflet'],
-          // Vendor: Turf.js spatial analysis
-          'vendor-turf': ['@turf/turf'],
           // Vendor: lucide icons
           'vendor-icons': ['lucide-react'],
         },

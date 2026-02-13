@@ -59,7 +59,7 @@ const OpsStatus: React.FC = () => {
     <div className="ops-status-card">
       <div className="ops-header">
         <ShieldCheck size={18} className="ops-icon-main" />
-        <h4>System Operations</h4>
+        <h3 className="text-sm font-semibold">System Operations</h3>
       </div>
       
       <div className="ops-grid">

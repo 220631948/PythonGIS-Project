@@ -1,0 +1,115 @@
+%%{
+  init: {
+    "gantt": {
+      "displayMode": "compact",
+      "axisFormat": "%b %d",
+      "todayMarker": "stroke:#1f6feb,stroke-width:2px",
+      "barHeight": 18,
+      "barGap": 6
+    }
+  }
+}%%
+gantt
+    title Enterprise GIS Swarm Commander - 8-Week Execution Timeline
+    dateFormat YYYY-MM-DD
+    axisFormat %b %d
+    excludes weekends
+%% Legend:
+%% - status tags: done=completed, active=in-progress, crit=critical path
+%% - team tags: [INFRA][SEC][BE][FE][QA][DEVOPS]
+%% - filter hints: search for a tag (e.g., [FE]) or Sprint number in Mermaid viewers
+%% - today marker: enabled in config above; adjust todayMarker style as needed
+%% - integration: renders in Markdown (Obsidian/Notion/GitHub) with Mermaid support
+
+    section Phase B - Infrastructure (Sprint 1)
+        [INFRA] Fix PostGIS permissions: crit, active, b1, 2026-02-11, 1d
+        [INFRA] Health check scripts: b2, after b1, 0.5d
+        [INFRA] Install missing dependencies: crit, b3, 2026-02-11, 0.5d
+        [SEC] Run security audits (pip/npm): b4, after b3, 0.5d
+        [INFRA] Pin all dependencies: b5, after b4, 1d
+        [BE] Review Alembic migrations: b6, after b1, 0.5d
+        [BE] Create tenants table migration: b7, after b6, 1d
+        [BE] Add tenant_id indexes: b8, after b7, 0.5d
+
+    section Phase C - Security Foundations (Sprint 1)
+        [SEC] Move SECRET_KEY to env: crit, c11, 2026-02-11, 0.5d
+        [SEC] Generate secure SECRET_KEY: crit, c12, after c11, 0.25d
+        [SEC] Add SECRET_KEY validation: c13, after c12, 0.5d
+        [SEC] Document key rotation: c14, after c13, 0.5d
+        [SEC] Add token refresh endpoint: c21, after c13, 1d
+        [SEC] Implement token blacklist: c22, after c21, 1.5d
+        [SEC] Set secure cookie options: c23, after c21, 0.5d
+        [SEC] Add CSRF middleware: crit, c31, 2026-02-16, 1d
+        [SEC] Generate CSRF tokens: c32, after c31, 0.5d
+        [SEC] Validate CSRF on mutations: c33, after c32, 0.5d
+        [SEC] Define RBAC roles: c41, 2026-02-18, 0.5d
+        [SEC] Create permission matrix: c42, after c41, 1d
+        [SEC] Implement role decorators: c43, after c42, 1.5d
+        [SEC] Add tenant context middleware: c44, after c43, 1d
+
+    section Milestone - Sprint 1
+        ! Sprint 1 Review & Retro: milestone, crit, m_s1, 2026-02-24, 0d
+
+    section Phase D - Backend Hardening (Sprint 2)
+        [BE] Fix TypeScript errors (18): crit, d11, 2026-02-25, 2d
+        [BE] Enable strict mode tsconfig: d12, after d11, 0.5d
+        [BE] Fix ruff unused import: d13, 2026-02-25, 0.25d
+        [BE] Add spatial endpoint validation: d21, 2026-02-27, 1.5d
+        [SEC] Implement rate limiting: d22, after c44, 1d
+        [BE] Add pagination metadata: d23, 2026-03-01, 1d
+        [BE] Verify GIST indexes: d31, after b7, 0.5d
+        [BE] Add composite indexes: d32, after d31, 1d
+        [BE] Analyze query performance: d33, after d32, 0.5d
+        [SEC] Implement RLS policies: crit, d41, after c44, 2d
+        [BE] Add soft deletes: d42, 2026-03-03, 1d
+        [BE] Create audit log table: d43, 2026-03-04, 1d
+
+    section Milestone - Sprint 2
+        ! Sprint 2 Review & Retro: milestone, crit, m_s2, 2026-03-07, 0d
+
+    section Phase E - Frontend UX (Sprint 3)
+        [FE] Complete Login component: e11, after c21, 1d
+        [FE] Add auth context provider: e12, after e11, 1d
+        [FE] Implement protected routes: e13, after e12, 0.5d
+        [FE] Add token refresh logic: e14, after e13, 1d
+        [FE] Virtual scrolling for layers: e21, 2026-03-08, 1d
+        [FE] Optimize GeoJSON clustering: e22, 2026-03-09, 1.5d
+        [FE] Progressive tile loading: e23, 2026-03-11, 1d
+        [FE] WCAG 2.1 AA compliance: e31, 2026-03-12, 1.5d
+        [FE] Keyboard navigation: e32, after e31, 1d
+        [FE] Screen reader announcements: e33, 2026-03-15, 0.5d
+        [FE] Service worker caching: e41, 2026-03-16, 1d
+        [FE] Background sync offline edits: e42, after e41, 1d
+
+    section Milestone - Sprint 3
+        ! Sprint 3 Review & Retro: milestone, crit, m_s3, 2026-03-18, 0d
+
+    section Phase F - QA & Testing (Sprint 4)
+        [QA] Unit tests for auth flows: crit, f11, after c22, 1.5d
+        [QA] Tenant isolation integration tests: crit, f12, after d41, 1.5d
+        [QA] Spatial query PostGIS tests: f13, after d32, 1d
+        [QA] Vitest component tests: f21, 2026-03-19, 1d
+        [QA] Playwright E2E critical flows: crit, f22, after e13, 2d
+        [QA] Axe-core accessibility tests: f23, after e31, 0.5d
+        [SEC] OWASP Top 10 ZAP scanning: f31, 2026-03-21, 1d
+        [SEC] SQL injection tests: f32, after d21, 1d
+        [SEC] Cross-tenant leakage tests: crit, f33, after f12, 1d
+        [QA] Load testing 1000 users: f41, 2026-03-23, 1d
+        [QA] Spatial query 100k features: f42, after d33, 0.5d
+
+    section Phase G - CI/CD & Observability (Sprint 4)
+        [DEVOPS] Lint & type check workflow: crit, g11, after d12, 0.5d
+        [DEVOPS] Test suite workflow: crit, g12, after f22, 0.5d
+        [SEC] Security audit workflow: g13, after b4, 0.5d
+        [DEVOPS] Build Docker images workflow: g14, after b1, 0.5d
+        [DEVOPS] Deploy to staging workflow: g15, after g12, 1d
+        [DEVOPS] Deploy to production workflow: g16, after g15, 1d
+        [DEVOPS] Blue-green deployment: g21, after g16, 1d
+        [DEVOPS] DB migration automation: g22, after b6, 0.5d
+        [DEVOPS] Rollback procedures docs: g23, after g21, 0.5d
+        [DEVOPS] Sentry error tracking config: g31, 2026-03-26, 0.5d
+        [DEVOPS] DB query monitoring setup: g32, 2026-03-26, 0.5d
+        [SEC] Security event alerts: g33, 2026-03-27, 0.5d
+
+    section Milestone - Production
+        ! Production Deployment: milestone, crit, m_prod, 2026-03-28, 0d

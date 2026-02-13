@@ -8,7 +8,7 @@ All models use SRID 4326 (WGS84) for compatibility with web mapping.
 from typing import Dict, Any
 from sqlalchemy import (
     Column, Integer, String, Float, DateTime, JSON,
-    Boolean, Text, Index
+    Boolean, Text, Index, ForeignKey
 )
 from sqlalchemy.sql import func
 from geoalchemy2 import Geometry
@@ -71,6 +71,7 @@ class SpatialLayer(Base):
     bounds = Column(JSON, nullable=True)  # [minx, miny, maxx, maxy]
     properties_schema = Column(JSON, nullable=True)  # Column info
     is_active = Column(Boolean, default=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     def to_dict(self) -> Dict[str, Any]:
@@ -182,6 +183,7 @@ class ServiceFacility(Base):
     operating_hours = Column(String(255), nullable=True)
     capacity = Column(Integer, nullable=True)
     properties = Column(JSON, nullable=True)  # Store original attributes
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=True, index=True)
     geom = Column(Geometry("POINT", srid=4326), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -451,6 +453,7 @@ class GenericSpatialFeature(Base):
     feature_id = Column(String(255), nullable=True)  # Original ID
     name = Column(String(255), nullable=True)
     properties = Column(JSON, nullable=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=True, index=True)
     geom = Column(Geometry("GEOMETRY", srid=4326), nullable=True)  # Generic geometry
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -474,7 +477,25 @@ class SuitabilityAnalysisResult(Base):
     weights = Column(JSON, nullable=True)  # Weights used
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     created_by = Column(String(255), nullable=True)  # User/session ID
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=True, index=True)
     geom = Column(Geometry("GEOMETRY", srid=4326), nullable=True)
+
+
+class WorkspaceItem(Base):
+    """
+    General workspace item for saving analysis results, 
+    scenarios, or shared markers.
+    """
+    __tablename__ = "workspace_items"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    item_type = Column(String(100), nullable=False) # 'shadow', 'suitability', 'viewshed'
+    data = Column(JSON, nullable=True) # Parameters and results
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=True, index=True)
+    user_id = Column(String(255), nullable=True)
+    geom = Column(Geometry("GEOMETRY", srid=4326), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 # Export all models for Alembic autogeneration
@@ -495,6 +516,7 @@ __all__ = [
     "CrimePrecinct",
     "GenericSpatialFeature",
     "SuitabilityAnalysisResult",
+    "WorkspaceItem",
     "LayerType",
     "FacilityType",
     "TransportType",

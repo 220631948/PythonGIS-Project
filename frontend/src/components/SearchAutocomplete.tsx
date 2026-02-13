@@ -187,6 +187,11 @@ export default function SearchAutocomplete({ onSelect, placeholder = "Search pla
 
   const displayItems = suggestions.length > 0 ? suggestions :
     (query.length === 0 && recentSearches.length > 0 ? recentSearches : []);
+  const listboxId = 'search-suggestions';
+  const activeOptionId =
+    selectedIndex >= 0 && selectedIndex < displayItems.length
+      ? `${listboxId}-option-${selectedIndex}`
+      : undefined;
 
   return (
     <div className="search-autocomplete" ref={containerRef}>
@@ -203,9 +208,11 @@ export default function SearchAutocomplete({ onSelect, placeholder = "Search pla
           className="search-input"
           aria-label="Search"
           aria-autocomplete="list"
-          aria-controls="search-suggestions"
+          aria-controls={isOpen && displayItems.length > 0 ? listboxId : undefined}
           aria-expanded={isOpen && displayItems.length > 0}
+          aria-haspopup="listbox"
           role="combobox"
+          aria-activedescendant={isOpen && activeOptionId ? activeOptionId : undefined}
         />
         {isLoading && <Loader className="search-loader" size={16} />}
         {query && (
@@ -225,7 +232,7 @@ export default function SearchAutocomplete({ onSelect, placeholder = "Search pla
 
       {isOpen && displayItems.length > 0 && (
         <ul
-          id="search-suggestions"
+          id={listboxId}
           className="search-suggestions"
           role="listbox"
         >
@@ -235,6 +242,7 @@ export default function SearchAutocomplete({ onSelect, placeholder = "Search pla
           {displayItems.map((item, index) => (
             <li
               key={`${item.text}-${index}`}
+              id={`${listboxId}-option-${index}`}
               className={`suggestion-item ${index === selectedIndex ? 'selected' : ''}`}
               onClick={() => handleSelect(item)}
               onMouseEnter={() => setSelectedIndex(index)}

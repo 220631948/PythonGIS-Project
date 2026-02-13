@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight, HelpCircle, CheckCircle } from 'lucide-react';
+import { useFocusTrap } from './Accessibility';
 
 interface TourStep {
   id: string;
@@ -106,7 +107,7 @@ function TourTooltip({ step, stepIndex, totalSteps, onNext, onPrev, onSkip, onCo
 
   return (
     <div className={`tour-tooltip ${step.position}`}>
-      <button className="close-btn" onClick={onSkip}><X size={16} /></button>
+      <button className="close-btn" onClick={onSkip} aria-label="Close guided tour" title="Close guided tour"><X size={16} aria-hidden="true" /></button>
 
       <div className="tour-content">
         <h3>{step.title}</h3>
@@ -114,22 +115,22 @@ function TourTooltip({ step, stepIndex, totalSteps, onNext, onPrev, onSkip, onCo
       </div>
 
       <div className="tour-footer">
-        <div className="step-indicator">
+        <div className="step-indicator" role="status" aria-live="polite" aria-label={`Step ${stepIndex + 1} of ${totalSteps}`}>
           {stepIndex + 1} / {totalSteps}
         </div>
         <div className="tour-actions">
           {!isFirst && (
-            <button onClick={onPrev} className="btn-prev">
-              <ChevronLeft size={16} /> Previous
+            <button onClick={onPrev} className="btn-prev" aria-label="Previous step">
+              <ChevronLeft size={16} aria-hidden="true" /> Previous
             </button>
           )}
           {isLast ? (
-            <button onClick={onComplete} className="btn-complete">
-              <CheckCircle size={16} /> Finish
+            <button onClick={onComplete} className="btn-complete" aria-label="Finish tour">
+              <CheckCircle size={16} aria-hidden="true" /> Finish
             </button>
           ) : (
-            <button onClick={onNext} className="btn-next">
-              Next <ChevronRight size={16} />
+            <button onClick={onNext} className="btn-next" aria-label="Next step">
+              Next <ChevronRight size={16} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -192,9 +193,14 @@ interface GuidedTourProps {
 export default function GuidedTour({ isActive, onComplete, onSkip }: GuidedTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<Element | null>(null);
+
+  useFocusTrap(overlayRef, isVisible);
 
   useEffect(() => {
     if (isActive) {
+      triggerRef.current = document.activeElement;
       setIsVisible(true);
       setCurrentStep(0);
     }
@@ -215,12 +221,14 @@ export default function GuidedTour({ isActive, onComplete, onSkip }: GuidedTourP
   const handleComplete = useCallback(() => {
     setIsVisible(false);
     localStorage.setItem('tourCompleted', 'true');
+    if (triggerRef.current instanceof HTMLElement) triggerRef.current.focus();
     onComplete?.();
   }, [onComplete]);
 
   const handleSkip = useCallback(() => {
     setIsVisible(false);
     localStorage.setItem('tourSkipped', 'true');
+    if (triggerRef.current instanceof HTMLElement) triggerRef.current.focus();
     onSkip?.();
   }, [onSkip]);
 
@@ -252,8 +260,8 @@ export default function GuidedTour({ isActive, onComplete, onSkip }: GuidedTourP
   if (!step) return null;
 
   return (
-    <div className="guided-tour-overlay">
-      <div className="tour-backdrop" onClick={handleSkip} />
+    <div className="guided-tour-overlay" ref={overlayRef} role="dialog" aria-modal="true" aria-label="Guided tour">
+      <div className="tour-backdrop" onClick={handleSkip} aria-hidden="true" />
 
       <TourHighlight targetSelector={step.target} />
 
@@ -302,7 +310,7 @@ export function useTour() {
 }
 
 interface HelpButtonProps {
-    onClick: () => void;
+  onClick: () => void;
 }
 
 // Help button component
@@ -312,8 +320,9 @@ export function HelpButton({ onClick }: HelpButtonProps) {
       className="help-button"
       onClick={onClick}
       title="Start guided tour"
+      aria-label="Start guided tour"
     >
-      <HelpCircle size={20} />
+      <HelpCircle size={20} aria-hidden="true" />
     </button>
   );
 }

@@ -1,0 +1,37 @@
+/* Loading — Loading overlay and spinner */
+
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: grid;
+    place-items: center;
+    z-index: 2500;
+}
+
+.loading-content {
+    background: var(--surface);
+    padding: 18px 24px;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+    text-align: center;
+}
+
+.loading-spinner {
+    animation: spin 1s linear infinite;
+}
+
+.loading-spinner.inline {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.loading-message {
+    margin: 8px 0 0;
+    color: var(--text-secondary);
+}
+
+/* Spinning animation class */
+.spinning {
+    animation: spin 1s linear infinite;
+}

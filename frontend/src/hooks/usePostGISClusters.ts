@@ -3,6 +3,10 @@
  *
  * Fetches clustered point data from the backend based on zoom level and map bounds.
  * Uses PostGIS ST_ClusterKMeans for efficient server-side clustering.
+ *
+ * **Sprint 3 - E.2.1: Enhanced with ClusterRequest schema validation**
+ * Now uses /api/spatial/cluster endpoint with validated ClusterRequest schema
+ * consistent with DensityAnalysisRequest pattern.
  */
 import { useState, useEffect, useRef } from 'react';
 import type { LatLngBounds } from 'leaflet';
@@ -76,20 +80,32 @@ export function usePostGISClusters({
       setError(null);
 
       try {
-        const boundsStr = [
-          bounds.getWest(),
-          bounds.getSouth(),
-          bounds.getEast(),
-          bounds.getNorth()
-        ].join(',');
+        // Build ClusterRequest body with validated schema
+        const requestBody = {
+          layer_name: dataset,
+          bounds: {
+            min_lat: bounds.getSouth(),
+            max_lat: bounds.getNorth(),
+            min_lng: bounds.getWest(),
+            max_lng: bounds.getEast(),
+          },
+          zoom_level: zoom,
+          // num_clusters will be calculated automatically based on zoom_level
+        };
 
-        const response = await fetch(
-          `/api/performance/cluster/${dataset}?zoom=${zoom}&bounds=${boundsStr}`,
-          { signal: controller.signal }
-        );
+        // Use new validated /api/spatial/cluster endpoint
+        const response = await fetch('/api/spatial/cluster', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
 
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
 
         const data = await response.json();

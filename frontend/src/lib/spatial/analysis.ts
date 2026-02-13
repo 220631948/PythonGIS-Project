@@ -4,7 +4,13 @@
  * TypeScript implementation with strict typing
  */
 
-import * as turf from '@turf/turf';
+import { point as turfPoint } from '@turf/helpers';
+import turfDistance from '@turf/distance';
+import turfNearestPoint from '@turf/nearest-point';
+import turfBuffer from '@turf/buffer';
+import turfPointsWithinPolygon from '@turf/points-within-polygon';
+import turfCentroid from '@turf/centroid';
+import turfSimplify from '@turf/simplify';
 import type { Feature, Point, Polygon, FeatureCollection, Position } from 'geojson';
 
 // Types
@@ -43,12 +49,12 @@ export const calculateNearestDistance = (
 ): number => {
     if (!destinations?.features?.length) return Infinity;
 
-    const originPoint = turf.point(origin);
+    const originPoint = turfPoint(origin);
     let minDistance = Infinity;
 
     for (const feature of destinations.features) {
         if (feature.geometry?.type === 'Point') {
-            const distance = turf.distance(originPoint, feature, { units: 'meters' });
+            const distance = turfDistance(originPoint, feature, { units: 'meters' });
             if (distance < minDistance) {
                 minDistance = distance;
             }
@@ -70,13 +76,13 @@ export const findNearestPoint = (
 ): Feature<Point> | null => {
     if (!destinations?.features?.length) return null;
 
-    const originPoint = turf.point(origin);
-    const nearest = turf.nearestPoint(originPoint, destinations);
+    const originPoint = turfPoint(origin);
+    const nearest = turfNearestPoint(originPoint, destinations);
 
     if (nearest) {
         nearest.properties = {
             ...nearest.properties,
-            distance: turf.distance(originPoint, nearest, { units: 'meters' })
+            distance: turfDistance(originPoint, nearest, { units: 'meters' })
         };
     }
 
@@ -97,11 +103,11 @@ export const generateWalkingBuffers = (
     const WALKING_SPEED_MPS = 1.2; // meters per second
     const WALKING_SPEED_MPM = WALKING_SPEED_MPS * 60; // 72 meters per minute
 
-    const centerPoint = turf.point(center);
+    const centerPoint = turfPoint(center);
 
     return minutes.map((mins) => {
         const meters = Math.round(mins * WALKING_SPEED_MPM);
-        const polygon = turf.buffer(centerPoint, meters, { units: 'meters' }) as Feature<Polygon>;
+        const polygon = turfBuffer(centerPoint, meters, { units: 'meters' }) as Feature<Polygon>;
 
         polygon.properties = {
             minutes: mins,
@@ -177,7 +183,7 @@ export const countPointsInPolygon = (
     points: FeatureCollection<Point>
 ): number => {
     if (!points?.features?.length) return 0;
-    const pointsWithin = turf.pointsWithinPolygon(points, polygon);
+    const pointsWithin = turfPointsWithinPolygon(points, polygon);
     return pointsWithin.features.length;
 };
 
@@ -194,7 +200,7 @@ export const getPointsInPolygon = (
     if (!points?.features?.length) {
         return { type: 'FeatureCollection', features: [] };
     }
-    return turf.pointsWithinPolygon(points, polygon) as FeatureCollection<Point>;
+    return turfPointsWithinPolygon(points, polygon) as FeatureCollection<Point>;
 };
 
 /**
@@ -203,7 +209,7 @@ export const getPointsInPolygon = (
  * @returns [lng, lat] of centroid
  */
 export const getCentroid = (polygon: Feature<Polygon>): Position => {
-    const centroid = turf.centroid(polygon);
+    const centroid = turfCentroid(polygon);
     return centroid.geometry.coordinates;
 };
 
@@ -217,7 +223,7 @@ export const simplifyGeometries = <T extends Feature>(
     geoJSON: FeatureCollection<T['geometry']>,
     tolerance: number = 0.001
 ): FeatureCollection<T['geometry']> => {
-    return turf.simplify(geoJSON, { tolerance, highQuality: true });
+    return turfSimplify(geoJSON, { tolerance, highQuality: true });
 };
 
 export default {

@@ -1,0 +1,92 @@
+/* Map Popups — Leaflet popup customization and enhanced popups */
+
+.custom-popup .leaflet-popup-content-wrapper {
+    background: var(--surface-overlay);
+    color: var(--text-primary);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.custom-popup .leaflet-popup-tip {
+    background: var(--surface-overlay);
+    border: 1px solid var(--border);
+}
+
+.popup-content {
+    min-width: 180px;
+}
+
+.popup-content h4 {
+    margin: 0 0 6px;
+    font-size: 1rem;
+}
+
+.popup-detail {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.popup-stat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.stat-value {
+    font-weight: 700;
+}
+
+.stat-value.good {
+    color: var(--color-success);
+}
+
+.stat-value.medium {
+    color: var(--color-warning);
+}
+
+.stat-value.poor {
+    color: var(--color-error);
+}
+
+.stat-value.high {
+    color: var(--color-error);
+}
+
+.stat-value.low {
+    color: var(--color-warning);
+        /* mapped to warning as closest semantic match */
+}
+
+.popup-note {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.click-marker {
+    background: var(--color-info-soft);
+        border: 2px solid var(--color-info);
+    border-radius: 50%;
+}
+
+.click-marker-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--color-info);
+    opacity: 0.5;
+}

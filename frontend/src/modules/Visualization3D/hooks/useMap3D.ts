@@ -25,12 +25,14 @@ interface UseMap3DReturn {
   buildings: BuildingData[];
   elevationProfile: ElevationProfile | null;
   shadowAnalysis: ShadowAnalysisResult | null;
+  interactiveShadow: any | null;
   isLoading: boolean;
   error: string | null;
   actions: {
     loadBuildings: (bounds: [number, number, number, number]) => Promise<BuildingData[]>;
     getElevationProfile: (points: [number, number][]) => Promise<ElevationProfile>;
     analyzeShadows: (request: ShadowAnalysisRequest) => Promise<ShadowAnalysisResult>;
+    simulateInteractiveShadow: (geometry: any, height: number, datetime: string) => Promise<any>;
     reset3DView: () => void;
     toggleAutoRotate: () => void;
   };
@@ -53,6 +55,7 @@ export function useMap3D(options: UseMap3DOptions = {}): UseMap3DReturn {
   const [buildings, setBuildings] = useState<BuildingData[]>([]);
   const [elevationProfile, setElevationProfile] = useState<ElevationProfile | null>(null);
   const [shadowAnalysis, setShadowAnalysis] = useState<ShadowAnalysisResult | null>(null);
+  const [interactiveShadow, setInteractiveShadow] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoRotateEnabled, setAutoRotateEnabled] = useState(autoRotate);
@@ -135,6 +138,23 @@ export function useMap3D(options: UseMap3DOptions = {}): UseMap3DReturn {
     }
   }, []);
 
+  const simulateInteractiveShadow = useCallback(async (geometry: any, height: number, datetime: string): Promise<any> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const result = await apiClient.simulateShadow({ geometry, height, datetime });
+      setInteractiveShadow(result.shadow);
+      return result.shadow;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to simulate shadow';
+      setError(message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const reset3DView = useCallback(() => {
     setViewState(initialViewState);
     setAutoRotateEnabled(false);
@@ -150,12 +170,14 @@ export function useMap3D(options: UseMap3DOptions = {}): UseMap3DReturn {
     buildings,
     elevationProfile,
     shadowAnalysis,
+    interactiveShadow,
     isLoading,
     error,
     actions: {
       loadBuildings,
       getElevationProfile,
       analyzeShadows,
+      simulateInteractiveShadow,
       reset3DView,
       toggleAutoRotate,
     },

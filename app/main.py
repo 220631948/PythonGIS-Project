@@ -38,6 +38,8 @@ from app.models.response_models import (
     HealthResponse,
     StatsResponse,
 )
+from app.middleware.csrf_protection import CSRFProtectionMiddleware
+from app.middleware.tenant_context import TenantContextMiddleware
 # Attempt to import API modules; some may require heavy spatial deps (geopandas) that
 # aren't available in lightweight test environments — allow graceful degradation.
 try:
@@ -52,6 +54,8 @@ try:
         infrastructure_api,
         portal_api,
         suitability_api,
+        auth_api,
+        tenants_api,
     )
 except Exception as exc:  # pragma: no cover - degrades gracefully when optional deps missing
     import logging as _logging
@@ -59,7 +63,7 @@ except Exception as exc:  # pragma: no cover - degrades gracefully when optional
     _logging.warning("One or more API modules failed to import: %s", exc)
     services_api = transport_api = safety_api = environment_api = None
     land_use_api = utilities_api = spatial_tools_api = infrastructure_api = None
-    portal_api = suitability_api = None
+    portal_api = suitability_api = auth_api = tenants_api = None
 
 # New enhanced API modules
 try:
@@ -135,6 +139,19 @@ async def lifespan(app: FastAPI):
     global app_start_time
     # Startup
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}...")
+
+    # Validate SECRET_KEY (Security Critical)
+    if len(settings.SECRET_KEY) < 32:
+        raise ValueError(
+            f"SECRET_KEY must be at least 32 characters (current: {len(settings.SECRET_KEY)}). "
+            "Generate a secure key with: python scripts/generate-secret-key.py"
+        )
+    if settings.SECRET_KEY in ["CHANGE_THIS_IN_PRODUCTION_USE_LONG_RANDOM_STRING", "changeme"]:
+        logger.warning(
+            "⚠️  SECRET_KEY is using default value. CRITICAL SECURITY RISK in production! "
+            "Generate a secure key with: python scripts/generate-secret-key.py"
+        )
+
     app_start_time = time.time()
     app.state.start_time = app_start_time
     # Here we could warm up the cache or initialize the data loader
@@ -168,6 +185,21 @@ app.add_middleware(
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(SlowAPIMiddleware)
+
+# Security Middlewares (Sprint 1 - Phase C)
+app.add_middleware(TenantContextMiddleware)
+app.add_middleware(CSRFProtectionMiddleware)
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.tile.openstreetmap.org https://*.tile.thunderforest.com https://citymaps.capetown.gov.za; connect-src 'self' https://citymaps.capetown.gov.za https://*.googleapis.com;"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
 
 limiter = Limiter(
     key_func=get_remote_address, default_limits=["10000 per day", "1000 per hour"]
@@ -236,6 +268,10 @@ if portal_api:
     app.include_router(portal_api.router, prefix=settings.API_PREFIX)
 if suitability_api:
     app.include_router(suitability_api.router, prefix=settings.API_PREFIX)
+if auth_api:
+    app.include_router(auth_api.router, prefix=settings.API_PREFIX)
+if tenants_api:
+    app.include_router(tenants_api.router, prefix=settings.API_PREFIX)
 
 # New enhanced feature routers
 if geocode_api:

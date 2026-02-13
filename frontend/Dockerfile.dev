@@ -1,5 +1,6 @@
 # Frontend Development Dockerfile
-FROM node:18-alpine
+# Alpine intermittently triggers SIGBUS with Vite in this environment.
+FROM node:20-bookworm-slim
 
 WORKDIR /app
 
@@ -7,7 +8,10 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies and wget for healthchecks
-RUN npm ci && apk add --no-cache wget
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends wget \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm ci
 
 # Copy source code
 COPY . .

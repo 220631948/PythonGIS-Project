@@ -8,7 +8,7 @@ Provides endpoints for:
 - 3D viewshed analysis
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import logging
@@ -48,6 +48,25 @@ class ViewshedRequest(BaseModel):
     observer_height: float = Field(1.7, description="Observer height in meters")
     radius_meters: float = Field(1000, description="Analysis radius")
     resolution: int = Field(50, description="Grid resolution", ge=10, le=200)
+
+
+@router.post("/simulate-shadow", response_model=Dict[str, Any])
+async def simulate_shadow(request: ShadowAnalysisRequest):
+    """
+    Simulate shadow for a custom building geometry.
+    Returns the shadow polygon as GeoJSON.
+    """
+    try:
+        from app.spatial_analysis.spatial_utils import calculate_shadow_geometry
+        shadow_geojson = calculate_shadow_geometry(
+            request.geometry, 
+            request.height, 
+            request.datetime
+        )
+        return {"status": "success", "shadow": shadow_geojson}
+    except Exception as e:
+        logger.error(f"Shadow simulation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/buildings/extrude")
@@ -325,9 +344,9 @@ async def calculate_viewshed(request: ViewshedRequest):
 
 @router.get("/terrain/tiles/{z}/{x}/{y}")
 async def get_terrain_tile(
-    z: int = Query(..., description="Zoom level"),
-    x: int = Query(..., description="Tile X coordinate"),
-    y: int = Query(..., description="Tile Y coordinate")
+    z: int = Path(..., description="Zoom level"),
+    x: int = Path(..., description="Tile X coordinate"),
+    y: int = Path(..., description="Tile Y coordinate")
 ):
     """
     Get terrain RGB tile for 3D terrain rendering.

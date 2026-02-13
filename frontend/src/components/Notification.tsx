@@ -43,11 +43,19 @@ const Notification: React.FC<NotificationProps> = ({ message, type = 'info', onC
   }, [duration, onClose]);
 
   return (
-    <div className={`notification ${config.className} ${isVisible ? 'visible' : 'hidden'}`}>
-      <IconComponent size={18} />
+    <div
+      className={`notification ${config.className} ${isVisible ? 'visible' : 'hidden'}`}
+      role={type === 'error' ? 'alert' : 'status'}
+      aria-atomic="true"
+    >
+      <IconComponent size={18} aria-hidden="true" />
       <span className="notification-message">{message}</span>
-      <button className="notification-close" onClick={onClose}>
-        <X size={14} />
+      <button
+        className="notification-close"
+        onClick={onClose}
+        aria-label="Close notification"
+      >
+        <X size={14} aria-hidden="true" />
       </button>
     </div>
   );
@@ -60,7 +68,7 @@ interface NotificationContainerProps {
 
 const NotificationContainer: React.FC<NotificationContainerProps> = ({ notifications, onRemove }) => {
   return (
-    <div className="notification-container">
+    <div className="notification-container" aria-live="polite" aria-relevant="additions">
       {notifications.map((notif) => (
         <Notification
           key={notif.id}

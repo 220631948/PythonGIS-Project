@@ -1,72 +1,256 @@
-# Version control / CI
-.git
+# =============================================================================
+# Cape Town GeoHub — .dockerignore
+# Purpose: reduce Docker build context size and avoid leaking local secrets.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# VCS / CI metadata (not needed in runtime image)
+# -----------------------------------------------------------------------------
+.git/
 .gitignore
 .gitattributes
-.github
+.gitmodules
+.github/
+.gitlab-ci.yml
+.circleci/
+.travis.yml
+azure-pipelines.yml
 
-# IDE / OS
-.vscode
-.idea
+# -----------------------------------------------------------------------------
+# Local editor / OS noise
+# -----------------------------------------------------------------------------
+.vscode/
+.idea/
 *.code-workspace
+*.iml
+*.ipr
+*.iws
 *.swp
 *.swo
-*.iml
 .DS_Store
+Thumbs.db
+.junie/
+.helix/
+.fleet/
 
-# Environment / secrets
+# -----------------------------------------------------------------------------
+# Environment + secrets (never copy into image)
+# -----------------------------------------------------------------------------
 .env
 .env.*
+!.env.example
 secrets/
 secrets.dev.yaml
 values.dev.yaml
+*.pem
+*.key
+*.crt
+*.cer
+*.der
+*.p12
+*.pfx
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+.ssh/
+config/local.yaml
+config/production.yaml
 
-# Python
+# -----------------------------------------------------------------------------
+# Python local artifacts
+# -----------------------------------------------------------------------------
 __pycache__/
 **/__pycache__/
 *.py[cod]
+*.so
+
+# Local virtualenvs (container installs dependencies itself)
 .venv/
+.venv*/
 venv/
 ENV/
 env/
+.audit-venv/
+
+# Python cache / reports
 .pytest_cache/
+.hypothesis/
+.tox/
+.nox/
 .mypy_cache/
+.ruff_cache/
+.pytype/
+.pyre/
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
-*.egg-info/
+
+# Python build outputs
 build/
 dist/
+site/
+*.egg-info/
+*.egg
+pip-wheel-metadata/
+.ipynb_checkpoints/
+*.ipynb
 
-# Node / frontend
+# -----------------------------------------------------------------------------
+# Frontend / Node local artifacts
+# -----------------------------------------------------------------------------
 node_modules/
 **/node_modules/
+.npm/
+.pnpm-store/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+.vite/
+frontend/.vite/
+frontend/dist/
+frontend/build/
+.cache/
+.parcel-cache/
+.turbo/
+storybook-static/
+.eslintcache
+frontend/.eslintcache
+*.tsbuildinfo
+
+# Frontend test and audit outputs
+coverage/
+.nyc_output/
+frontend/test-results/
+frontend/playwright-report/
+frontend/playwright/.cache/
+playwright/.cache/
+blob-report/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.vite/
-*.tsbuildinfo
-frontend/.eslintcache
-frontend/dist/
-frontend/build/
-coverage/
-frontend/test-results/
-frontend/playwright-report/
-*.test.ts
-*.spec.tsx
+pnpm-debug.log*
+lerna-debug.log*
 
-# Data
-data/cache/
+# -----------------------------------------------------------------------------
+# Data and DB artifacts (large/local)
+# -----------------------------------------------------------------------------
 postgres_data/
 pgdata/
-*.db
-*.sqlite3
-*.geojson
-*.parquet
-*.zip
+pg_data/
+volumes/
+docker-data/
 
-# Logs / temp
-*.log
+# Local caches and generated datasets
+data/cache/
+!data/cache/.gitkeep
+
+# Local DB files / dumps
+*.db
+*.db-shm
+*.db-wal
+*.sqlite3
+*.sqlite3-journal
+*.sql.gz
+*.dump
+*.backup
+*.bak
+
+# Heavy geospatial binary assets
+*.parquet
+*.feather
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.gpkg
+*.mbtiles
+*.tif
+*.tiff
+
+# -----------------------------------------------------------------------------
+# Project docs / planning / generated reports (not needed to run API)
+# -----------------------------------------------------------------------------
+docs/
+CHANGELOG.md
+CONTRIBUTING.md
+ETHICS.md
+QUICKSTART_DEPLOYMENT.md
+README.md
+*.md
+!app/README.md
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Agent orchestration outputs / AI tool state (not runtime dependencies)
+# ═════════════════════════════════════════════════════════════════════════════
+agents/
+agents/logs/
+pipelines/
+tasks/
+outputs/
+runs/
+sessions/
+
+.agent-memory/
+.agentpipe.state
+.spec-env/
+
+# AI tool caches
+.gemini/
+.claude/
+.copilot/
+.code/
+.cursor/
+.continue/
+.aider/
+.windsurf/
+.codex/
+.ollama/
+.ai/
+.local-ai/
+.zap/
+.agent-memory
+aider.*.md
+
+# LLM cache directories
+memory/
+.history/
+*.cache/
+vectorstores/
+chroma/
+faiss_index/
+lancedb/
+embeddings/
+models/
+checkpoints/
+weights/
+
+# LLM tokens and auth
+tokens.json
+auth.json
+
+# Ralph state
+.ralph/
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Runtime temporary files
+# ═════════════════════════════════════════════════════════════════════════════
 logs/
+*.log
+*.log.*
 tmp/
 temp/
+.temp/
 *.tmp
-.agent-memory
+*.temp
+*.pid
+*.pid.lock
+*.sock

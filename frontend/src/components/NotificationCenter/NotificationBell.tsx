@@ -5,7 +5,7 @@
  * Opens notification inbox on click
  */
 
-import React from 'react';
+// React import not needed in React 17+
 import { Bell, BellRing } from 'lucide-react';
 
 interface NotificationBellProps {

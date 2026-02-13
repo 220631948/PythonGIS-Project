@@ -4,7 +4,7 @@
  * Overview of community engagement statistics and recent activity
  */
 
-import React from 'react';
+// React import not needed in React 17+
 import {
   Users,
   MessageSquare,

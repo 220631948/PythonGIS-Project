@@ -9,6 +9,7 @@ from typing import Dict, Any, List, Optional, Tuple
 import requests
 import geopandas as gpd
 from sqlalchemy import inspect, text
+from fastapi.concurrency import run_in_threadpool
 from app.config import settings
 from app.core.cache_manager import cache_manager
 from app.core.exceptions import DataNotFoundError, DataValidationError
@@ -137,6 +138,22 @@ class DataLoader:
 
         return paginated_gdf, total_count
 
+    async def get_paginated_gdf_async(
+        self,
+        dataset_name: str,
+        limit: int = 1000,
+        offset: int = 0,
+        force_refresh: bool = False,
+    ) -> Tuple[gpd.GeoDataFrame, int]:
+        """Async wrapper that runs paginated GeoDataFrame retrieval in a threadpool."""
+        return await run_in_threadpool(
+            self.get_paginated_gdf,
+            dataset_name,
+            limit,
+            offset,
+            force_refresh,
+        )
+
     def get_gdf(
         self, dataset_name: str, force_refresh: bool = False
     ) -> gpd.GeoDataFrame:
@@ -218,6 +235,14 @@ class DataLoader:
 
         # Return the GeoDataFrame so callers can use the loaded data
         return gdf
+
+    async def get_gdf_async(
+        self,
+        dataset_name: str,
+        force_refresh: bool = False,
+    ) -> gpd.GeoDataFrame:
+        """Async wrapper that runs GeoDataFrame retrieval in a threadpool."""
+        return await run_in_threadpool(self.get_gdf, dataset_name, force_refresh)
 
     def load_csv(self, dataset_name: str) -> pd.DataFrame:
         """Load tabular data (CSV/Excel) from configured source."""
@@ -308,6 +333,20 @@ class DataLoader:
     def get_retrieval_log(self) -> List[Dict[str, Any]]:
         """Get the data retrieval log for monitoring."""
         return self._retrieval_log.copy()
+
+    def get_last_sync_times(self) -> Dict[str, str]:
+        """Get the last successful sync time for each dataset from the database."""
+        sync_times = {}
+        try:
+            with require_engine().connect() as conn:
+                result = conn.execute(
+                    text("SELECT name, last_updated FROM spatial_layers")
+                )
+                for row in result:
+                    sync_times[row[0]] = row[1].isoformat() if row[1] else None
+        except Exception as e:
+            logger.warning(f"Failed to fetch sync times: {e}")
+        return sync_times
 
     def _table_exists(self, table_name: str) -> bool:
         try:
