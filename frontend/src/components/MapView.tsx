@@ -6,7 +6,7 @@
  *
  * ENHANCED: Now supports PostGIS clustering, heatmaps, and advanced layer rendering
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { ReactElement } from 'react';
 import type { PathOptions } from 'leaflet';
 import {
@@ -206,44 +206,48 @@ const MapView = ({
   // TODO: Reintroduce typed layer rendering (follow-up task).
 
   // Pre-compute data layer elements to avoid TS inference issues with Object.keys in JSX
-  const dataLayerElements: ReactElement[] = [];
-  for (const layerId of Object.keys(geoData)) {
-    const layerData = geoData[layerId];
-    if (!layerData?.geojson) continue;
-    const datasetName = LAYER_TO_DATASET[layerId] || layerId;
-    dataLayerElements.push(
-      <LayersControl.Overlay key={layerId} checked name={datasetName}>
-        <GeoJSON
-          data={layerData.geojson}
-          style={{
-            color: '#3b82f6',
-            weight: 2,
-            opacity: 0.7,
-            fillOpacity: _layerOpacity,
-          }}
-          onEachFeature={(feature, layer) => {
-            const props = feature.properties || {};
-            const name = props.name || props.NAME || props.label || datasetName;
+  // ⚡ Bolt Optimization: Memoize data layers to prevent re-renders when map state (zoom/center) changes
+  const dataLayerElements = useMemo(() => {
+    const elements: ReactElement[] = [];
+    for (const layerId of Object.keys(geoData)) {
+      const layerData = geoData[layerId];
+      if (!layerData?.geojson) continue;
+      const datasetName = LAYER_TO_DATASET[layerId] || layerId;
+      elements.push(
+        <LayersControl.Overlay key={layerId} checked name={datasetName}>
+          <GeoJSON
+            data={layerData.geojson}
+            style={{
+              color: '#3b82f6',
+              weight: 2,
+              opacity: 0.7,
+              fillOpacity: _layerOpacity,
+            }}
+            onEachFeature={(feature, layer) => {
+              const props = feature.properties || {};
+              const name = props.name || props.NAME || props.label || datasetName;
 
-            // Build popup content
-            const popupLines = [`<strong>${String(name)}</strong>`];
-            if (props.description) popupLines.push(`<p>${String(props.description)}</p>`);
-            if (props.category) popupLines.push(`<p>Category: ${String(props.category)}</p>`);
-            if (props.area) popupLines.push(`<p>Area: ${String(props.area)}</p>`);
+              // Build popup content
+              const popupLines = [`<strong>${String(name)}</strong>`];
+              if (props.description) popupLines.push(`<p>${String(props.description)}</p>`);
+              if (props.category) popupLines.push(`<p>Category: ${String(props.category)}</p>`);
+              if (props.area) popupLines.push(`<p>Area: ${String(props.area)}</p>`);
 
-            layer.bindPopup(`<div class="p-2">${popupLines.join('')}</div>`);
+              layer.bindPopup(`<div class="p-2">${popupLines.join('')}</div>`);
 
-            // Attach event handlers
-            layer.on({
-              click: (e) => _onFeatureClick?.(feature, e),
-              mouseover: () => _onFeatureHover?.(feature, true),
-              mouseout: () => _onFeatureHover?.(feature, false),
-            });
-          }}
-        />
-      </LayersControl.Overlay>
-    );
-  }
+              // Attach event handlers
+              layer.on({
+                click: (e) => _onFeatureClick?.(feature, e),
+                mouseover: () => _onFeatureHover?.(feature, true),
+                mouseout: () => _onFeatureHover?.(feature, false),
+              });
+            }}
+          />
+        </LayersControl.Overlay>
+      );
+    }
+    return elements;
+  }, [geoData, _layerOpacity, _onFeatureClick, _onFeatureHover]);
 
   // Fallback when coords are not yet available
   if (!normalizedCenter) {
