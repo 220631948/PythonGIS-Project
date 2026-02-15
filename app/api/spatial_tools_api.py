@@ -4,11 +4,11 @@ import logging
 from pathlib import Path
 from typing import List, Dict, Any
 
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Response
 from pydantic import BaseModel
 import geopandas as gpd
 from shapely.geometry import shape
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
@@ -54,7 +54,7 @@ async def get_buffer(
     lat: float, 
     lon: float, 
     distance: float = Query(500, description="Buffer distance in meters"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Returns a GeoJSON buffer around a point using PostGIS."""
     try:
@@ -68,10 +68,11 @@ async def get_buffer(
             ) as geojson
         """)
 
-        result = db.execute(query, {"lon": lon, "lat": lat, "distance": distance}).scalar()
+        result = await db.execute(query, {"lon": lon, "lat": lat, "distance": distance})
+        geojson_str = result.scalar()
 
-        if result:
-            geom = json.loads(result)
+        if geojson_str:
+            geom = json.loads(geojson_str)
             return {
                 "type": "Feature",
                 "geometry": geom,
@@ -84,15 +85,16 @@ async def get_buffer(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/nearby")
-def get_nearby_features(
+async def get_nearby_features(
     layer: str,
     lat: float,
     lon: float,
     radius: float = 1000.0,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Finds features in a specific layer within `radius` meters of (lat, lon) using PostGIS ST_DWithin.
+    Optimized to return raw JSON from PostGIS to avoid double serialization overhead.
     """
     # Map friendly layer names to tables if needed
     TABLE_MAPPING = {
@@ -126,39 +128,43 @@ def get_nearby_features(
         # Use simple SQL construction for table name (parameterized queries can't handle table names)
         # Check against allow-list or schema first for safety in prod.
 
+        # Optimized Query: Construct FeatureCollection directly in PostGIS
+        # This avoids transferring multiple rows and parsing/serializing JSON in Python.
         query_sql = f"""
-            SELECT id, name, 
-                   ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography) as distance_meters,
-                   ST_AsGeoJSON(geom) as geojson 
-            FROM "{table_name}"
-            WHERE ST_DWithin(
-                geom::geography, 
-                ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography, 
-                :radius
-            )
-            {type_filter}
-            ORDER BY distance_meters ASC
-            LIMIT 100
+            SELECT json_build_object(
+                'type', 'FeatureCollection',
+                'features', Coalesce(json_agg(
+                    json_build_object(
+                        'type', 'Feature',
+                        'geometry', ST_AsGeoJSON(geom)::json,
+                        'properties', json_build_object(
+                            'id', id,
+                            'name', name,
+                            'distance_meters', ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography)
+                        )
+                    )
+                ), '[]'::json),
+                'count', COUNT(*)
+            )::text as json_response
+            FROM (
+                SELECT id, name, geom
+                FROM "{table_name}"
+                WHERE ST_DWithin(
+                    geom::geography,
+                    ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
+                    :radius
+                )
+                {type_filter}
+                ORDER BY ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography) ASC
+                LIMIT 100
+            ) subquery
         """
 
-        result = db.execute(text(query_sql), {"lon": lon, "lat": lat, "radius": radius})
+        result = await db.execute(text(query_sql), {"lon": lon, "lat": lat, "radius": radius})
+        json_str = result.scalar()
 
-        features = []
-        for row in result:
-            row_dict = dict(row._mapping)
-            geom = json.loads(row_dict.pop('geojson')) if row_dict.get('geojson') else None
-
-            features.append({
-                "type": "Feature",
-                "geometry": geom,
-                "properties": row_dict
-            })
-
-        return {
-            "type": "FeatureCollection",
-            "features": features,
-            "count": len(features)
-        }
+        # Return raw JSON response directly
+        return Response(content=json_str, media_type="application/json")
 
     except Exception as e:
         # If table doesn't exist, try fallback to generic data loader (GeoPandas)
