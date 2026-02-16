@@ -49,7 +49,7 @@ export default function IssueReporter({
   onUploadPhoto,
   defaultLocation
 }: IssueReporterProps) {
-  const [step, setStep] = useState<'form' | 'photos' | 'success'>(form');
+  const [step, setStep] = useState<'form' | 'photos' | 'success'>('form');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submittedIssue, setSubmittedIssue] = useState<any>(null);
@@ -172,10 +172,13 @@ export default function IssueReporter({
         setStep('photos');
 
         for (let i = 0; i < photoFiles.length; i++) {
-          try {
-            await onUploadPhoto(result.id, photoFiles[i]);
-          } catch (err) {
-            console.error('Failed to upload photo:', err);
+          const file = photoFiles[i];
+          if (file) {
+            try {
+              await onUploadPhoto(result.id, file);
+            } catch (err) {
+              console.error('Failed to upload photo:', err);
+            }
           }
         }
       }

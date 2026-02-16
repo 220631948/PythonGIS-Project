@@ -12,7 +12,6 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import logging
-from datetime import datetime
 import math
 import numpy as np
 
@@ -59,7 +58,6 @@ async def get_building_extrusion(request: BuildingExtrusionRequest):
     """
     try:
         from app.core.data_loader import data_loader
-        import geopandas as gpd
         from shapely.geometry import box
 
         # Load buildings dataset
@@ -197,7 +195,6 @@ async def calculate_shadow(request: ShadowAnalysisRequest):
     try:
         from shapely.geometry import shape, mapping
         from shapely import affinity
-        import pytz
         from datetime import datetime
 
         # Parse datetime
@@ -205,7 +202,7 @@ async def calculate_shadow(request: ShadowAnalysisRequest):
 
         # Calculate sun position (simplified - use pysolar or pvlib in production)
         lat = request.location["lat"]
-        lng = request.location["lng"]
+        request.location["lng"]
 
         # Simplified solar angle calculation
         hour = dt.hour + dt.minute / 60.0

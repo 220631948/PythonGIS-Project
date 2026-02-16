@@ -16,8 +16,20 @@ export interface Building3D {
     height?: number;
     base_height?: number;
     building_type?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
+}
+
+// Type alias for Building3D
+export type BuildingData = Building3D;
+
+export interface ViewState3D {
+  longitude: number;
+  latitude: number;
+  zoom: number;
+  pitch?: number;
+  bearing?: number;
+  transitionDuration?: number;
 }
 
 export interface BuildingExtrusionRequest {
@@ -47,6 +59,9 @@ export interface ElevationProfileResponse {
   max_elevation: number;
 }
 
+// Type alias for compatibility
+export type ElevationProfile = ElevationProfileResponse;
+
 export interface ShadowAnalysisRequest {
   bounds: {
     minLat: number;
@@ -63,6 +78,21 @@ export interface ShadowAnalysisResponse {
   sun_elevation: number;
   sun_azimuth: number;
   time: string;
+}
+
+// Extended shadow analysis result with time series data
+export interface ShadowAnalysisResult {
+  total_shadow_area: number;
+  max_shadow_length: number;
+  affected_area: number;
+  shadow_duration: number;
+  shadow_polygons: Array<{
+    time: string;
+    shadow_area: number;
+    sun_altitude: number;
+    sun_azimuth: number;
+    geometry?: GeoJSON.Polygon;
+  }>;
 }
 
 export interface ViewshedRequest {
@@ -439,7 +469,7 @@ export interface DashboardWidget {
   id: string;
   type: 'chart' | 'map' | 'metric' | 'table' | 'text';
   title: string;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   position: {
     x: number;
     y: number;
@@ -469,9 +499,54 @@ export interface DashboardTemplate {
   preview_image?: string;
 }
 
+// Type aliases for compatibility
+// Note: WidgetConfig represents configuration parameters for creating widgets,
+// while DashboardWidget is the complete widget structure
+export interface WidgetConfig {
+  title?: string;
+  defaultWidth?: number;
+  defaultHeight?: number;
+  config?: Record<string, unknown>;
+}
+
+export type DashboardLayout = Dashboard['layout'];
+
 // ==========================================
 // 8. COMPARISON TYPES
 // ==========================================
+
+export interface Dataset {
+  id: string;
+  title: string;
+  description?: string;
+  category?: string;
+  last_updated?: string;
+  record_count?: number;
+  spatial_extent?: GeoJSON.Polygon;
+}
+
+export interface ComparisonMetric {
+  name: string;
+  value: number;
+  unit?: string;
+  category?: string;
+}
+
+export interface ComparisonRequest {
+  dataset_ids: string[];
+  metrics?: string[];
+  area?: GeoJSON.Polygon;
+}
+
+export interface ComparisonResult {
+  datasets: Dataset[];
+  metrics: ComparisonMetric[];
+  comparison_data: Array<{
+    dataset_id: string;
+    values: Record<string, number>;
+  }>;
+  generated_at: string;
+}
 
 export interface NeighborhoodComparisonRequest {
   area_ids: string[];
@@ -671,7 +746,7 @@ export interface SpatialQueryRequest {
   attribute_filters?: Array<{
     field: string;
     operator: 'eq' | 'ne' | 'gt' | 'lt' | 'in' | 'contains';
-    value: any;
+    value: string | number | boolean | null;
   }>;
 }
 

@@ -6,8 +6,7 @@
  *
  * ENHANCED: Now supports PostGIS clustering, heatmaps, and advanced layer rendering
  */
-import { useState, useCallback } from 'react';
-import type { ReactElement } from 'react';
+import { useState, useCallback, type JSX } from 'react';
 import type { PathOptions } from 'leaflet';
 import {
   MapContainer,
@@ -199,51 +198,43 @@ const MapView = ({
 
   const basemapConfig: BasemapConfig = (BASEMAPS[basemap] ?? BASEMAPS.streets)!;
 
-  // Data layers are rendered in a small helper to keep MapView types manageable.
-  // NOTE: This was temporarily simplified to avoid a TSC edge case with strict indexed access.
-  // TODO: Re-introduce typed data layer rendering in a separate refactor/PR.
-  // Data layers rendering temporarily removed to simplify strict typing.
-  // TODO: Reintroduce typed layer rendering (follow-up task).
-
-  // Pre-compute data layer elements to avoid TS inference issues with Object.keys in JSX
-  const dataLayerElements: ReactElement[] = [];
-  for (const layerId of Object.keys(geoData)) {
-    const layerData = geoData[layerId];
-    if (!layerData?.geojson) continue;
-    const datasetName = LAYER_TO_DATASET[layerId] || layerId;
-    dataLayerElements.push(
-      <LayersControl.Overlay key={layerId} checked name={datasetName}>
-        <GeoJSON
-          data={layerData.geojson}
-          style={{
-            color: '#3b82f6',
-            weight: 2,
-            opacity: 0.7,
-            fillOpacity: _layerOpacity,
-          }}
-          onEachFeature={(feature, layer) => {
-            const props = feature.properties || {};
-            const name = props.name || props.NAME || props.label || datasetName;
-
-            // Build popup content
-            const popupLines = [`<strong>${String(name)}</strong>`];
-            if (props.description) popupLines.push(`<p>${String(props.description)}</p>`);
-            if (props.category) popupLines.push(`<p>Category: ${String(props.category)}</p>`);
-            if (props.area) popupLines.push(`<p>Area: ${String(props.area)}</p>`);
-
-            layer.bindPopup(`<div class="p-2">${popupLines.join('')}</div>`);
-
-            // Attach event handlers
-            layer.on({
-              click: (e) => _onFeatureClick?.(feature, e),
-              mouseover: () => _onFeatureHover?.(feature, true),
-              mouseout: () => _onFeatureHover?.(feature, false),
-            });
-          }}
-        />
-      </LayersControl.Overlay>
-    );
-  }
+  // Data layers rendered directly inline
+  const renderDataLayers = (): JSX.Element[] => {
+    const layers: JSX.Element[] = [];
+    Object.keys(geoData).forEach((layerId) => {
+      const layerData = geoData[layerId];
+      if (!layerData?.geojson) return;
+      const datasetName = LAYER_TO_DATASET[layerId] || layerId;
+      layers.push(
+        <LayersControl.Overlay key={layerId} checked name={datasetName}>
+          <GeoJSON
+            data={layerData.geojson}
+            style={{
+              color: '#3b82f6',
+              weight: 2,
+              opacity: 0.7,
+              fillOpacity: _layerOpacity,
+            }}
+            onEachFeature={(feature, layer) => {
+              const props = feature.properties || {};
+              const name = props.name || props.NAME || props.label || datasetName;
+              const popupLines = [`<strong>${String(name)}</strong>`];
+              if (props.description) popupLines.push(`<p>${String(props.description)}</p>`);
+              if (props.category) popupLines.push(`<p>Category: ${String(props.category)}</p>`);
+              if (props.area) popupLines.push(`<p>Area: ${String(props.area)}</p>`);
+              layer.bindPopup(`<div class="p-2">${popupLines.join('')}</div>`);
+              layer.on({
+                click: (e) => _onFeatureClick?.(feature, e),
+                mouseover: () => _onFeatureHover?.(feature, true),
+                mouseout: () => _onFeatureHover?.(feature, false),
+              });
+            }}
+          />
+        </LayersControl.Overlay>
+      );
+    });
+    return layers;
+  };
 
   // Fallback when coords are not yet available
   if (!normalizedCenter) {
@@ -310,7 +301,7 @@ const MapView = ({
             ))}
 
           {/* Data Layers from API */}
-          {dataLayerElements}
+          {renderDataLayers()}
 
           {/* Route Layer */}
           {routeOrigin && routeDestination && routeData?.route_geojson && (

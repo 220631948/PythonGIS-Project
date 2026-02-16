@@ -1,6 +1,5 @@
 import json
 import logging
-import geopandas as gpd
 from typing import Dict, Any, Optional, Union
 from sqlalchemy import text
 
@@ -9,7 +8,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from app.spatial_analysis.base import BaseAnalyzer
-from app.spatial_analysis.spatial_utils import gdf_to_geojson
 from app.config import settings
 from app.core.database import require_engine
 
@@ -168,8 +166,10 @@ class ServicesAnalyzer(BaseAnalyzer):
         # Score: 100 is best. Penalty for distance.
         # 0-500m: 100 score, 500m-2000m: linear drop, >2000m: 0 score.
         def calculate_score(dist):
-            if dist < 500: return 100
-            if dist > 2000: return 0
+            if dist < 500:
+                return 100
+            if dist > 2000:
+                return 0
             return 100 - ((dist - 500) / 15)
 
         settlements_proj['water_score'] = settlements_proj['dist_water'].apply(calculate_score)

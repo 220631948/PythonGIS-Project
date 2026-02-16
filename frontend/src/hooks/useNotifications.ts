@@ -107,6 +107,7 @@ export function useNotifications(options: UseNotificationsOptions): UseNotificat
         }
       };
     }
+    return undefined; // Explicit return for when condition is false
   }, [enableRealtime, pollingInterval, fetchNotifications, fetchActiveAlerts]);
 
   // Setup WebSocket for real-time notifications
