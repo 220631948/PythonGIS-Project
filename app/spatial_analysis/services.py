@@ -1,6 +1,7 @@
 import json
 import logging
 import geopandas as gpd
+import pandas as pd
 from typing import Dict, Any, Optional, Union
 from sqlalchemy import text
 
@@ -156,14 +157,47 @@ class ServicesAnalyzer(BaseAnalyzer):
         water_proj = water.to_crs(settings.PROJECTED_CRS) if not water.empty else None
         elec_proj = electricity.to_crs(settings.PROJECTED_CRS) if not electricity.empty else None
 
-        def get_min_dist(point, facilities_gdf):
-            if facilities_gdf is None or facilities_gdf.empty:
-                return 5000  # Default large distance if no facilities
-            return facilities_gdf.distance(point).min()
+        def calculate_min_dist(source_gdf, target_gdf, default_dist=5000):
+            """
+            Optimized distance calculation using spatial join (nearest neighbor).
+            Returns a Series of distances aligned with source_gdf index.
+            """
+            if target_gdf is None or target_gdf.empty:
+                return pd.Series([default_dist] * len(source_gdf), index=source_gdf.index)
 
-        logger.info("Calculating distances to facilities...")
-        settlements_proj['dist_water'] = settlements_proj['centroid'].apply(lambda x: get_min_dist(x, water_proj))
-        settlements_proj['dist_elec'] = settlements_proj['centroid'].apply(lambda x: get_min_dist(x, elec_proj))
+            # Use sjoin_nearest for vectorized distance calculation (much faster than apply)
+            # We use the centroid geometry created earlier for distance measurement
+            # source_gdf has 'centroid' column which we temporary set as geometry
+            source_temp = source_gdf.set_geometry('centroid')[['centroid']]
+
+            # Ensure target has geometry set (it should)
+            target_temp = target_gdf[['geometry']]
+
+            try:
+                # sjoin_nearest returns a GDF with source index preserved
+                # distance_col adds the distance
+                nearest = gpd.sjoin_nearest(
+                    source_temp,
+                    target_temp,
+                    how='left',
+                    distance_col='dist'
+                )
+
+                # Group by index to handle potential multiple nearest neighbors (ties)
+                # and take min distance (ties will have same distance)
+                dists = nearest.groupby(nearest.index)['dist'].min()
+
+                # Reindex to ensure alignment and fill missing (if any) with default
+                return dists.reindex(source_gdf.index).fillna(default_dist)
+
+            except Exception as e:
+                logger.warning(f"Fast distance calculation failed: {e}. Fallback to slow method.")
+                # Fallback to slow method if sjoin_nearest fails (e.g. index issues)
+                return source_gdf['centroid'].apply(lambda x: target_gdf.distance(x).min())
+
+        logger.info("Calculating distances to facilities (optimized)...")
+        settlements_proj['dist_water'] = calculate_min_dist(settlements_proj, water_proj)
+        settlements_proj['dist_elec'] = calculate_min_dist(settlements_proj, elec_proj)
 
         # Score: 100 is best. Penalty for distance.
         # 0-500m: 100 score, 500m-2000m: linear drop, >2000m: 0 score.
