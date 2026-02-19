@@ -326,7 +326,7 @@ function PendingExports({ exports }: { exports: ExportFile[] }) {
           <span className="export-filename">{exp.filename}</span>
           <span className="export-size">{(exp.size_bytes / 1024).toFixed(1)} KB</span>
           <a
-            href={apiClient.getExportDownloadUrl(exp.file_id)}
+            href={apiClient.export.getDownloadUrl(exp.file_id)}
             className="download-link"
             download
           >
@@ -358,7 +358,7 @@ export default function ExportPanel({
 
   const loadDatasets = async () => {
     try {
-      const data = (await apiClient.getCatalogDatasets()) as Dataset[];
+      const data = (await apiClient.catalog.getDatasets()) as Dataset[];
       setDatasets(data ?? []);
     } catch (error) {
       console.error('Failed to load datasets:', error);
@@ -367,7 +367,7 @@ export default function ExportPanel({
 
   const loadPendingExports = async () => {
     try {
-      const data = (await apiClient.getPendingExports()) as { exports?: ExportFile[] };
+      const data = (await apiClient.export.getPending()) as { exports?: ExportFile[] };
       setPendingExports(data.exports ?? []);
     } catch (error) {
       console.error('Failed to load pending exports:', error);
@@ -376,7 +376,7 @@ export default function ExportPanel({
 
   const handleDataExport = async (request: ExportRequest) => {
     try {
-      const result = await apiClient.exportData(request) as { filename: string };
+      const result = await apiClient.export.exportData(request) as { filename: string };
       onNotification?.(`Export ready: ${result.filename}`, 'success');
       loadPendingExports();
     } catch (error: any) {
@@ -386,7 +386,7 @@ export default function ExportPanel({
 
   const handleAnalysisExport = async (request: ExportRequest) => {
     try {
-      const result = await apiClient.exportAnalysis(request) as { filename: string };
+      const result = await apiClient.export.exportAnalysis(request) as { filename: string };
       onNotification?.(`Analysis export ready: ${result.filename}`, 'success');
       loadPendingExports();
     } catch (error: any) {

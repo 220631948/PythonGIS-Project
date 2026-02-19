@@ -95,7 +95,7 @@ export function useDashboardBuilder(options: UseDashboardBuilderOptions = {}): U
     setError(null);
 
     try {
-      const result = await apiClient.createDashboard({
+      const result = await apiClient.dashboard.create({
         name,
         description,
         widgets: [],
@@ -149,7 +149,7 @@ export function useDashboardBuilder(options: UseDashboardBuilderOptions = {}): U
     setError(null);
 
     try {
-      await apiClient.updateDashboard(dashboard.id, {
+      await apiClient.dashboard.update(dashboard.id, {
         widgets,
         layout,
         updated_at: new Date().toISOString(),
@@ -170,7 +170,7 @@ export function useDashboardBuilder(options: UseDashboardBuilderOptions = {}): U
     setError(null);
 
     try {
-      await apiClient.deleteDashboard(id);
+      await apiClient.dashboard.deleteDashboard(id);
 
       if (dashboard?.id === id) {
         setDashboard(null);

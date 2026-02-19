@@ -120,7 +120,7 @@ function AnnotationDetail({ annotation, onClose, onUpdate }: AnnotationDetailPro
 
   const loadReplies = useCallback(async () => {
     try {
-      const data = (await apiClient.getAnnotationReplies(annotation.id)) as Reply[];
+      const data = (await apiClient.collaboration.getAnnotationReplies(annotation.id)) as Reply[];
       setReplies(data);
     } catch (error) {
       console.error('Failed to load replies:', error);
@@ -136,7 +136,7 @@ function AnnotationDetail({ annotation, onClose, onUpdate }: AnnotationDetailPro
 
     setIsSubmitting(true);
     try {
-      await apiClient.createReply(annotation.id, {
+      await apiClient.collaboration.createReply(annotation.id, {
         content: newReply,
         author: replyAuthor
       });
@@ -152,7 +152,7 @@ function AnnotationDetail({ annotation, onClose, onUpdate }: AnnotationDetailPro
 
   const handleStatusChange = async (newStatus: string) => {
     try {
-      await apiClient.updateAnnotation(annotation.id, { status: newStatus });
+      await apiClient.collaboration.updateAnnotation(annotation.id, { status: newStatus });
       onUpdate();
     } catch (error) {
       console.error('Failed to update status:', error);
@@ -351,7 +351,7 @@ export default function CollaborationPanel({
       const bbox = mapBounds ?
         `${mapBounds.west},${mapBounds.south},${mapBounds.east},${mapBounds.north}` :
         null;
-      const data = (await apiClient.getAnnotations(
+      const data = (await apiClient.collaboration.getAnnotations(
         bbox,
         filter.type || null,
         filter.status || null
@@ -372,7 +372,7 @@ export default function CollaborationPanel({
 
   const handleCreateAnnotation = async (annotationData: any) => {
     try {
-      await apiClient.createAnnotation(annotationData);
+      await apiClient.collaboration.createAnnotation(annotationData);
       setIsCreating(false);
       loadAnnotations();
     } catch (error) {
@@ -383,7 +383,7 @@ export default function CollaborationPanel({
   const handleDeleteAnnotation = async (id: number) => {
     if (!confirm('Delete this annotation?')) return;
     try {
-      await apiClient.deleteAnnotation(id);
+      await apiClient.collaboration.deleteAnnotation(id);
       setSelectedAnnotation(null);
       loadAnnotations();
     } catch (error) {

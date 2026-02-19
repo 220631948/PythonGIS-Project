@@ -90,7 +90,7 @@ function MainApp() {
 
         const fetchMarkers = async () => {
             try {
-                const markers = await apiClient.getMarkers() as any[];
+                const markers = await apiClient.collaboration.getMarkers() as any[];
                 if (mounted) {
                     setCollaborationMarkers(markers);
                 }

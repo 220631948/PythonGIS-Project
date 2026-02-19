@@ -48,7 +48,7 @@ export function useNotifications(options: UseNotificationsOptions): UseNotificat
   // Fetch notifications from API
   const fetchNotifications = useCallback(async () => {
     try {
-      const data = await apiClient.getUserNotifications(userId) as any;
+      const data = await apiClient.notifications.getUserNotifications(userId) as any;
       if (data && Array.isArray(data.notifications)) {
         setNotifications(data.notifications);
         setUnreadCount(data.unread_count || 0);
@@ -62,7 +62,7 @@ export function useNotifications(options: UseNotificationsOptions): UseNotificat
   // Fetch active alerts
   const fetchActiveAlerts = useCallback(async () => {
     try {
-      const data = await apiClient.getActiveAlerts() as any;
+      const data = await apiClient.notifications.getActiveAlerts() as any;
       if (data && Array.isArray(data.alerts)) {
         setActiveAlerts(data.alerts);
       }
@@ -74,7 +74,7 @@ export function useNotifications(options: UseNotificationsOptions): UseNotificat
   // Fetch subscriptions
   const fetchSubscriptions = useCallback(async () => {
     try {
-      const data = await apiClient.getSubscriptions(userId) as any;
+      const data = await apiClient.notifications.getSubscriptions(userId) as any;
       if (data && Array.isArray(data.subscriptions)) {
         setSubscriptions(data.subscriptions);
       }
@@ -158,7 +158,7 @@ export function useNotifications(options: UseNotificationsOptions): UseNotificat
   // Mark notification as read
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
-      await apiClient.markNotificationRead(notificationId);
+      await apiClient.notifications.markRead(notificationId);
       setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       );
@@ -173,7 +173,7 @@ export function useNotifications(options: UseNotificationsOptions): UseNotificat
   const markAllAsRead = useCallback(async () => {
     try {
       const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
-      await Promise.all(unreadIds.map(id => apiClient.markNotificationRead(id)));
+      await Promise.all(unreadIds.map(id => apiClient.notifications.markRead(id)));
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (err: any) {
@@ -198,7 +198,7 @@ export function useNotifications(options: UseNotificationsOptions): UseNotificat
   // Subscribe to alerts
   const subscribeToAlerts = useCallback(async (subscription: any) => {
     try {
-      const result = await apiClient.subscribeToAlerts(subscription) as any;
+      const result = await apiClient.notifications.subscribe(subscription) as any;
       if (result && result.subscription) {
         setSubscriptions(prev => [...prev, result.subscription]);
       }
@@ -212,7 +212,7 @@ export function useNotifications(options: UseNotificationsOptions): UseNotificat
   // Unsubscribe from alerts
   const unsubscribeFromAlerts = useCallback(async (subscriptionId: string) => {
     try {
-      await apiClient.unsubscribe(subscriptionId);
+      await apiClient.notifications.unsubscribe(subscriptionId);
       setSubscriptions(prev => prev.filter(s => s.id !== subscriptionId));
     } catch (err: any) {
       console.error('Failed to unsubscribe:', err);
@@ -227,7 +227,7 @@ export function useNotifications(options: UseNotificationsOptions): UseNotificat
     radius: number = 1000
   ) => {
     try {
-      const data = await apiClient.getActiveAlerts(lat, lng, radius) as any;
+      const data = await apiClient.notifications.getActiveAlerts(lat, lng, radius) as any;
       if (data && Array.isArray(data.alerts)) {
         setActiveAlerts(data.alerts);
       }
