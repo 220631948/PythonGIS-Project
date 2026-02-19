@@ -19,14 +19,33 @@ try:
     from shapely.geometry import Point, Polygon, LineString
 except Exception:  # pragma: no cover - optional heavy dependency for some test suites
     Point = Polygon = LineString = None
-import pandas as pd
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from httpx import AsyncClient
+try:
+    import pandas as pd
+except Exception:  # pragma: no cover - optional heavy dependency for some test suites
+    pd = None
+
+try:
+    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+except ImportError:
+    AsyncSession = None
+    create_async_engine = None
+    async_sessionmaker = None
+
+try:
+    from httpx import AsyncClient
+except ImportError:
+    AsyncClient = None
+
 import os
 
 # Import the app for testing
-from app.main import app
-from app.core.database import Base, get_db
+try:
+    from app.main import app
+    from app.core.database import Base, get_db
+except ImportError:
+    app = None
+    Base = None
+    get_db = None
 
 
 # ============================================================================
