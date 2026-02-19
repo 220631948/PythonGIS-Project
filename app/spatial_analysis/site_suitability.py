@@ -17,6 +17,8 @@ import logging
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
+from sqlalchemy import text
+from app.core.database import require_engine
 
 logger = logging.getLogger(__name__)
 
@@ -424,23 +426,67 @@ class SiteSuitabilityAnalyzer:
     def _eval_urban_edge(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
         """Evaluate urban edge compliance.
 
-        TODO: Wire to PostGIS ST_Intersects query against urban edge boundary.
-              City of Cape Town Urban Edge dataset.
+        Queries the PostGIS 'urban_edge' table to check if the location
+        falls within the urban development boundary.
         """
-        logger.debug(f"urban_edge: placeholder evaluation for ({lat}, {lng})")
-        return CriterionResult(
-            criterion="urban_edge",
-            score=80,
-            weight=0,
-            weighted_score=0,
-            details={
-                "within_urban_edge": None,
-                "distance_to_edge_m": None,
-                "note": self.PLACEHOLDER_NOTE,
-            },
-            constraints=[],
-            data_source="placeholder",
-        )
+        try:
+            engine = require_engine()
+            query = text("""
+                SELECT EXISTS (
+                    SELECT 1 FROM urban_edge
+                    WHERE ST_Intersects(geometry, ST_SetSRID(ST_Point(:lng, :lat), 4326))
+                )
+            """)
+
+            with engine.connect() as conn:
+                is_within = conn.execute(query, {"lng": lng, "lat": lat}).scalar()
+
+            # Development generally should be inside the urban edge
+            if is_within:
+                return CriterionResult(
+                    criterion="urban_edge",
+                    score=100,
+                    weight=0,
+                    weighted_score=0,
+                    details={
+                        "within_urban_edge": True,
+                        "distance_to_edge_m": 0,
+                        "note": "Site is within the Urban Edge",
+                    },
+                    constraints=[],
+                    data_source="postgis",
+                )
+            else:
+                return CriterionResult(
+                    criterion="urban_edge",
+                    score=0,
+                    weight=0,
+                    weighted_score=0,
+                    details={
+                        "within_urban_edge": False,
+                        "distance_to_edge_m": None,
+                        "note": "Site is outside the Urban Edge",
+                    },
+                    constraints=["Outside Urban Edge"],
+                    data_source="postgis",
+                )
+
+        except Exception as e:
+            logger.warning(f"urban_edge: database query failed: {e}")
+            # Fallback to placeholder if table missing or DB error
+            return CriterionResult(
+                criterion="urban_edge",
+                score=80,
+                weight=0,
+                weighted_score=0,
+                details={
+                    "within_urban_edge": None,
+                    "distance_to_edge_m": None,
+                    "note": f"{self.PLACEHOLDER_NOTE} (Error: {e})",
+                },
+                constraints=[],
+                data_source="placeholder",
+            )
 
     def _eval_default(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
         """Default evaluator for unknown/unimplemented criteria."""

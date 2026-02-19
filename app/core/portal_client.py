@@ -205,7 +205,7 @@ PORTAL_DATASETS: Dict[str, PortalDataset] = {
         name="Urban Edge",
         description="Urban development boundary",
         category=DatasetCategory.PLANNING,
-        url=f"{EGIS_MAP_SERVICE}/26/query?where=1%3D1&outFields=*&f=geojson",
+        url=f"{EGIS_MAP_SERVICE}/218/query?where=1%3D1&outFields=*&f=geojson",
         format="MapServer",
         geometry_type="Polygon",
     ),
