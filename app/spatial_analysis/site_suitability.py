@@ -17,6 +17,10 @@ import logging
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
+from sqlalchemy import func
+
+from app.core.database import SessionLocal
+from app.models.sql_models import BiodiversityArea
 
 logger = logging.getLogger(__name__)
 
@@ -266,26 +270,109 @@ class SiteSuitabilityAnalyzer:
         )
 
     def _eval_biodiversity(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
-        """Evaluate biodiversity constraints.
+        """Evaluate biodiversity constraints using PostGIS."""
+        # Use placeholder default if database is not available
+        if SessionLocal is None:
+            logger.debug(f"biodiversity: no database connection, using placeholder for ({lat}, {lng})")
+            return CriterionResult(
+                criterion="biodiversity",
+                score=75,
+                weight=0,
+                weighted_score=0,
+                details={
+                    "in_biodiversity_network": False,
+                    "classification": "unknown",
+                    "vegetation_type": "Unknown",
+                    "note": self.PLACEHOLDER_NOTE,
+                },
+                constraints=[],
+                data_source="placeholder",
+            )
 
-        TODO: Wire to PostGIS query against Critical Biodiversity Areas layer.
-              Use City of Cape Town Biodiversity Network dataset.
-        """
-        logger.debug(f"biodiversity: placeholder evaluation for ({lat}, {lng})")
-        return CriterionResult(
-            criterion="biodiversity",
-            score=75,
-            weight=0,
-            weighted_score=0,
-            details={
-                "in_biodiversity_network": False,
-                "classification": "unknown",
-                "vegetation_type": "Unknown",
-                "note": self.PLACEHOLDER_NOTE,
-            },
-            constraints=[],
-            data_source="placeholder",
-        )
+        session = SessionLocal()
+        try:
+            # Construct point geometry (WGS84)
+            point = func.ST_SetSRID(func.ST_MakePoint(lng, lat), 4326)
+
+            # Query for intersection with biodiversity areas
+            area = session.query(BiodiversityArea).filter(
+                func.ST_Intersects(BiodiversityArea.geom, point)
+            ).first()
+
+            if not area:
+                return CriterionResult(
+                    criterion="biodiversity",
+                    score=100,
+                    weight=0,
+                    weighted_score=0,
+                    details={
+                        "in_biodiversity_network": False,
+                        "classification": "None",
+                        "vegetation_type": "None",
+                        "note": "No biodiversity constraints identified"
+                    },
+                    constraints=[],
+                    data_source="postgis",
+                )
+
+            # Map area types to suitability scores
+            # CBA 1: Irreplaceable (0)
+            # CBA 2: Restorable (20)
+            # ESA: Ecological Support Area (50)
+            # Other: Protected/Natural (70)
+            area_type = str(area.area_type).upper() if area.area_type else "UNKNOWN"
+
+            if "CBA 1" in area_type or "CRITICAL BIODIVERSITY AREA 1" in area_type:
+                score = 0
+                classification = "Critical Biodiversity Area 1"
+            elif "CBA 2" in area_type or "CRITICAL BIODIVERSITY AREA 2" in area_type:
+                score = 20
+                classification = "Critical Biodiversity Area 2"
+            elif "ESA" in area_type or "ECOLOGICAL SUPPORT" in area_type:
+                score = 50
+                classification = "Ecological Support Area"
+            elif "OTHER" in area_type:
+                score = 70
+                classification = "Other Natural Area"
+            else:
+                score = 30
+                classification = area.area_type or "Unknown"
+
+            return CriterionResult(
+                criterion="biodiversity",
+                score=score,
+                weight=0,
+                weighted_score=0,
+                details={
+                    "in_biodiversity_network": True,
+                    "classification": classification,
+                    "vegetation_type": area.category or "Unknown",
+                    "status": area.status,
+                    "note": f"Intersected {classification}"
+                },
+                constraints=[classification] if score < 40 else [],
+                data_source="postgis",
+            )
+
+        except Exception as e:
+            logger.error(f"Error querying biodiversity data: {e}")
+            # Fallback to safe default on error
+            return CriterionResult(
+                criterion="biodiversity",
+                score=75,
+                weight=0,
+                weighted_score=0,
+                details={
+                    "in_biodiversity_network": False,
+                    "classification": "unknown",
+                    "vegetation_type": "Unknown",
+                    "note": f"Error: {str(e)}",
+                },
+                constraints=[],
+                data_source="error",
+            )
+        finally:
+            session.close()
 
     def _eval_wetlands(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
         """Evaluate wetland constraints.
