@@ -29,10 +29,13 @@ class ServicesAnalyzer(BaseAnalyzer):
 
             # Use ST_Simplify if requested
             geom_expr = "s.geom"
+            params: Dict[str, Any] = {}
             if simplify:
                 # ST_Simplify works on geometry. If s.geom is 4326, tolerance is degrees.
                 # Assuming s.geom is appropriate for the simplify parameter provided.
-                geom_expr = f"ST_Simplify(s.geom, {simplify})"
+                # Use bind parameter for security
+                geom_expr = "ST_Simplify(s.geom, :simplify_val)"
+                params["simplify_val"] = simplify
 
             query = f"""
             WITH water_dist AS (
@@ -120,8 +123,8 @@ class ServicesAnalyzer(BaseAnalyzer):
             try:
                 # Wrap connection in try-block to ensure fallback on connection failure
                 with require_engine().connect() as conn:
-                    # Execute optimized query
-                    result = conn.execute(text(query)).scalar()
+                    # Execute optimized query with parameters
+                    result = conn.execute(text(query), params).scalar()
                     if result:
                         return result
                     else:
