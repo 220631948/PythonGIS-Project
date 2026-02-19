@@ -5,21 +5,18 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import logging
 import time
-import json
 from collections import defaultdict
 from contextlib import asynccontextmanager
-from typing import Optional, Union
 
 try:
     from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 except Exception:  # pragma: no cover - optional dependency
     SentryAsgiMiddleware = None
-from cachetools import TTLCache
 from fastapi import FastAPI, Request, HTTPException, Query, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -27,6 +24,7 @@ from slowapi.middleware import SlowAPIMiddleware
 # httpx import removed as it is no longer used in proxy_data
 
 from app.config import settings
+from app.services.data_proxy import DataProxyService
 from app.utils.logging_config import setup_logging
 from app.sentry_ import init_sentry
 from app.core.exceptions import GeoHubException, geohub_exception_handler
@@ -295,23 +293,6 @@ if performance_api:
 if extensions_api:
     app.include_router(extensions_api.router, prefix=settings.API_PREFIX)
 
-# Generic Data Proxy Endpoint (Phase 7.5: System Integration)
-# Bounded in-memory cache with automatic TTL eviction (B5 refactor)
-CACHE_TTL_SECONDS = 300  # 5 minutes
-CACHE_MAX_ENTRIES = 256  # Prevent unbounded memory growth
-_response_cache: TTLCache = TTLCache(maxsize=CACHE_MAX_ENTRIES, ttl=CACHE_TTL_SECONDS)
-
-
-def get_cached_response(cache_key: str) -> Optional[Union[dict, str]]:
-    """Get cached response if present (TTLCache handles expiration automatically)."""
-    return _response_cache.get(cache_key)
-
-
-def set_cached_response(cache_key: str, data: Union[dict, str]) -> None:
-    """Store response in bounded TTL cache (evicts oldest when full)."""
-    _response_cache[cache_key] = data
-
-
 @app.get("/api/data/{dataset_key}")
 async def proxy_data(
     dataset_key: str,
@@ -332,210 +313,12 @@ async def proxy_data(
 
     Pagination: Use limit/offset to page through large datasets.
     """
-    import re
-    from app.core.data_loader import data_loader
-    from app.spatial_analysis.safety import safety_analyzer
-    from app.spatial_analysis.transport import transport_optimizer
-    from app.config import settings
-
-    # Validate dataset_key against injection (alphanumeric + underscores only)
-    if not re.match(r"^[a-zA-Z]\w{0,62}$", dataset_key):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid dataset key: '{dataset_key}'. Only letters, digits, and underscores allowed.",
-        )
-
-    if dataset_key not in settings.DATA_URLS and dataset_key != "safety_precincts":
-        raise HTTPException(
-            status_code=404,
-            detail=f"Dataset '{dataset_key}' not found. Available: {list(settings.DATA_URLS.keys())} + ['safety_precincts']",
-        )
-
-    # Check cache first
-    cache_key = f"{dataset_key}:{limit}:{offset}"
-    if use_cache:
-        cached = get_cached_response(cache_key)
-        if cached:
-            # Optimization: Return pre-serialized JSON string directly if available
-            if isinstance(cached, str):
-                return Response(
-                    content=cached,
-                    media_type="application/json",
-                    headers={
-                        "X-Cache": "HIT",
-                        "Cache-Control": "public, max-age=300",
-                    },
-                )
-            return JSONResponse(
-                content=cached,
-                headers={
-                    "X-Cache": "HIT",
-                    "Cache-Control": "public, max-age=300",
-                },
-            )
-
-    try:
-        # Domain Intelligence Logic
-
-        # 1. Transport Domain - Optimize Routes
-        if dataset_key == "myciti_routes":
-            gdf = data_loader.get_gdf(dataset_key)
-            optimized = transport_optimizer.optimize_routes(gdf)
-            # Apply pagination
-            total = len(optimized)
-            paginated = optimized.iloc[offset : offset + limit]
-            result = {
-                "type": "FeatureCollection",
-                "features": json.loads(paginated.to_json())["features"],
-                "metadata": {
-                    "total": total,
-                    "limit": limit,
-                    "offset": offset,
-                    "returned": len(paginated),
-                },
-            }
-            set_cached_response(cache_key, result)
-            return JSONResponse(
-                content=result,
-                headers={
-                    "X-Optimization": "TransportOptimizer",
-                    "X-Cache": "MISS",
-                    "Cache-Control": "public, max-age=86400",
-                },
-            )
-
-        # 2. Safety Domain - Merge Precincts with Stats
-        elif dataset_key == "safety_precincts":
-            try:
-                precincts = data_loader.get_gdf("precincts")
-                stats = data_loader.load_csv("crime_stats")
-                merged = safety_analyzer.merge_stats_with_precincts(precincts, stats)
-                # Apply pagination
-                total = len(merged)
-                paginated = merged.iloc[offset : offset + limit]
-                result = {
-                    "type": "FeatureCollection",
-                    "features": json.loads(paginated.to_json())["features"],
-                    "metadata": {
-                        "total": total,
-                        "limit": limit,
-                        "offset": offset,
-                        "returned": len(paginated),
-                    },
-                }
-                set_cached_response(cache_key, result)
-                return JSONResponse(
-                    content=result,
-                    headers={
-                        "X-Merged": "SafetyAnalyzer",
-                        "X-Cache": "MISS",
-                        "Cache-Control": "public, max-age=86400",
-                    },
-                )
-            except Exception as e:
-                logger.error(f"Safety domain error: {e}. Falling back to boundaries.")
-                precincts = data_loader.get_gdf("precincts")
-                total = len(precincts)
-                paginated = precincts.iloc[offset : offset + limit]
-                return JSONResponse(
-                    content={
-                        "type": "FeatureCollection",
-                        "features": json.loads(paginated.to_json())["features"],
-                        "metadata": {
-                            "total": total,
-                            "limit": limit,
-                            "offset": offset,
-                            "returned": len(paginated),
-                        },
-                    }
-                )
-
-        # 3. Default Path - Smart Loader with Pagination
-        # Optimized with direct DB pagination
-        gdf, total = data_loader.get_paginated_gdf(
-            dataset_key, limit=limit, offset=offset
-        )
-
-        # Performance Optimization: Construct JSON string directly to avoid double serialization
-        # gdf.to_json() returns a FeatureCollection string. We strip the closing brace '}'
-        # and append our metadata object.
-        # This is ~2x faster than json.loads(gdf.to_json()) -> JSONResponse
-        json_str = gdf.to_json(na="null")
-
-        # Ensure we have a valid object end
-        if json_str.rstrip().endswith("}"):
-            json_str = json_str.rstrip()[:-1]
-
-            metadata = {
-                "total": total,
-                "limit": limit,
-                "offset": offset,
-                "returned": len(gdf),
-                "has_more": offset + limit < total,
-            }
-            # Serialize metadata to JSON string
-            metadata_str = json.dumps(metadata)
-
-            # Splice them together
-            final_json = f'{json_str}, "metadata": {metadata_str}}}'
-
-            set_cached_response(cache_key, final_json)
-
-            return Response(
-                content=final_json,
-                media_type="application/json",
-                headers={
-                    "Cache-Control": f"public, max-age={settings.CACHE_DURATION_DAYS * 86400}",
-                    "X-Data-Source": "City of Cape Town",
-                    "X-Loader-Version": "v2",
-                    "X-Cache": "MISS",
-                    "X-Total-Count": str(total),
-                },
-            )
-        else:
-            # Fallback for unexpected format
-            result = {
-                "type": "FeatureCollection",
-                "features": json.loads(gdf.to_json())["features"],
-                "metadata": {
-                    "total": total,
-                    "limit": limit,
-                    "offset": offset,
-                    "returned": len(gdf),
-                    "has_more": offset + limit < total,
-                },
-            }
-            set_cached_response(cache_key, result)
-
-            return JSONResponse(
-                content=result,
-                headers={
-                    "Cache-Control": f"public, max-age={settings.CACHE_DURATION_DAYS * 86400}",
-                    "X-Data-Source": "City of Cape Town",
-                    "X-Loader-Version": "v2",
-                    "X-Cache": "MISS",
-                    "X-Total-Count": str(total),
-                },
-            )
-
-    except Exception as e:
-        # Attach geo context to Sentry (if configured)
-        try:
-            from app.utils.sentry_utils import attach_geo_context
-
-            attach_geo_context(dataset_id=dataset_key)
-        except Exception:
-            pass
-
-        logger.error(f"Smart proxy error for {dataset_key}: {e}")
-        # Improve error messages for known types
-        status = 500
-        if "timeout" in str(e).lower():
-            status = 504
-        elif "not found" in str(e).lower():
-            status = 404
-
-        raise HTTPException(status_code=status, detail=str(e))
+    return await DataProxyService.get_dataset(
+        dataset_key=dataset_key,
+        limit=limit,
+        offset=offset,
+        use_cache=use_cache,
+    )
 
 
 # Health check (Enhanced - validates database connectivity)
@@ -627,8 +410,7 @@ async def get_system_stats():
 async def clear_cache():
     """Clear application caches (response cache + monitoring stats)."""
     try:
-        cache_size = len(_response_cache)
-        _response_cache.clear()
+        cache_size = DataProxyService.clear_cache()
         request_stats.clear()
         error_stats.clear()
 
