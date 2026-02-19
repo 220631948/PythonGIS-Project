@@ -5,6 +5,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { X, CheckCircle, AlertTriangle, Info, XCircle } from 'lucide-react';
+import { announce } from '../Accessibility';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -43,6 +44,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         const newToast: Toast = { id, message, type, duration };
 
         setToasts(prev => [...prev, newToast]);
+        announce(message);
 
         if (duration > 0) {
             setTimeout(() => {
