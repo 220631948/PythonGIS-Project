@@ -8,7 +8,7 @@
  */
 import { useState, useCallback } from 'react';
 import type { ReactElement } from 'react';
-import type { PathOptions } from 'leaflet';
+import type { PathOptions, LeafletEvent } from 'leaflet';
 import {
   MapContainer,
   TileLayer,
@@ -40,6 +40,7 @@ import {
   FullscreenControl,
   LocationControl,
   MinimapControl,
+  EnhancedGeoJSONLayer,
 } from './map';
 import { useMapLayers, LAYER_TO_DATASET } from './map/useMapLayers';
 import { usePostGISClusters } from '../hooks/usePostGISClusters';
@@ -119,7 +120,7 @@ interface MapViewProps {
   onGeometryCreated?: (data: { type: string; geometry: GeoJSON.Geometry; layer: L.Layer }) => void;
   onGeometryEdited?: (data: L.LayerGroup) => void;
   onGeometryDeleted?: (data: L.LayerGroup) => void;
-  onFeatureClick?: (feature: GeoJSON.Feature, event: unknown) => void;
+  onFeatureClick?: (feature: GeoJSON.Feature, event: LeafletEvent) => void;
   onFeatureHover?: (feature: GeoJSON.Feature, hovering: boolean) => void;
   showDrawingTools?: boolean;
   showFullscreen?: boolean;
@@ -199,51 +200,8 @@ const MapView = ({
 
   const basemapConfig: BasemapConfig = (BASEMAPS[basemap] ?? BASEMAPS.streets)!;
 
-  // Data layers are rendered in a small helper to keep MapView types manageable.
-  // NOTE: This was temporarily simplified to avoid a TSC edge case with strict indexed access.
-  // TODO: Re-introduce typed data layer rendering in a separate refactor/PR.
-  // Data layers rendering temporarily removed to simplify strict typing.
-  // TODO: Reintroduce typed layer rendering (follow-up task).
-
-  // Pre-compute data layer elements to avoid TS inference issues with Object.keys in JSX
-  const dataLayerElements: ReactElement[] = [];
-  for (const layerId of Object.keys(geoData)) {
-    const layerData = geoData[layerId];
-    if (!layerData?.geojson) continue;
-    const datasetName = LAYER_TO_DATASET[layerId] || layerId;
-    dataLayerElements.push(
-      <LayersControl.Overlay key={layerId} checked name={datasetName}>
-        <GeoJSON
-          data={layerData.geojson}
-          style={{
-            color: '#3b82f6',
-            weight: 2,
-            opacity: 0.7,
-            fillOpacity: _layerOpacity,
-          }}
-          onEachFeature={(feature, layer) => {
-            const props = feature.properties || {};
-            const name = props.name || props.NAME || props.label || datasetName;
-
-            // Build popup content
-            const popupLines = [`<strong>${String(name)}</strong>`];
-            if (props.description) popupLines.push(`<p>${String(props.description)}</p>`);
-            if (props.category) popupLines.push(`<p>Category: ${String(props.category)}</p>`);
-            if (props.area) popupLines.push(`<p>Area: ${String(props.area)}</p>`);
-
-            layer.bindPopup(`<div class="p-2">${popupLines.join('')}</div>`);
-
-            // Attach event handlers
-            layer.on({
-              click: (e) => _onFeatureClick?.(feature, e),
-              mouseover: () => _onFeatureHover?.(feature, true),
-              mouseout: () => _onFeatureHover?.(feature, false),
-            });
-          }}
-        />
-      </LayersControl.Overlay>
-    );
-  }
+  // Data layers are rendered using the typed EnhancedGeoJSONLayer component
+  // which handles styling, popups, and events with proper typing.
 
   // Fallback when coords are not yet available
   if (!normalizedCenter) {
@@ -310,7 +268,22 @@ const MapView = ({
             ))}
 
           {/* Data Layers from API */}
-          {dataLayerElements}
+          {Object.entries(geoData).map(([layerId, layerData]) => {
+            if (!layerData?.geojson) return null;
+            const datasetName = LAYER_TO_DATASET[layerId] || layerId;
+            return (
+              <LayersControl.Overlay key={layerId} checked name={datasetName}>
+                <EnhancedGeoJSONLayer
+                  data={layerData.geojson}
+                  layerId={layerId}
+                  datasetInfo={{ name: datasetName }}
+                  opacity={_layerOpacity}
+                  onFeatureClick={_onFeatureClick}
+                  onFeatureHover={_onFeatureHover}
+                />
+              </LayersControl.Overlay>
+            );
+          })}
 
           {/* Route Layer */}
           {routeOrigin && routeDestination && routeData?.route_geojson && (
