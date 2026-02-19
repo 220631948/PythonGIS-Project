@@ -23,3 +23,10 @@ export {
   collaborationIcon,
 } from './mapUtils';
 export type { LatLng, LatLngCandidate } from './mapUtils';
+
+export * from './types';
+export { DataLayers } from './DataLayers';
+export { ModuleLayers } from './ModuleLayers';
+export { RouteLayers } from './RouteLayers';
+export { MarkerManager } from './MarkerManager';
+export { PostGISClusterOverlay } from './PostGISClusterOverlay';
