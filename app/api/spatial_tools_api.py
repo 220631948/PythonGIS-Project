@@ -27,13 +27,51 @@ class PointInPolygonRequest(BaseModel):
     layers: List[str]
 
 @router.post("/point-in-polygon")
-async def point_in_polygon(request: PointInPolygonRequest):
+async def point_in_polygon(
+    request: PointInPolygonRequest,
+    db: AsyncSession = Depends(get_db)
+):
     """Counts points in a user-defined polygon from specified layers."""
     try:
         user_poly = shape(request.polygon)
         results = {}
         
         for layer in request.layers:
+            # 1. Optimize: Check if table exists in DB and use PostGIS
+            # Convert layer name to table name convention
+            table_name = layer.lower().replace('-', '_')
+
+            # Basic validation to prevent SQL injection
+            if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$", table_name):
+                try:
+                    # Check existence using async query
+                    exists_query = text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = :table_name)")
+                    result = await db.execute(exists_query, {"table_name": table_name})
+                    if result.scalar():
+                        # Table exists, run optimized PostGIS query
+                        # Use ST_Intersects which is generally faster and covers most use cases (point inside or on boundary)
+                        # Ensure we handle CRS. PostGIS data is likely 4326.
+                        count_query = text(f"""
+                            SELECT COUNT(*)
+                            FROM "{table_name}"
+                            WHERE ST_Intersects(
+                                geom,
+                                ST_SetSRID(ST_GeomFromGeoJSON(:geojson), 4326)
+                            )
+                        """)
+
+                        # Serialize polygon to JSON string for ST_GeomFromGeoJSON
+                        geojson_str = json.dumps(request.polygon)
+
+                        count_result = await db.execute(count_query, {"geojson": geojson_str})
+                        count = count_result.scalar()
+                        results[layer] = count
+                        continue
+                except Exception as e:
+                    logger.warning(f"PostGIS query failed for {layer}: {e}")
+                    # Fallthrough to data_loader
+
+            # 2. Fallback: Load data into memory (slow)
             gdf = data_loader.get_gdf(layer)
             if gdf.empty:
                 results[layer] = 0

@@ -5,3 +5,7 @@
 ## 2026-02-18 - [Backend] PostGIS Native GeoJSON Construction
 **Learning:** Constructing complex GeoJSON FeatureCollections directly in PostGIS using `json_build_object`, `json_agg`, and `ST_AsGeoJSON` is significantly more efficient than fetching rows and constructing dictionaries in Python. This eliminates row iteration overhead and leverages the database's optimized JSON functions.
 **Action:** For spatial endpoints returning GeoJSON, push the JSON construction logic to the SQL query and return the raw JSON string using `Response` to bypass FastAPI/Pydantic serialization. Also, ensure `AsyncSession` is used correctly with `await` for database execution to avoid coroutine errors.
+
+## 2026-02-19 - [Backend] Spatial Intersection Optimization
+**Learning:** Loading entire datasets into memory with `geopandas` for point-in-polygon checks is extremely inefficient for large datasets. Using PostGIS `ST_Intersects` (or `ST_Within`) allows the database to use spatial indexes and only return the count, avoiding data transfer and memory overhead.
+**Action:** Always prefer database-side spatial operations (`ST_Intersects`, `ST_DWithin`) over loading data into application memory. When implementing fallback logic, ensure input geometries are correctly serialized for PostGIS (e.g., `ST_GeomFromGeoJSON`) and coordinate systems are handled (e.g., `ST_SetSRID(..., 4326)`). Also, validating table names with regex is critical when dynamic table names are used.
