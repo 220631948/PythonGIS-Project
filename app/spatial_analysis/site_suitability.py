@@ -14,9 +14,11 @@ Use cases:
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
 from enum import Enum
+from sqlalchemy import text
+from app.core.database import require_engine
 
 logger = logging.getLogger(__name__)
 
@@ -334,10 +336,48 @@ class SiteSuitabilityAnalyzer:
     def _eval_zoning(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
         """Evaluate zoning compatibility.
 
-        TODO: Wire to PostGIS query against 'zoning' layer
-              (MapServer/58 — Zoning). Use ST_Intersects to find
-              current zoning classification, then compare with dev_type.
+        Queries the PostGIS 'zoning_areas' layer (MapServer/58 — Zoning)
+        using ST_Intersects to find current zoning classification,
+        then compares with development type to determine suitability.
         """
+        try:
+            engine = require_engine()
+            # Query zoning_areas for intersection with point
+            query = text("""
+                SELECT zone_name, zone_type, properties
+                FROM zoning_areas
+                WHERE ST_Intersects(geom, ST_SetSRID(ST_Point(:lng, :lat), 4326))
+                LIMIT 1
+            """)
+
+            with engine.connect() as conn:
+                result = conn.execute(query, {"lat": lat, "lng": lng}).fetchone()
+
+            if result:
+                zone_name, zone_type, properties = result
+                score, compatibility_notes = self._calculate_zoning_score(
+                    zone_type, zone_name, dev_type
+                )
+
+                return CriterionResult(
+                    criterion="zoning_compatible",
+                    score=score,
+                    weight=0,
+                    weighted_score=0,
+                    details={
+                        "current_zoning": zone_name,
+                        "zone_type": zone_type,
+                        "compatible_with": dev_type,
+                        "notes": compatibility_notes,
+                    },
+                    constraints=[],
+                    data_source="postgis",
+                )
+
+        except Exception as e:
+            logger.warning(f"Zoning PostGIS query failed, using placeholder: {e}")
+
+        # Fallback to placeholder if database is unavailable or no result found
         logger.debug(f"zoning: placeholder evaluation for ({lat}, {lng})")
         return CriterionResult(
             criterion="zoning_compatible",
@@ -353,6 +393,64 @@ class SiteSuitabilityAnalyzer:
             constraints=[],
             data_source="placeholder",
         )
+
+    def _calculate_zoning_score(
+        self, zone_type: Optional[str], zone_name: Optional[str], dev_type: str
+    ) -> Tuple[float, str]:
+        """Calculate compatibility score between zone and development type.
+
+        Maps common Cape Town zoning codes to development suitability scores.
+        """
+        if not zone_type:
+            return 50.0, "Unknown zoning type"
+
+        zt = zone_type.upper()
+        dt = dev_type.lower()
+        zn = zone_name or "Unknown Zone"
+
+        # Residential
+        if dt == "residential":
+            if any(zt.startswith(x) for x in ["SR", "GR", "MU"]):
+                return 100.0, f"Compatible: {zn} is a residential zone."
+            if any(zt.startswith(x) for x in ["GB", "LB"]):
+                return 80.0, f"Generally compatible: {zn} allows residential use."
+            return 20.0, f"Incompatible: {zn} is not intended for residential use."
+
+        # Commercial
+        if dt == "commercial":
+            if any(zt.startswith(x) for x in ["GB", "LB", "MU"]):
+                return 100.0, f"Compatible: {zn} is a business/commercial zone."
+            if zt.startswith("GI"):
+                return 60.0, f"Marginally compatible: {zn} may allow certain commercial uses."
+            return 20.0, f"Incompatible: {zn} is not intended for commercial use."
+
+        # Industrial
+        if dt == "industrial":
+            if zt.startswith("GI") or zt.startswith("RI"):
+                return 100.0, f"Compatible: {zn} is an industrial zone."
+            return 10.0, f"Incompatible: {zn} is not intended for industrial use."
+
+        # Mixed Use
+        if dt == "mixed_use":
+            if zt.startswith("MU") or zt.startswith("GB"):
+                return 100.0, f"Compatible: {zn} is designed for mixed-use development."
+            if zt.startswith("LB") or zt.startswith("GR"):
+                return 70.0, f"Suitable: {zn} supports mixed-use characteristics."
+            return 10.0, f"Incompatible: {zn} does not support mixed-use development."
+
+        # Institutional
+        if dt == "institutional":
+            if any(zt.startswith(x) for x in ["CO", "US"]):
+                return 100.0, f"Compatible: {zn} is designated for community/institutional use."
+            return 40.0, f"Consent required: Institutional use in {zn} typically requires special permission."
+
+        # Recreational
+        if dt == "recreational":
+            if zt.startswith("OS"):
+                return 100.0, f"Compatible: {zn} is designated for open space/recreation."
+            return 30.0, f"Incompatible: {zn} is not intended for recreational development."
+
+        return 50.0, f"Unknown compatibility for {dev_type} in {zn}"
 
     def _eval_road_access(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
         """Evaluate road access.
