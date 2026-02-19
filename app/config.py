@@ -1,5 +1,6 @@
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Any
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -91,13 +92,17 @@ class Settings(BaseSettings):
     MAX_CACHE_SIZE_MB: int = 500
 
     # API Settings
-    CORS_ORIGINS: List[str] = [
-        "http://localhost:5173",  # Vite dev server
-        "http://localhost:3000",  # Alternate dev port
-        "http://localhost:4173",  # Vite preview
-        "http://localhost:8000",  # Self (for testing)
-        "https://*.github.io",  # GitHub Pages
-    ]
+    CORS_ORIGINS: List[str] = []
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: Any) -> Any:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        elif isinstance(v, (list, str)):
+            return v
+        raise ValueError(v)
+
     RATE_LIMIT_PER_MINUTE: int = 60
 
     # Logging
