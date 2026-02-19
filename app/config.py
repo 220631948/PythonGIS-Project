@@ -71,6 +71,7 @@ class Settings(BaseSettings):
         # Housing and Maintenance Offices
         "open_spaces": "https://citymaps.capetown.gov.za/agsext/rest/services/Theme_Based/Open_Data_Service/MapServer/212/query?where=1%3D1&outFields=*&f=geojson",
         # Environmental Focus Areas
+        "urban_edge": "https://citymaps.capetown.gov.za/agsext/rest/services/Theme_Based/Open_Data_Service/MapServer/218/query?where=1%3D1&outFields=*&f=geojson",
         "building_footprints": "https://citymaps.capetown.gov.za/agsext/rest/services/Theme_Based/Open_Data_Service/MapServer/86/query?where=1%3D1&outFields=*&resultRecordCount=1000&f=geojson",
         "precincts": "https://citymaps.capetown.gov.za/agsext/rest/services/Theme_Based/Open_Data_Service/MapServer/75/query?where=1%3D1&outFields=*&f=geojson",
         # Suburbs as proxy for precincts
