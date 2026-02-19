@@ -6,6 +6,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import logging
 import time
 import json
+import asyncio
+from functools import partial
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from typing import Optional, Union
@@ -452,8 +454,10 @@ async def proxy_data(
 
         # 3. Default Path - Smart Loader with Pagination
         # Optimized with direct DB pagination
-        gdf, total = data_loader.get_paginated_gdf(
-            dataset_key, limit=limit, offset=offset
+        loop = asyncio.get_running_loop()
+        gdf, total = await loop.run_in_executor(
+            None,
+            partial(data_loader.get_paginated_gdf, dataset_key, limit=limit, offset=offset)
         )
 
         # Performance Optimization: Construct JSON string directly to avoid double serialization
