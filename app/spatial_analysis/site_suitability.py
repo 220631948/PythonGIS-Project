@@ -17,6 +17,8 @@ import logging
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
+from sqlalchemy import text
+from app.core.database import require_engine
 
 logger = logging.getLogger(__name__)
 
@@ -357,24 +359,82 @@ class SiteSuitabilityAnalyzer:
     def _eval_road_access(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
         """Evaluate road access.
 
-        TODO: Wire to PostGIS ST_Distance query against road network layer.
-              Calculate distance to nearest classified road.
+        Wires to PostGIS ST_Distance query against road network layer.
+        Calculates distance to nearest classified road.
         """
-        logger.debug(f"road_access: placeholder evaluation for ({lat}, {lng})")
-        return CriterionResult(
-            criterion="road_access",
-            score=75,
-            weight=0,
-            weighted_score=0,
-            details={
-                "distance_to_road_m": None,
-                "nearest_road_class": "Unknown",
-                "access_quality": "Unknown",
-                "note": self.PLACEHOLDER_NOTE,
-            },
-            constraints=[],
-            data_source="placeholder",
-        )
+        try:
+            engine = require_engine()
+
+            # Simple KNN search for nearest road
+            query = text("""
+                SELECT
+                    road_class,
+                    ST_Distance(
+                        geom::geography,
+                        ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography
+                    ) as distance_m
+                FROM roads
+                ORDER BY geom <-> ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)
+                LIMIT 1;
+            """)
+
+            with engine.connect() as conn:
+                result = conn.execute(query, {"lat": lat, "lng": lng}).fetchone()
+
+            if result:
+                road_class, distance_m = result
+
+                # Scoring logic
+                if distance_m <= 50:
+                    score = 100
+                    quality = "Excellent"
+                elif distance_m <= 200:
+                    score = 80
+                    quality = "Good"
+                elif distance_m <= 500:
+                    score = 60
+                    quality = "Moderate"
+                elif distance_m <= 1000:
+                    score = 40
+                    quality = "Poor"
+                else:
+                    score = 20
+                    quality = "Very Poor"
+
+                return CriterionResult(
+                    criterion="road_access",
+                    score=score,
+                    weight=0,
+                    weighted_score=0,
+                    details={
+                        "distance_to_road_m": round(distance_m, 1),
+                        "nearest_road_class": road_class or "Unknown",
+                        "access_quality": quality,
+                        "note": "Based on nearest road proximity"
+                    },
+                    constraints=[],
+                    data_source="postgis",
+                )
+            else:
+                logger.warning(f"No roads found near ({lat}, {lng})")
+                return CriterionResult(
+                    criterion="road_access",
+                    score=0,
+                    weight=0,
+                    weighted_score=0,
+                    details={
+                        "distance_to_road_m": None,
+                        "nearest_road_class": "None",
+                        "access_quality": "No Access",
+                        "note": "No road network data found"
+                    },
+                    constraints=["No road access"],
+                    data_source="postgis",
+                )
+
+        except Exception as e:
+            logger.error(f"Error in _eval_road_access: {e}")
+            raise e
 
     def _eval_transport_access(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
         """Evaluate public transport access.
