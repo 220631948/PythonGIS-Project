@@ -12,14 +12,13 @@ import pytest
 from datetime import datetime, timezone
 from typing import Generator, Any
 try:
-    import geopandas as gpd
-except Exception:  # pragma: no cover - optional heavy dependency for some test suites
-    gpd = None
-try:
     from shapely.geometry import Point, Polygon, LineString
 except Exception:  # pragma: no cover - optional heavy dependency for some test suites
     Point = Polygon = LineString = None
-import pandas as pd
+try:
+    import pandas as pd
+except ImportError:  # pragma: no cover - optional heavy dependency for some test suites
+    pd = None
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from httpx import AsyncClient
 import os

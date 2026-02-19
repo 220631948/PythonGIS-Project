@@ -18,6 +18,9 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
 
+from sqlalchemy import text
+from app.core.database import require_engine
+
 logger = logging.getLogger(__name__)
 
 
@@ -244,26 +247,70 @@ class SiteSuitabilityAnalyzer:
     def _eval_flood_risk(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
         """Evaluate flood risk at location.
 
-        TODO: Wire to PostGIS ST_Intersects query against 'flood_zones' layer
-              (MapServer/71 — Stormwater Waterbodies).
-              Query: SELECT 1 FROM flood_zones WHERE ST_Intersects(geom, ST_SetSRID(ST_Point(lng,lat),4326))
+        Query: SELECT 1 FROM flood_zones WHERE ST_Intersects(geom, ST_SetSRID(ST_Point(lng,lat),4326))
         """
-        # PLACEHOLDER: Returns safe defaults until PostGIS layer is loaded
-        logger.debug(f"flood_risk: placeholder evaluation for ({lat}, {lng})")
-        return CriterionResult(
-            criterion="flood_risk",
-            score=85,
-            weight=0,
-            weighted_score=0,
-            details={
-                "in_flood_zone": False,
-                "risk_level": "unknown",
-                "flood_return_period": "N/A",
-                "note": self.PLACEHOLDER_NOTE,
-            },
-            constraints=[],
-            data_source="placeholder",
-        )
+        try:
+            engine = require_engine()
+            # Use bind parameters for coordinates to prevent SQL injection
+            query = text(
+                "SELECT 1 FROM flood_zones "
+                "WHERE ST_Intersects(geom, ST_SetSRID(ST_Point(:lng, :lat), 4326)) "
+                "LIMIT 1"
+            )
+
+            with engine.connect() as conn:
+                result = conn.execute(query, {"lng": lng, "lat": lat}).scalar()
+
+            in_flood_zone = result is not None
+
+            if in_flood_zone:
+                return CriterionResult(
+                    criterion="flood_risk",
+                    score=10,  # High risk
+                    weight=0,
+                    weighted_score=0,
+                    details={
+                        "in_flood_zone": True,
+                        "risk_level": "high",
+                        "flood_return_period": "Unknown",
+                        "note": "Intersected with flood_zones layer",
+                    },
+                    constraints=["High Flood Risk"],
+                    data_source="postgis",
+                )
+            else:
+                return CriterionResult(
+                    criterion="flood_risk",
+                    score=90,  # Low risk
+                    weight=0,
+                    weighted_score=0,
+                    details={
+                        "in_flood_zone": False,
+                        "risk_level": "low",
+                        "flood_return_period": "N/A",
+                        "note": "No intersection with flood_zones layer",
+                    },
+                    constraints=[],
+                    data_source="postgis",
+                )
+
+        except Exception as e:
+            logger.warning(f"flood_risk evaluation failed: {e}")
+            # Fallback to safe default if DB fails
+            return CriterionResult(
+                criterion="flood_risk",
+                score=50,
+                weight=0,
+                weighted_score=0,
+                details={
+                    "in_flood_zone": False,
+                    "risk_level": "unknown",
+                    "error": str(e),
+                    "note": "Database query failed, using placeholder",
+                },
+                constraints=[],
+                data_source="error",
+            )
 
     def _eval_biodiversity(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
         """Evaluate biodiversity constraints.
