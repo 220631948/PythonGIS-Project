@@ -42,7 +42,7 @@ export function useCommunity(): UseCommunityReturn {
   // Fetch issues
   const fetchIssues = useCallback(async () => {
     try {
-      const data = await apiClient.getIssuesList() as any;
+      const data = await apiClient.community.getIssuesList() as any;
       if (data && Array.isArray(data.issues)) {
         setIssues(data.issues);
       }
@@ -54,7 +54,7 @@ export function useCommunity(): UseCommunityReturn {
   // Fetch polls
   const fetchPolls = useCallback(async () => {
     try {
-      const data = await apiClient.getPollsList('active') as any;
+      const data = await apiClient.community.getPollsList('active') as any;
       if (data && Array.isArray(data.polls)) {
         setPolls(data.polls);
       }
@@ -66,7 +66,7 @@ export function useCommunity(): UseCommunityReturn {
   // Fetch stats
   const fetchStats = useCallback(async () => {
     try {
-      const data = await apiClient.getCommunityStats() as CommunityStats;
+      const data = await apiClient.community.getStats() as CommunityStats;
       setStats(data);
     } catch (err: any) {
       console.error('Failed to fetch stats:', err);
@@ -98,7 +98,7 @@ export function useCommunity(): UseCommunityReturn {
   // Report issue
   const reportIssue = useCallback(async (issue: IssueReport): Promise<Issue> => {
     try {
-      const result = await apiClient.reportIssue(issue) as any;
+      const result = await apiClient.community.reportIssue(issue) as any;
       if (result && result.issue) {
         setIssues(prev => [result.issue, ...prev]);
         await fetchStats();
@@ -117,7 +117,7 @@ export function useCommunity(): UseCommunityReturn {
       const formData = new FormData();
       formData.append('file', file);
 
-      await apiClient.uploadIssuePhoto(issueId, formData);
+      await apiClient.community.uploadIssuePhoto(issueId, formData);
 
       // Update issue with new photo
       await fetchIssues();
@@ -130,7 +130,7 @@ export function useCommunity(): UseCommunityReturn {
   // Submit feedback
   const submitFeedback = useCallback(async (feedbackData: FeedbackSubmission) => {
     try {
-      await apiClient.submitFeedback(feedbackData);
+      await apiClient.community.submitFeedback(feedbackData);
       await fetchStats();
     } catch (err: any) {
       console.error('Failed to submit feedback:', err);
@@ -145,7 +145,7 @@ export function useCommunity(): UseCommunityReturn {
     voterId: string
   ) => {
     try {
-      const result = await apiClient.voteOnPoll(pollId, optionId, voterId) as any;
+      const result = await apiClient.community.voteOnPoll(pollId, optionId, voterId) as any;
 
       // Update poll in state
       setPolls(prev =>

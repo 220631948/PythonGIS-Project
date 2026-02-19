@@ -9,7 +9,7 @@ import { fetchData, APIError, NetworkError, TimeoutError, apiClient } from '../l
 const mockFetch = vi.fn<(...args: Parameters<typeof fetch>) => Promise<Response>>();
 
 beforeEach(() => {
-  vi.stubGlobal('fetch', mockFetch);
+  global.fetch = mockFetch;
 });
 
 afterEach(() => {
@@ -96,7 +96,7 @@ describe('fetchData', () => {
 describe('APIClient', () => {
   it('getServiceAccess calls correct endpoint', async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({ features: [] }));
-    await apiClient.getServiceAccess();
+    await apiClient.services.getAccess();
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
     const url = mockFetch.mock.calls[0]?.[0] as string;
@@ -105,7 +105,7 @@ describe('APIClient', () => {
 
   it('searchPlaces URL-encodes the query', async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse([{ name: 'test' }]));
-    await apiClient.searchPlaces('sea point');
+    await apiClient.geocoding.searchPlaces('sea point');
 
     const url = mockFetch.mock.calls[0]?.[0] as string;
     expect(url).toContain('q=sea%20point');
@@ -113,7 +113,7 @@ describe('APIClient', () => {
 
   it('getSafetyPrecincts includes simplify param', async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({ features: [] }));
-    await apiClient.getSafetyPrecincts(0.005);
+    await apiClient.safety.getPrecincts(0.005);
 
     const url = mockFetch.mock.calls[0]?.[0] as string;
     expect(url).toContain('simplify=0.005');

@@ -136,7 +136,7 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({
     setIsLoading(true);
     setError(null);
     try {
-      const newWorkspace = await apiClient.createWorkspace({
+      const newWorkspace = await apiClient.workspace.create({
         name: workspaceName,
         description: workspaceDescription,
         owner_id: currentUserId,
@@ -162,7 +162,7 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({
     }
 
     try {
-      await apiClient.deleteWorkspace(workspaceId);
+      await apiClient.workspace.deleteWorkspace(workspaceId);
       setWorkspaces(workspaces.filter(w => w.id !== workspaceId));
       if (selectedWorkspace?.id === workspaceId) {
         setSelectedWorkspace(null);
@@ -192,7 +192,7 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({
         zoom: 11,
       };
 
-      const newScenario = await apiClient.createScenario({
+      const newScenario = await apiClient.workspace.createScenario({
         workspace_id: selectedWorkspace.id,
         name: scenarioName,
         description: scenarioDescription,

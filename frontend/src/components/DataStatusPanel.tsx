@@ -70,8 +70,8 @@ const DataStatusPanel: React.FC<DataStatusPanelProps> = ({ isOpen, onClose }) =>
 
         try {
             const [health, log] = await Promise.all([
-                apiClient.getDataSourcesHealth() as Promise<HealthData>,
-                apiClient.getRetrievalLog(20) as Promise<RetrievalLog>
+                apiClient.dataStatus.getHealth() as Promise<HealthData>,
+                apiClient.dataStatus.getRetrievalLog(20) as Promise<RetrievalLog>
             ]);
             setHealthData(health);
             setRetrievalLog(log);

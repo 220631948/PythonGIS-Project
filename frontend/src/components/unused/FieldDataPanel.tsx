@@ -369,7 +369,7 @@ export default function FieldDataPanel({
 
   const loadForms = async () => {
     try {
-      const data = (await apiClient.getFieldForms()) as FormConfig[];
+      const data = (await apiClient.field.getForms()) as FormConfig[];
       setForms(data ?? []);
     } catch (error) {
       console.error('Failed to load forms:', error);
@@ -378,7 +378,7 @@ export default function FieldDataPanel({
 
   const loadEntries = async () => {
     try {
-      const data = (await apiClient.getFieldEntries()) as FieldEntry[];
+      const data = (await apiClient.field.getEntries()) as FieldEntry[];
       setEntries(data ?? []);
     } catch (error) {
       console.error('Failed to load entries:', error);
@@ -402,7 +402,7 @@ export default function FieldDataPanel({
   const handleSubmitEntry = async (entry: Partial<FieldEntry>) => {
     if (isOnline) {
       try {
-        await apiClient.submitFieldEntry(entry);
+        await apiClient.field.submitEntry(entry);
         onNotification?.('Entry submitted successfully', 'success');
         loadEntries();
       } catch {
@@ -434,7 +434,7 @@ export default function FieldDataPanel({
 
     setIsSyncing(true);
     try {
-      const result = await apiClient.syncFieldEntries(syncQueue) as { synced: number; failed: number; errors: Array<{ offline_id: string }> };
+      const result = await apiClient.field.syncEntries(syncQueue) as { synced: number; failed: number; errors: Array<{ offline_id: string }> };
 
       if (result.synced > 0) {
         // Clear synced entries from queue

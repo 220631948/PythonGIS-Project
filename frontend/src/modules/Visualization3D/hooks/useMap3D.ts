@@ -106,7 +106,7 @@ export function useMap3D(options: UseMap3DOptions = {}): UseMap3DReturn {
     setError(null);
 
     try {
-      const result = await apiClient.getElevationProfile({ points });
+      const result = await apiClient.visualization3d.getElevationProfile({ points });
       setElevationProfile(result);
       return result;
     } catch (err) {
@@ -123,7 +123,7 @@ export function useMap3D(options: UseMap3DOptions = {}): UseMap3DReturn {
     setError(null);
 
     try {
-      const result = await apiClient.analyzeShadows(request);
+      const result = await apiClient.visualization3d.analyzeShadows(request);
       setShadowAnalysis(result);
       return result;
     } catch (err) {

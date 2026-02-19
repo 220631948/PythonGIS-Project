@@ -53,7 +53,7 @@ export function useAIInsights(): UseAIInsightsReturn {
     setError(null);
 
     try {
-      const result = await apiClient.predictTraffic(request) as TrafficPredictionResponse;
+      const result = await apiClient.ai.predictTraffic(request) as TrafficPredictionResponse;
       setTrafficPrediction(result);
       return result;
     } catch (err: any) {
@@ -73,7 +73,7 @@ export function useAIInsights(): UseAIInsightsReturn {
     setError(null);
 
     try {
-      const result = await apiClient.predictCrimeHotspots(request) as CrimeHotspotResponse;
+      const result = await apiClient.ai.predictCrimeHotspots(request) as CrimeHotspotResponse;
       setCrimeHotspots(result);
       return result;
     } catch (err: any) {
@@ -93,7 +93,7 @@ export function useAIInsights(): UseAIInsightsReturn {
     setError(null);
 
     try {
-      const result = await apiClient.detectLandUseChange(request) as LandUseChangeResponse;
+      const result = await apiClient.ai.detectLandUseChange(request) as LandUseChangeResponse;
       setLandUseChanges(result);
       return result;
     } catch (err: any) {
@@ -114,7 +114,7 @@ export function useAIInsights(): UseAIInsightsReturn {
 
     try {
       const request: NLPQueryRequest = { query };
-      const result = await apiClient.queryNaturalLanguage(request) as NLPQueryResponse;
+      const result = await apiClient.ai.queryNaturalLanguage(request) as NLPQueryResponse;
       setNlpResult(result);
       return result;
     } catch (err: any) {
@@ -132,7 +132,7 @@ export function useAIInsights(): UseAIInsightsReturn {
     setError(null);
 
     try {
-      const result = await apiClient.getTrendingPredictions() as any;
+      const result = await apiClient.ai.getTrendingPredictions() as any;
       if (result && Array.isArray(result.predictions)) {
         setTrendingPredictions(result.predictions);
       }
