@@ -7,21 +7,14 @@
  * ENHANCED: Now supports PostGIS clustering, heatmaps, and advanced layer rendering
  */
 import { useState, useCallback } from 'react';
-import type { ReactElement } from 'react';
-import type { PathOptions } from 'leaflet';
 import {
   MapContainer,
   TileLayer,
-  GeoJSON,
-  Marker,
-  Popup,
   ZoomControl,
   ScaleControl,
   LayersControl,
-  LayerGroup,
-  useMap,
-  useMapEvents,
 } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 import { BASEMAPS, BasemapConfig } from '../config/maps';
@@ -29,81 +22,19 @@ import { BASEMAPS, BasemapConfig } from '../config/maps';
 import {
   type LatLng,
   toLatLng,
-  clickMarkerIcon,
-  locationMarkerIcon,
-  collaborationIcon,
-} from './map';
-import {
   MapEvents,
   MapController,
   DrawingTools,
   FullscreenControl,
   LocationControl,
   MinimapControl,
+  DataLayers,
+  RouteLayers,
+  ModuleLayers,
+  MarkerManager,
+  type ModuleLayerData,
 } from './map';
-import { useMapLayers, LAYER_TO_DATASET } from './map/useMapLayers';
-import { usePostGISClusters } from '../hooks/usePostGISClusters';
-import { HeatmapLayer, extractHeatmapPoints } from './map/HeatmapLayer';
-import { ClusterLayer } from './map/ClusterLayer';
-
-/**
- * Inner component that reads map state (bounds/zoom) and renders PostGIS clusters
- * for point-type layers.  Must live *inside* <MapContainer>.
- */
-function PostGISClusterOverlay({ dataset, color }: { dataset: string; color?: string }) {
-  const map = useMap();
-  const [mapState, setMapState] = useState({
-    zoom: map.getZoom(),
-    bounds: map.getBounds(),
-  });
-
-  useMapEvents({
-    moveend: () => {
-      setMapState({ zoom: map.getZoom(), bounds: map.getBounds() });
-    },
-    zoomend: () => {
-      setMapState({ zoom: map.getZoom(), bounds: map.getBounds() });
-    },
-  });
-
-  const { clusters } = usePostGISClusters({
-    dataset,
-    zoom: mapState.zoom,
-    bounds: mapState.bounds,
-    enabled: true,
-    minZoom: 15,
-  });
-
-  return <ClusterLayer clusterData={clusters} color={color} />;
-}
-
-// ── Props ──
-
-interface ModuleLayerBuffer {
-  polygon: GeoJSON.FeatureCollection;
-  color: string;
-  opacity: number;
-}
-
-interface ModuleLayerData {
-  type?: 'FeatureCollection' | 'geojson' | 'choropleth' | 'multi-layer' | 'heatmap' | 'cluster';
-  data?: GeoJSON.FeatureCollection;
-  style?: PathOptions | ((feature?: GeoJSON.Feature) => PathOptions);
-  popup?: (feature: GeoJSON.Feature) => string;
-  colorFn?: (value: unknown) => string;
-  buffers?: ModuleLayerBuffer[];
-  layers?: Array<{
-    data: GeoJSON.FeatureCollection;
-    style: PathOptions;
-    popup?: (feature: GeoJSON.Feature) => string;
-  }>;
-  heatmapOptions?: {
-    radius?: number;
-    blur?: number;
-    maxZoom?: number;
-    intensityProperty?: string;
-  };
-}
+import { useMapLayers } from './map/useMapLayers';
 
 interface MapViewProps {
   center: { lat?: number | string; lng?: number | string; lon?: number | string };
@@ -179,9 +110,6 @@ const MapView = ({
   const routeDestination = toLatLng(routeData?.destination as Record<string, unknown> | null);
   const isochroneGeojson = (isochroneData as Record<string, unknown>)?.isochrone_geojson ?? isochroneData;
 
-  const moduleLayer = moduleLayerData as ModuleLayerData | null;
-
-
   const handleMapClick = useCallback((latlng: LatLng) => {
     const normalized = toLatLng(latlng);
     if (normalized) setLocalClickLocation(normalized);
@@ -198,52 +126,6 @@ const MapView = ({
   );
 
   const basemapConfig: BasemapConfig = (BASEMAPS[basemap] ?? BASEMAPS.streets)!;
-
-  // Data layers are rendered in a small helper to keep MapView types manageable.
-  // NOTE: This was temporarily simplified to avoid a TSC edge case with strict indexed access.
-  // TODO: Re-introduce typed data layer rendering in a separate refactor/PR.
-  // Data layers rendering temporarily removed to simplify strict typing.
-  // TODO: Reintroduce typed layer rendering (follow-up task).
-
-  // Pre-compute data layer elements to avoid TS inference issues with Object.keys in JSX
-  const dataLayerElements: ReactElement[] = [];
-  for (const layerId of Object.keys(geoData)) {
-    const layerData = geoData[layerId];
-    if (!layerData?.geojson) continue;
-    const datasetName = LAYER_TO_DATASET[layerId] || layerId;
-    dataLayerElements.push(
-      <LayersControl.Overlay key={layerId} checked name={datasetName}>
-        <GeoJSON
-          data={layerData.geojson}
-          style={{
-            color: '#3b82f6',
-            weight: 2,
-            opacity: 0.7,
-            fillOpacity: _layerOpacity,
-          }}
-          onEachFeature={(feature, layer) => {
-            const props = feature.properties || {};
-            const name = props.name || props.NAME || props.label || datasetName;
-
-            // Build popup content
-            const popupLines = [`<strong>${String(name)}</strong>`];
-            if (props.description) popupLines.push(`<p>${String(props.description)}</p>`);
-            if (props.category) popupLines.push(`<p>Category: ${String(props.category)}</p>`);
-            if (props.area) popupLines.push(`<p>Area: ${String(props.area)}</p>`);
-
-            layer.bindPopup(`<div class="p-2">${popupLines.join('')}</div>`);
-
-            // Attach event handlers
-            layer.on({
-              click: (e) => _onFeatureClick?.(feature, e),
-              mouseover: () => _onFeatureHover?.(feature, true),
-              mouseout: () => _onFeatureHover?.(feature, false),
-            });
-          }}
-        />
-      </LayersControl.Overlay>
-    );
-  }
 
   // Fallback when coords are not yet available
   if (!normalizedCenter) {
@@ -309,198 +191,31 @@ const MapView = ({
               </LayersControl.BaseLayer>
             ))}
 
-          {/* Data Layers from API */}
-          {dataLayerElements}
+          <DataLayers
+            geoData={geoData}
+            layerOpacity={_layerOpacity}
+            onFeatureClick={_onFeatureClick}
+            onFeatureHover={_onFeatureHover}
+          />
 
-          {/* Route Layer */}
-          {routeOrigin && routeDestination && routeData?.route_geojson && (
-            <LayersControl.Overlay checked name="Active Route">
-              <LayerGroup>
-                <GeoJSON
-                  key={`route-${(routeData.route_geojson as GeoJSON.FeatureCollection)?.features?.length ?? 0}`}
-                  data={routeData.route_geojson as GeoJSON.FeatureCollection}
-                  style={{ color: '#3b82f6', weight: 5, opacity: 0.8 }}
-                />
-                <Marker position={[routeOrigin.lat, routeOrigin.lng]} icon={locationMarkerIcon}>
-                  <Popup>Origin: {String((routeData.origin as Record<string, unknown>)?.name ?? 'Origin')}</Popup>
-                </Marker>
-                <Marker position={[routeDestination.lat, routeDestination.lng]} icon={locationMarkerIcon}>
-                  <Popup>Destination: {String((routeData.destination as Record<string, unknown>)?.name ?? 'Destination')}</Popup>
-                </Marker>
-              </LayerGroup>
-            </LayersControl.Overlay>
-          )}
+          <RouteLayers
+            routeData={routeData}
+            routeOrigin={routeOrigin}
+            routeDestination={routeDestination}
+            isochroneGeojson={isochroneGeojson as GeoJSON.FeatureCollection | null}
+          />
 
-          {/* Isochrone Layer */}
-          {isochroneGeojson && (
-            <LayersControl.Overlay checked name="Isochrone">
-              <GeoJSON
-                key={`iso-${(isochroneGeojson as GeoJSON.FeatureCollection)?.features?.length ?? 0}`}
-                data={isochroneGeojson as GeoJSON.FeatureCollection}
-                style={{ color: '#8b5cf6', weight: 2, opacity: 0.8, fillColor: '#a78bfa', fillOpacity: 0.3 }}
-              />
-            </LayersControl.Overlay>
-          )}
-
-          {/* Module Layers */}
-          {moduleLayer && (
-            <LayersControl.Overlay checked name="Module Analysis">
-              <LayerGroup>
-                {(moduleLayer.type === 'FeatureCollection' || moduleLayer.type === 'geojson') && (
-                  <GeoJSON
-                    key={`module-geo-${((moduleLayer.data ?? moduleLayer) as GeoJSON.FeatureCollection)?.features?.length ?? 0}`}
-                    data={((moduleLayer.data ?? moduleLayer) as GeoJSON.FeatureCollection)}
-                    style={(feature) =>
-                      typeof moduleLayer.style === 'function'
-                        ? (moduleLayer.style as (f: GeoJSON.Feature | undefined) => PathOptions)(feature)
-                        : { color: feature?.properties?.color ?? '#3b82f6', weight: 2, opacity: 0.8 }
-                    }
-                    onEachFeature={(feature, layer) => {
-                      if (typeof moduleLayer.popup === 'function') {
-                        layer.bindPopup((moduleLayer.popup as (f: GeoJSON.Feature) => string)(feature));
-                      } else if (feature.properties?.name) {
-                        layer.bindPopup(String(feature.properties.name));
-                      }
-                    }}
-                  />
-                )}
-
-                {moduleLayer.type === 'choropleth' && (
-                  <GeoJSON
-                    key={`module-choro-${(moduleLayer.data as GeoJSON.FeatureCollection)?.features?.length ?? 0}`}
-                    data={moduleLayer.data as GeoJSON.FeatureCollection}
-                    style={(feature) => ({
-                      fillColor: (moduleLayer.colorFn as (v: unknown) => string)(feature?.properties?.crime_index),
-                      weight: 2,
-                      opacity: 1,
-                      color: 'white',
-                      fillOpacity: 0.7,
-                    })}
-                    onEachFeature={(feature, layer) => {
-                      layer.bindPopup(`
-                        <div class="p-2">
-                          <strong>${String(feature.properties?.name)}</strong><br/>
-                          Index: ${String(feature.properties?.crime_index)}
-                        </div>
-                      `);
-                    }}
-                  />
-                )}
-
-                {moduleLayer.buffers?.map(
-                  (buffer, idx) => (
-                    <GeoJSON
-                      key={`transport-buffer-${idx}`}
-                      data={buffer.polygon}
-                      style={{ color: buffer.color, fillColor: buffer.color, fillOpacity: buffer.opacity, weight: 1 }}
-                    />
-                  ),
-                )}
-
-                {moduleLayer.type === 'multi-layer' &&
-                  moduleLayer.layers?.map((layerCfg, idx) => (
-                    <GeoJSON
-                      key={`env-layer-${idx}`}
-                      data={layerCfg.data}
-                      style={layerCfg.style}
-                      onEachFeature={(feature, layerInstance) => {
-                        if (layerCfg.popup) layerInstance.bindPopup(layerCfg.popup(feature));
-                      }}
-                    />
-                  ))}
-              </LayerGroup>
-            </LayersControl.Overlay>
-          )}
-
-          {/* Heatmap Layer - for density visualization */}
-          {moduleLayer?.type === 'heatmap' && moduleLayer.data && (
-            <LayersControl.Overlay checked name="Density Heatmap">
-              <HeatmapLayer
-                points={extractHeatmapPoints(moduleLayer.data)}
-                options={{
-                  radius: 25,
-                  blur: 15,
-                  maxZoom: 17,
-                  max: 1.0
-                }}
-              />
-            </LayersControl.Overlay>
-          )}
-
-          {/* PostGIS cluster layers for enabled point datasets */}
-          {moduleLayer?.type === 'cluster' && (
-            <LayersControl.Overlay checked name="PostGIS Clusters">
-              <LayerGroup>
-                <PostGISClusterOverlay
-                  dataset={(moduleLayer.data as unknown as { dataset?: string })?.dataset ?? 'clinics'}
-                  color="#3388ff"
-                />
-              </LayerGroup>
-            </LayersControl.Overlay>
-          )}
+          <ModuleLayers moduleLayerData={moduleLayerData as ModuleLayerData | null} />
         </LayersControl>
 
-        {/* Collaboration Markers */}
-        {collaborationMarkers.map((marker, idx) => {
-          const normalized = toLatLng((marker.location ?? marker) as Record<string, unknown>);
-          const markerTimestamp = marker.timestamp as string | undefined;
-          if (!normalized) return null;
-          return (
-            <Marker key={(marker.id as string) ?? idx} position={[normalized.lat, normalized.lng]} icon={collaborationIcon}>
-              <Popup>
-                <div className="collaboration-popup">
-                  <h4>{String(marker.author ?? 'Contributor')}</h4>
-                  <p>{String(marker.text ?? marker.description)}</p>
-                  {markerTimestamp && (
-                    <span className="popup-time">{new Date(markerTimestamp).toLocaleString()}</span>
-                  )}
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
-
-        {/* Click marker */}
-        {activeClickLocation && (
-          <Marker position={[activeClickLocation.lat, activeClickLocation.lng]} icon={clickMarkerIcon}>
-            <Popup>
-              <div className="popup-content click-location">
-                <h4>Selected Location</h4>
-                <p>Lat: {activeClickLocation.lat.toFixed(5)}</p>
-                <p>Lng: {activeClickLocation.lng.toFixed(5)}</p>
-                <button
-                  className="popup-button"
-                  onClick={() =>
-                    window.dispatchEvent(
-                      new CustomEvent('suitabilityAnalysis', {
-                        detail: { lat: activeClickLocation.lat, lng: activeClickLocation.lng },
-                      }),
-                    )
-                  }
-                >
-                  Analyze Site Suitability
-                </button>
-              </div>
-            </Popup>
-          </Marker>
-        )}
-
-        {/* User location */}
-        {normalizedUserLocation && (
-          <Marker position={[normalizedUserLocation.lat, normalizedUserLocation.lng]} icon={locationMarkerIcon}>
-            <Popup>
-              <div className="popup-content user-location">
-                <h4>Your Location</h4>
-                <p>Lat: {normalizedUserLocation.lat.toFixed(5)}</p>
-                <p>Lng: {normalizedUserLocation.lng.toFixed(5)}</p>
-              </div>
-            </Popup>
-          </Marker>
-        )}
+        <MarkerManager
+          collaborationMarkers={collaborationMarkers}
+          activeClickLocation={activeClickLocation}
+          userLocation={normalizedUserLocation}
+        />
       </MapContainer>
     </div>
   );
 };
 
 export default MapView;
-
