@@ -1,20 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import MapView from './components/MapView';
 import Dashboard from './components/Dashboard';
-import NotificationContainer from './components/Notification';
 import OfflineDataManager from './components/OfflineDataManager';
 import DataStatusPanel from './components/DataStatusPanel';
 import { InstallBanner, InstallModal } from './components/InstallPrompt';
-import { SkipLink, LiveRegion, useKeyboardShortcuts, announce } from './components/Accessibility';
+import { SkipLink, LiveRegion, useKeyboardShortcuts } from './components/Accessibility';
 import GuidedTour, { useTour, HelpButton } from './components/GuidedTour';
 import { KeyboardShortcutsHelp, useKeyboardShortcuts as useHelpOverlay } from './components/KeyboardShortcutsHelp';
-import { ToastProvider } from './components/Common';
+import { ToastProvider, useToast } from './components/Common/ToastContext';
 import { useOnlineStatus } from './hooks/useOfflineData';
-import { useUrlState, UrlState } from './hooks/useUrlState';
-import { apiClient } from './lib/api';
 import './App.css';
 
 // Phase 5: Spatial Analysis
@@ -27,189 +24,67 @@ import { WorkspaceManager } from './modules/Workspace';
 import { DashboardBuilder } from './modules/DashboardBuilder';
 import { ComparativeAnalysis } from './modules/ComparativeAnalysis';
 
-const DEFAULT_STATE: UrlState = {
-    lat: -33.9249,
-    lng: 18.4241,
-    zoom: 11,
-    layers: [],
-    basemap: 'streets'
-};
+// New Hooks
+import { useTheme } from './hooks/useTheme';
+import { useUIState } from './hooks/useUIState';
+import { useMapLogic } from './hooks/useMapLogic';
+import { useCollaborationMarkers } from './hooks/useCollaborationMarkers';
+import { useWorkspaceState } from './hooks/useWorkspaceState';
 
 function MainApp() {
-    const [urlState, setUrlState] = useUrlState(DEFAULT_STATE);
-    const [metadata] = useState<any>({});
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [isDarkMode, setIsDarkMode] = useState(() => {
-        const saved = localStorage.getItem('theme');
-        if (saved) return saved === 'dark';
-        return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    });
+    const { isDarkMode, setIsDarkMode } = useTheme();
+    const uiState = useUIState();
+    const {
+        isSidebarOpen, setIsSidebarOpen,
+        isOfflineManagerOpen, setIsOfflineManagerOpen,
+        isInstallModalOpen, setIsInstallModalOpen,
+        isDashboardOpen, setIsDashboardOpen,
+        isDataStatusOpen, setIsDataStatusOpen,
+        isWorkspaceManagerOpen, setIsWorkspaceManagerOpen,
+        isDashboardBuilderOpen, setIsDashboardBuilderOpen,
+        isComparativeAnalysisOpen, setIsComparativeAnalysisOpen
+    } = uiState;
 
-    // Sync Dark Mode with DOM root for Tailwind v4 and CSS variables
-    useEffect(() => {
-        const root = document.documentElement;
-        if (isDarkMode) {
-            root.classList.add('dark');
-            root.setAttribute('data-theme', 'dark');
-        } else {
-            root.classList.remove('dark');
-            root.setAttribute('data-theme', 'light');
-        }
-        localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-    }, [isDarkMode]);
-    const [loadingLayers, setLoadingLayers] = useState<string[]>([]);
-    const [flyTo, setFlyTo] = useState<any>(null);
-    const [clickedLocation, setClickedLocation] = useState<any>(null);
-    const [notifications, setNotifications] = useState<any[]>([]);
-    const [isOfflineManagerOpen, setIsOfflineManagerOpen] = useState(false);
-    const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
-    const [isDashboardOpen, setIsDashboardOpen] = useState(false);
-    const [isDataStatusOpen, setIsDataStatusOpen] = useState(false);
-    const [isWorkspaceManagerOpen, setIsWorkspaceManagerOpen] = useState(false);
-    const [isDashboardBuilderOpen, setIsDashboardBuilderOpen] = useState(false);
-    const [isComparativeAnalysisOpen, setIsComparativeAnalysisOpen] = useState(false);
-    const [currentWorkspace, setCurrentWorkspace] = useState<any>(null);
-    const [currentScenario, setCurrentScenario] = useState<any>(null);
-    // Route/Isochrone data can be wired when RoutePanel is integrated
-    const [routeData] = useState<any>(null);
-    const [isochroneData] = useState<any>(null);
-    const [activeFilters, _setActiveFilters] = useState<any>({});
-    const [collaborationMarkers, setCollaborationMarkers] = useState<any[]>([]);
-    const [moduleLayerData, setModuleLayerData] = useState<any>(null);
-    const [isDataLoading] = useState(false); // Will be connected to data hooks later
+    const { addToast, toasts } = useToast();
     const isOnline = useOnlineStatus();
+
+    // Phase 5: Spatial Analysis
+    const { analyzeGeometry } = useSpatialAnalysis();
+
+    const {
+        urlState,
+        setUrlState,
+        flyTo,
+        clickedLocation,
+        loadingLayers,
+        moduleLayerData,
+        routeData,
+        isochroneData,
+        activeFilters,
+        metadata,
+        handleLayerToggle,
+        handleBasemapChange,
+        handleMapMove,
+        handleSearch,
+        handleModuleLayerUpdate,
+        handleGeometryCreated,
+        handleShareUrl,
+        handleExport,
+        handleLayerLoading
+    } = useMapLogic({ analyzeGeometry });
+
+    const { collaborationMarkers } = useCollaborationMarkers(isOnline);
+    const { currentWorkspace, setCurrentWorkspace, currentScenario, setCurrentScenario } = useWorkspaceState();
 
     // New Features: Tour and Help Overlay
     const { isActive: isTourActive, startTour, endTour } = useTour();
     const { showHelp, openHelp, closeHelp } = useHelpOverlay();
 
-    // Load collaboration markers
-    useEffect(() => {
-        let mounted = true;
-        const controller = new AbortController();
-
-        const fetchMarkers = async () => {
-            try {
-                const markers = await apiClient.getMarkers() as any[];
-                if (mounted) {
-                    setCollaborationMarkers(markers);
-                }
-            } catch (error: any) {
-                if (error.name !== 'AbortError' && mounted) {
-                    console.error("Failed to fetch collaboration markers:", error);
-                }
-            }
-        };
-
-        if (isOnline) {
-            fetchMarkers();
-        }
-
-        return () => {
-            mounted = false;
-            controller.abort();
-        };
-    }, [isOnline]);
-
-    const addNotification = useCallback((message: string, type = 'info') => {
-        const id = Date.now() + Math.random(); // Add randomness to prevent collisions
-        setNotifications(prev => [...prev, { id, message, type }]);
-        announce(message);
-        setTimeout(() => {
-            setNotifications(prev => prev.filter(n => n.id !== id));
-        }, 5000);
-    }, []); // Empty deps - function only uses internal state updates
-
-    const handleLayerToggle = useCallback((layerId: string) => {
-        setUrlState(prev => {
-            const currentLayers = prev.layers || [];
-            const newLayers = currentLayers.includes(layerId)
-                ? currentLayers.filter(l => l !== layerId)
-                : [...currentLayers, layerId];
-
-            // Notification sent after state update to avoid dependency loop
-            const action = currentLayers.includes(layerId) ? 'Removed' : 'Added';
-            // Use queueMicrotask to defer notification
-            queueMicrotask(() => {
-                addNotification(`${action} layer: ${layerId}`);
-            });
-
-            return { ...prev, layers: newLayers };
-        });
-    }, [setUrlState, addNotification]);
-
-    const handleModuleLayerUpdate = (data: any) => {
-        setModuleLayerData(data);
-    };
-
-    // Phase 5: Spatial Analysis
-    const { analyzeGeometry } = useSpatialAnalysis();
-
-    const handleGeometryCreated = useCallback((e: any) => {
-        const { layer, type, geometry } = e;
-
-        // Analyze using the new hook
-        analyzeGeometry(geometry, type);
-
-        // Create popup content (use simple HTML to avoid ReactDOMServer issues)
-        const popupContent = `
-      <div class="leaflet-popup-content-wrapper-reset">
-        <div class="spatial-analysis-popup">
-          <h4 style="margin-bottom: 0.5rem; color: var(--color-text-primary)">Analysis Complete</h4>
-          <p style="font-size: 0.8rem; color: var(--color-text-secondary)">Type: ${type}</p>
-          <div style="margin-top: 0.5rem; padding: 0.5rem; background: var(--color-bg-secondary); border-radius: 4px;">
-            <p style="font-size: 0.75rem">Geometry results verified.</p>
-          </div>
-        </div>
-      </div>
-    `;
-
-        // Bind and open popup
-        layer.bindPopup(popupContent).openPopup();
-
-        addNotification(`${type} analysis complete`, 'success');
-    }, [analyzeGeometry, addNotification]);
-
-    const handleBasemapChange = useCallback((basemap: string) => {
-        setUrlState(prev => ({ ...prev, basemap }));
-    }, [setUrlState]);
-
-    const handleMapMove = useCallback((moveState: any) => {
-        setUrlState(prev => ({
-            ...prev,
-            lat: moveState.lat,
-            lng: moveState.lng,
-            zoom: moveState.zoom
-        }));
-    }, [setUrlState]);
-
-    const handleSearch = (location: any) => {
-        setFlyTo({
-            lat: location.lat,
-            lng: location.lng,
-            zoom: location.zoom || 14
-        });
-        setClickedLocation({ lat: location.lat, lng: location.lng });
-        addNotification(`Found: ${location.name}`, 'success');
-    };
-
-    // Route/Isochrone callbacks can be restored alongside RoutePanel wiring when needed
-
-    const handleShareUrl = () => {
-        navigator.clipboard.writeText(window.location.href);
-        addNotification('Map link copied to clipboard!', 'success');
-    };
-
-    const handleExport = () => {
-        addNotification('Preparing export...', 'info');
-        // Logic for export modal/panel can be added here
-    };
-
     // Workspace handlers
     const handleWorkspaceChange = useCallback((workspace: any) => {
         setCurrentWorkspace(workspace);
-        addNotification(`Switched to workspace: ${workspace.name}`, 'success');
-    }, [addNotification]);
+        addToast(`Switched to workspace: ${workspace.name}`, 'success');
+    }, [addToast, setCurrentWorkspace]);
 
     const handleScenarioLoad = useCallback((scenario: any) => {
         setCurrentScenario(scenario);
@@ -223,9 +98,9 @@ function MainApp() {
                 layers: scenario.layers || [],
             }));
         }
-        addNotification(`Loaded scenario: ${scenario.name}`, 'success');
+        addToast(`Loaded scenario: ${scenario.name}`, 'success');
         setIsWorkspaceManagerOpen(false);
-    }, [setUrlState, addNotification]);
+    }, [setUrlState, addToast, setIsWorkspaceManagerOpen, setCurrentScenario]);
 
     // Keyboard shortcuts
     useKeyboardShortcuts({
@@ -247,7 +122,7 @@ function MainApp() {
     return (
         <div className={`app-container ${isDarkMode ? 'dark' : ''}`}>
             <SkipLink targetId="main-map" />
-            <LiveRegion message={notifications[notifications.length - 1]?.message} />
+            <LiveRegion message={toasts[toasts.length - 1]?.message} />
 
             <Header
                 onSearch={handleSearch}
@@ -280,7 +155,7 @@ function MainApp() {
                     loadingLayers={loadingLayers}
                     clickedLocation={clickedLocation}
                     isOnline={isOnline}
-                    isLoading={isDataLoading || loadingLayers.length > 0}
+                    isLoading={loadingLayers.length > 0}
                 />
 
                 <div id="main-map" className="map-view-container">
@@ -288,22 +163,18 @@ function MainApp() {
                         center={{ lat: urlState.lat, lng: urlState.lng }}
                         zoom={urlState.zoom}
                         layers={urlState.layers}
-                        moduleLayerData={moduleLayerData} // Passed here
+                        moduleLayerData={moduleLayerData}
                         basemap={urlState.basemap as string}
                         onMapMove={handleMapMove}
                         flyTo={flyTo}
-                        onLayerLoading={(id: string, loading: boolean) => {
-                            setLoadingLayers(prev =>
-                                loading ? [...prev, id] : prev.filter(l => l !== id)
-                            );
-                        }}
+                        onLayerLoading={handleLayerLoading}
                         clickedLocation={clickedLocation}
                         routeData={routeData}
                         isochroneData={isochroneData}
                         activeFilters={activeFilters}
                         collaborationMarkers={collaborationMarkers}
                         onBasemapChange={handleBasemapChange}
-                        onGeometryCreated={handleGeometryCreated} // Connected here
+                        onGeometryCreated={handleGeometryCreated}
                         showDrawingTools={true}
                         showFullscreen={true}
                         showLocation={true}
@@ -328,10 +199,7 @@ function MainApp() {
                 onClose={() => setIsDataStatusOpen(false)}
             />
 
-            <NotificationContainer
-                notifications={notifications}
-                onRemove={(id: string | number) => setNotifications(prev => prev.filter(n => n.id !== id))}
-            />
+            {/* NotificationContainer removed in favor of ToastProvider */}
 
             {/* New Feature Components */}
             <GuidedTour
