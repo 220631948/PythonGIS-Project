@@ -1,5 +1,7 @@
 # Data Sources 📊
 
+_Last updated: 2026-02-19_
+
 This application relies on the City of Cape Town's Open Data Portal and other public datasets.
 
 | Module | Dataset Name | Source URL | Update Frequency | License |

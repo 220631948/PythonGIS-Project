@@ -1,5 +1,7 @@
 # Changelog
 
+_Last updated: 2026-02-19_
+
 All notable changes to the Cape Town GeoHub project are documented in this file.
 
 ## [2.0.0] - 2026-02-10

@@ -1,5 +1,7 @@
 # Cape Town GeoHub
 
+_Last updated: 2026-02-19_
+
 Cape Town GeoHub is a full-stack geospatial decision-support platform combining a FastAPI backend, a React + Vite frontend (Leaflet maps), and an ingestion pipeline for City of Cape Town open data. It focuses on spatial analysis, accessibility, and data provenance for municipal planning and community workflows.
 
 ## Current Stage

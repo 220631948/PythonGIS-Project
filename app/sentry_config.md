@@ -1,5 +1,7 @@
 # Sentry Configuration for Cape Town GeoHub
 
+_Last updated: 2026-02-19_
+
 ## Installation
 
 1. **Install Sentry SDK** for Python and JavaScript:

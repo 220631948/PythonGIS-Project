@@ -1,5 +1,7 @@
 # Cape Town GeoHub — Backend API
 
+_Last updated: 2026-02-19_
+
 The backend powers all spatial analysis and data services for Cape Town GeoHub. It exposes REST endpoints for routing, isochrones, open data retrieval, filtering, collaboration markers, and advanced geospatial analysis.
 
 ## ✨ Core Capabilities

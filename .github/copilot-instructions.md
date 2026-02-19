@@ -1,250 +1,133 @@
 # 🧠 GitHub Copilot Agent Instructions (Ralph Wiggum Triple-Check Edition)
 
-Welcome to the Cape Town GeoHub Copilot Agent Guide!  
-This file is your friendly, step-by-step manual for working safely and smartly on this project — even if you're new, confused, or just like things explained clearly.  
-Think like Ralph Wiggum: read, repeat, double-check, and smile when things work.  
-**Golden Rule: Assumptions are the mother of all mess-ups. Never assume. Always verify.**
+_Last updated: 2026-02-19_
+
+Welcome to the Cape Town GeoHub Copilot Agent Guide — the friendly, plain-English playbook for AI coding agents and subagents. Think like Ralph Wiggum: read slowly, check twice, and smile when it works. Keep instructions simple, verifiable, and safe.
 
 ---
 
-## 🗺️ What Is This Project?
-
-Cape Town GeoHub is a **map-based decision tool**. It helps people make smart choices using maps and data.
-
-It has 3 big parts:
-
-1. **Frontend**: What users see. Built with React 19 + Vite + Leaflet (for maps).
-2. **Backend**: What powers the app. Built with FastAPI + GeoPandas.
-3. **Data Pipeline**: Where the data comes from. ArcGIS → local cache → API.
+## Purpose (short)
+- Tell the agent what to do, how to behave, and how to coordinate with subagents.
+- Provide clear, repeatable steps so changes are small, testable, and auditable.
 
 ---
 
-## 🤖 What Is Agent Mode?
-
-Agent Mode is when Copilot acts like a robot helper. It follows strict rules.
-
-### ✅ When Agent Mode Is Active
-
-- `SAFE_MODE=true` (default): Robot can only write to `.github/` and must propose code changes as patch files in `.github/patches/`.
-- `SAFE_MODE=false`: Robot can write to app code — but only if a human says “yes.”
-- Any PR labeled `agent/run` or `agent/automerge`.
-
-### 📘 Always Read This First
-
-Before doing anything, read:
-- `./README.AGENT_ACTIONS.md` — the robot’s rulebook.
-- `./AGENTS.md` and `../AGENTS.md` — explains what each agent can do.
+## Agent Modes & Safety (hard rules)
+- SAFE_MODE=true (default): write-permissions limited to `.github/`; code changes must be proposed as patch files under `.github/patches/`.
+- SAFE_MODE=false: allowed to modify application code **only after explicit human approval**.
+- PR labels that change behavior: `agent/run` (execute), `agent/automerge` (merge if CI passes).
+- Never add secrets, credentials, or private keys to the repo. If a secret is required, stop and request human help.
 
 ---
 
-## 🧼 Code Rules (Clean Code Only!)
-
-### 🧪 Checks You Must Pass
-
-- **No ESLint errors** — run `npm run lint`
-- **No `any` types** in TypeScript — run `npm run type-check`
-- **No vulnerabilities** — run `npm audit` and `pip-audit --strict`
-
-### 🎨 Styling Rules
-
-- Use **CSS variables** from `index.css` (no hardcoded colors!)
-- Use **Tailwind CSS** utilities
-- No hex codes like `#ff0000` — use tokens instead
-
-### 🧠 State Management
-
-- ❌ No Redux
-- ✅ Use React Context + Hooks
-- ✅ Use `useOfflineData` hook for offline sync (IndexedDB)
+## Before you act (required pre-flight checks)
+1. Read `AGENTS.md` and `README.AGENT_ACTIONS.md` (the repository's agent law).
+2. Run `./verify.sh` locally (or equivalent checks): lint, type-check, audits, and tests.
+3. Use `grep`/repo search to find related files; prefer reading over guessing.
+4. Confirm SAFE_MODE value before any write operation.
 
 ---
 
-## 🗺️ Spatial Rules (Maps Are Weird)
+## How to plan work (Ralph-style, plain steps)
+1. Summarize the user's request in one sentence.
+2. Break the request into small subtasks (3–8 items). Use `manage_todo_list` for tracking.
+3. For each subtask, decide **skill** (frontend/backend/test/docs) and **exit criteria** (what 'done' looks like).
+4. Run checks early (lint/type/test) and run them after each change.
+5. Prepare a PR or patch with a short description and tests.
 
-- **Frontend (Leaflet)**: `[lat, lng]`
-- **Backend (GeoJSON)**: `[lng, lat]`
-- **External data**: EPSG:4326 (WGS 84)
-- **Internal analysis**: EPSG:32734 (UTM 34S)
-
-⚠️ If the map shows Antarctica, you probably used the wrong coordinate system.
-
----
-
-## ♿ Accessibility Rules
-
-- Every button or link needs an `aria-label`
-- Must support keyboard navigation (tab, enter, space)
-- Color contrast must be **greater than 4.5:1**
+Quick example:
+- Request: "Add ARIA label to Search button"
+- Subtasks: (1) find component, (2) add `aria-label`, (3) add unit test, (4) run `npm run lint` and `npm run test`, (5) open PR.
 
 ---
 
-## 🧪 How to Run Things
+## Subagents: when and how to spawn them
+When to spawn:
+- Parallelizable tasks (lint + tests + type-check), large reads, or specialized skills (Playwright E2E, accessibility audit).
+- Long-running analyses or batch refactors where intermediate verification is required.
 
-### 🖥️ Start the App
+How to instruct a subagent (always provide):
+- Context: files to read (paths), relevant tests, and the exact question.
+- Expected output format: JSON with `summary`, `files_changed[]`, `patches[]` (unified diff or patch content), `commands_run[]`, and `confidence: 0.0-1.0`.
+- Time budget and resource limits (e.g., "do not open PRs; return proposed patches only").
 
-**Backend**
-```bash
-.venv/bin/uvicorn app.main:app --reload --port 8000
-```
+Subagent naming convention: `sub/<skill>-<short-desc>-<timestamp>` (helps traceability).
 
-**Frontend**
-```bash
-npm run dev
-```
-
-### ✅ Run All Checks
-
-```bash
-npm run lint && npm run type-check && npm audit
-ruff check app/ && pip-audit -r requirements.txt --strict
-bash .github/scripts/verify.sh
-node .github/scripts/policy_check.js
-```
-
-### 🔄 Refresh Data
-
-```bash
-python scripts/update_data.py
-```
+Subagent example prompt (short):
+- "Read `frontend/src/components/Search.tsx` and return a patch that adds `aria-label='Search input'`, plus one unit test and the lint output. Return JSON with `patches` and `commands_run`. Do not commit or open PRs."
 
 ---
 
-## 🧾 PR and Commit Rules
+## Agentic thinking (mental model)
+- Decompose → Isolate → Implement → Test → Verify → Document → Deliver.
+- Prefer small diffs and single-focus PRs.
+- If uncertain, produce a proposal (patch) instead of committing code.
+- Always provide reproduction steps and commands to verify your change.
 
-### 🏷️ Branch Names
+---
 
-```
-ag/<ticket>-<short-desc>   # e.g. ag/42-fix-aria-labels
-ag/auto/<timestamp>        # e.g. ag/auto/1707580800
-```
+## Decision rules & escalation (stop & ask humans when)
+- Any change to production infra, secrets, or organisation-level CI workflows.
+- Large migrations (> 200 lines across multiple files) without tests.
+- Ambiguous user instructions or conflicting test results.
 
-### 📝 Commit Message
+When you stop: leave a short note in `hooks/audit.log` and open an issue or draft PR explaining the blocker.
 
+---
+
+## Output & review expectations
+- PRs/patches must include: short summary, files changed, tests added, and CI checklist.
+- For SAFE_MODE=true produce a patch in `.github/patches/` and add a human-friendly summary.
+- Include unit/integration tests when behavior changes.
+- Add `Co-authored-by: GitHub Copilot` if the agent authored code.
+
+---
+
+## Useful templates (copy/paste)
+Branch name: `ag/<ticket>-<short-desc>`
+
+Commit message:
 ```
 ag:<scope> — <short summary>
 
-Co-authored-by: <agent-name>
+Co-authored-by: GitHub Copilot
 ```
 
-### 📦 PR Template
-
-```markdown
+PR template (short):
+```
 ## Summary
+- What changed and why
 
-- What changed and why.
+## Verification steps
+- Commands to run locally
 
-## Files Changed
-
-- List of files.
-
-## Tests Added
-
-- List of tests.
-
-## CI Jobs That Must Pass
-
-- [ ] npm run lint
-- [ ] npm run type-check
-- [ ] npm run build
-- [ ] npm audit
-- [ ] ruff check app/
-- [ ] pip-audit -r requirements.txt --strict
-- [ ] pytest
-
-## Rollback
-
-- git revert <sha>
-- Restore DB if needed
+## CI checks
+- [ ] lint
+- [ ] type-check
+- [ ] tests
 ```
 
 ---
 
-## 🧩 Subtasks and Skills
-
-### 🔨 Subtasks to Break Down Work
-1. **Understand the task** — read instructions twice.
-2. **Check SAFE_MODE** — decide if patch or direct code change.
-3. **Pick the right skill** — backend, frontend, testing, etc.
-4. **Run local checks** — lint, type-check, audits.
-5. **Make small changes** — one thing at a time.
-6. **Run checks again** — double-check.
-7. **Log actions** — update `hooks/audit.log`.
-8. **Prepare PR or patch** — follow template.
-9. **Triple-check** — repeat steps 4–6 before finishing.
-10. **Verify again** — never assume, always confirm.
-
-### 🧰 Skills Agents Can Use
-- **Backend FastAPI Expert** — builds endpoints.
-- **Frontend React Expert** — makes components.
-- **Spatial GeoJSON Expert** — validates map data.
-- **Spatial GeoPandas Expert** — runs spatial analysis.
-- **Testing Generator** — writes tests.
-- **Design Linter** — checks UI consistency.
-- **Accessibility Auditor** — checks WCAG compliance.
-
-### 🧩 Extensions
-- **Playwright MCP** — for browser automation.
-- **Chrome DevTools MCP** — for deep debugging.
-- **Policy Scripts** — run `.github/scripts/policy_check.js` to enforce rules.
+## Logging & audit
+- Update `hooks/audit.log` for any write action, including the reason and verification commands run.
+- Record the `manage_todo_list` tasks you completed.
 
 ---
 
-## 🔁 Ralph Wiggum Loop (How to Think Like Ralph)
-
-**Golden Rule: Assumptions are the mother of all mess-ups. Never assume. Always verify.**
-
-1. **Read the rule** (slowly, maybe twice).
-2. **Say it out loud** (or write it down).
-3. **Ask: “Did I follow it?”**
-4. **Run the tools** (lint, audit, verify).
-5. **Fix anything broken** (don’t ignore errors).
-6. **Run the tools again** (double-check).
-7. **Smile when it works** (celebrate small wins).
-8. **Repeat if unsure** (triple-check if necessary).
-9. **Verify again** — never assume, always confirm.
-
-Example:
-- Ralph writes code.
-- Ralph runs `npm run lint`.
-- Ralph sees errors.
-- Ralph fixes them.
-- Ralph runs again.
-- Ralph smiles.
-- Ralph runs one more time just to be sure.
-- Ralph smiles bigger.
-- Ralph checks again because assumptions are bad.
+## Examples (short & clear)
+- Fix lint error: find file → apply fix → run `npm run lint` → commit patch → open PR.
+- Add endpoint: add route + pydantic schema + unit tests → `ruff check app/` → `pytest` → open PR.
 
 ---
 
-## ✅ Final Checklist Before You Finish
-
-- [ ] All links work (especially `README.AGENT_ACTIONS.md`)
-- [ ] `verify.sh` passes
-- [ ] `policy_check.js` passes
-- [ ] No secrets added
-- [ ] PR template is filled
-- [ ] CI workflows exist
-- [ ] `git diff --staged` is clean
-- [ ] `hooks/audit.log` updated
-- [ ] No assumptions made — everything verified
+## Final checklist (Ralph triple-check)
+- [ ] I read related docs (`AGENTS.md`, `README.AGENT_ACTIONS.md`).
+- [ ] SAFE_MODE confirmed.
+- [ ] Changes are small and test-covered.
+- [ ] `verify.sh` passes locally.
+- [ ] `hooks/audit.log` updated.
 
 ---
 
-## 🧯 Safety First
-
-- Don’t refactor big things in SAFE_MODE — use `.github/patches/`
-- Don’t add secrets — redact and log them
-- Don’t touch protected files unless approved
-- Always log what you do in `hooks/audit.log`
-- Always verify — never assume
-
----
-
-## 📎 Need More Help?
-
-- The real rules live in `README.AGENT_ACTIONS.md`
-- This file is your friendly guide, but that file is the boss
-
----
-
-🧠 Be safe. Be clear. Be like Ralph — follow the loop, double-check, triple-check, and never assume.
+Be simple. Be safe. Be like Ralph — read, repeat, triple-check, and celebrate small wins. 🚀

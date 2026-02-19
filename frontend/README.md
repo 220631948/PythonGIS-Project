@@ -1,5 +1,7 @@
 # Cape Town GeoHub — Frontend
 
+_Last updated: 2026-02-19_
+
 The frontend is a mobile-responsive GIS application built with **React**, **Vite**, and **Leaflet**. It provides the interactive map experience, analysis tools, and collaboration workflows for the Cape Town GeoHub platform.
 
 ## ✨ Key Features

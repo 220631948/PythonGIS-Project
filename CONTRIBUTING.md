@@ -1,5 +1,7 @@
 # Contributing to Cape Town GeoHub
 
+_Last updated: 2026-02-19_
+
 Thank you for considering contributing to Cape Town GeoHub! This document provides guidelines and information for contributors.
 
 ## 🚀 Quick Start

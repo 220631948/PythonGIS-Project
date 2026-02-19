@@ -1,3 +1,5 @@
+_Last updated: 2026-02-19_
+
 ### Building and running your application
 
 When you're ready, start your application by running:

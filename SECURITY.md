@@ -1,5 +1,7 @@
 # Security Policy (Ralph Wiggum Edition)
 
+_Last updated: 2026-02-19_
+
 I’m in danger! But we can be safe if we follow the Ralph Security Loop.  
 The loop goes: **See Bug → Tell Grownups → Patch Bug → Eat Cookie → Repeat.**
 

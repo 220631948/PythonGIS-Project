@@ -1,5 +1,7 @@
 # Offline Setup Guide
 
+_Last updated: 2026-02-19_
+
 ## Overview
 The Cape Town GeoHub is designed with an offline-first architecture. This allows the application to function in environments with limited or no internet connectivity after the initial setup.
 

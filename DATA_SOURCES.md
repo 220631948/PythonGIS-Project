@@ -1,5 +1,7 @@
 # Data Attribution Table 📊
 
+_Last updated: 2026-02-19_
+
 The Cape Town GeoHub relies on the following datasets from the **City of Cape Town Open Data Portal**. We acknowledge the City of Cape Town for making this data publicly available under the Open Data License.
 
 | Category | Dataset Name | Source URL (ArcGIS MapServer) |

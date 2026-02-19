@@ -3,6 +3,8 @@
 
 # AGENTS.md - System Instructions for Cape Town GeoHub
 
+_Last updated: 2026-02-19_
+
 ## 0. Project Stage
 
 **Stage**: **Beta (CI-gated)** — expect strict linting, type checks, audits, and tests before merge. E2E runs on `master`/`develop` in CI.
@@ -133,3 +135,46 @@ Before merging/committing major changes, align with CI:
    - Zoning and Land Use
    - Safety/Crime Statistics
 - **Data Source**: City of Cape Town Open Data Portal (ArcGIS MapServer). All attributions must be preserved (see `DATA_SOURCES.md`).
+
+---
+
+## Agentic Thinking & Subagents (Ralph Wiggum Loop Edition)
+This section explains how AI agents and *subagents* should think and cooperate in this repository. Keep the language plain, the tasks small, and verification automatic.
+
+### When to use a subagent
+- Parallel tasks: linting, type-checking, running different test suites.
+- Specialized audits: accessibility, performance, dependency checks.
+- Large reads: scanning many files to extract patterns or create summaries.
+
+### Subagent contract (must follow)
+- Inputs: precise file paths + exact question.
+- Outputs: JSON with `summary`, `files_changed[]`, `patches[]` (unified-diff), `commands_run[]`, `confidence`.
+- Side effects: **none** unless explicitly allowed by a human. Return proposed patches; do not commit.
+
+### Orchestration pattern
+1. Parent agent defines tasks and constraints (time, tests, format).
+2. Spawn subagents with clear prompts and expected return format.
+3. Parent verifies subagent outputs (run `lint`, `pytest`, `type-check`).
+4. Parent merges validated patches into a single PR/patch set and documents verification steps.
+
+### Practical rules for subagents
+- Keep patches atomic (one logical change per patch).
+- Include tests for functional changes.
+- Report confidence and any uncertainties.
+- Always include reproduction steps for humans.
+
+### Example workflow (add ARIA label)
+1. Parent: create todo list and spawn `sub/accessibility-add-aria` to propose a patch.
+2. Subagent: returns patch + test + `commands_run`.
+3. Parent: applies patch in SAFE_MODE=true as `.github/patches/0004-add-aria.patch` and opens PR with explanation.
+
+---
+
+### Agent Best Practices (summary)
+- Prefer small, reversible changes.
+- Use `manage_todo_list` to track and report progress.
+- Always run CI locally (lint/type/tests) before proposing changes.
+- Use descriptive branch names and commit messages.
+- If in doubt, propose a patch and ask for a human review.
+
+_This section helps agents stay reliable and predictable — like Ralph, but with tests._

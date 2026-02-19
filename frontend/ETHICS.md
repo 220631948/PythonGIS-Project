@@ -1,5 +1,7 @@
 # Data Ethics & Limitations 🛡️
 
+_Last updated: 2026-02-19_
+
 ## 1. Principles of Use
 The Cape Town GeoHub is a technical tool designed to support planning, safety, and efficient service delivery. We adhere to the following ethical principles:
 
