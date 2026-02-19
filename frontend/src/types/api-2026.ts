@@ -469,6 +469,14 @@ export interface DashboardTemplate {
   preview_image?: string;
 }
 
+export interface DashboardLayout {
+  lg: any[];
+  md: any[];
+  sm: any[];
+  xs: any[];
+  [key: string]: any[];
+}
+
 // ==========================================
 // 8. COMPARISON TYPES
 // ==========================================

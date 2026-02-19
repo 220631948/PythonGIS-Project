@@ -1,14 +1,19 @@
 /**
- * DashboardCanvas Component (Simplified)
+ * DashboardCanvas Component
  *
  * Grid-based canvas for arranging dashboard widgets
- * Note: This is a simplified version without drag-and-drop (react-grid-layout unavailable)
- * TODO: Restore react-grid-layout when package is available
+ * Restored react-grid-layout for drag-and-drop functionality
  */
 
 import React from 'react';
+import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
+
 import DashboardWidget from './DashboardWidget';
 import type { DashboardWidget as WidgetType, DashboardLayout, WidgetConfig } from '../../../types/api-2026';
+
+const ResponsiveGridLayout = WidthProvider(Responsive);
 
 interface DashboardCanvasProps {
   widgets: WidgetType[];
@@ -24,10 +29,17 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({
   widgets,
   layout,
   previewMode = false,
+  onLayoutChange,
   onWidgetUpdate,
   onWidgetRemove,
   onWidgetDuplicate,
 }) => {
+  const handleLayoutChange = (currentLayout: Layout[], allLayouts: DashboardLayout) => {
+    // We should only trigger update if something actually changed
+    // RGL triggers this on mount sometimes, but it's safe to propagate
+    onLayoutChange(allLayouts);
+  };
+
   if (widgets.length === 0) {
     return (
       <div className="canvas-empty-state">
@@ -47,15 +59,32 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({
 
   return (
     <div className={`dashboard-canvas ${previewMode ? 'preview-mode' : 'edit-mode'}`}>
-      <div className="simple-grid-layout">
+      <ResponsiveGridLayout
+        className="layout"
+        layouts={layout}
+        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+        cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+        rowHeight={80}
+        onLayoutChange={handleLayoutChange}
+        isDraggable={!previewMode}
+        isResizable={!previewMode}
+        margin={[16, 16]}
+        containerPadding={[16, 16]}
+        draggableHandle=".widget-drag-handle"
+      >
         {widgets.map((widget) => (
           <div
             key={widget.id}
-            className="grid-item"
-            style={{
-              gridColumn: `span ${Math.min(widget.position.w, 4)}`,
-              minHeight: `${widget.position.h * 80}px`,
+            data-grid={{
+              i: widget.id,
+              x: widget.position.x,
+              y: widget.position.y,
+              w: widget.position.w,
+              h: widget.position.h,
+              minW: 2,
+              minH: 2,
             }}
+            className="grid-item"
           >
             <DashboardWidget
               widget={widget}
@@ -66,12 +95,7 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({
             />
           </div>
         ))}
-      </div>
-      {!previewMode && (
-        <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
-          ℹ️ Drag-and-drop functionality requires react-grid-layout package (currently unavailable). Widgets are displayed in a simple grid.
-        </div>
-      )}
+      </ResponsiveGridLayout>
     </div>
   );
 };
