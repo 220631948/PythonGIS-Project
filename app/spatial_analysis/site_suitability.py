@@ -18,6 +18,9 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
 
+from sqlalchemy import text
+from app.core.database import require_engine, DatabaseConnectionError
+
 logger = logging.getLogger(__name__)
 
 
@@ -379,24 +382,124 @@ class SiteSuitabilityAnalyzer:
     def _eval_transport_access(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
         """Evaluate public transport access.
 
-        TODO: Wire to PostGIS ST_Distance query against 'myciti_stops' layer
-              (MapServer/96) and 'rail_stations' (MapServer/235).
+        Wires to PostGIS ST_Distance query against 'myciti_stops' layer
+        (MapServer/96) and 'rail_stations' (MapServer/235).
         """
-        logger.debug(f"transport_access: placeholder evaluation for ({lat}, {lng})")
-        return CriterionResult(
-            criterion="transport_access",
-            score=65,
-            weight=0,
-            weighted_score=0,
-            details={
-                "distance_to_transit_m": None,
-                "nearest_transit_type": "Unknown",
-                "walking_time_min": None,
-                "note": self.PLACEHOLDER_NOTE,
-            },
-            constraints=[],
-            data_source="placeholder",
-        )
+        try:
+            engine = require_engine()
+            with engine.connect() as conn:
+                # Query MyCiTi stops
+                # Use parameterized query to prevent SQL injection, though table name is hardcoded
+                query_myciti = text("""
+                    SELECT MIN(ST_Distance(
+                        geom::geography,
+                        ST_SetSRID(ST_Point(:lng, :lat), 4326)::geography
+                    ))
+                    FROM myciti_stops
+                """)
+                # Query Rail stations
+                query_rail = text("""
+                    SELECT MIN(ST_Distance(
+                        geom::geography,
+                        ST_SetSRID(ST_Point(:lng, :lat), 4326)::geography
+                    ))
+                    FROM rail_stations
+                """)
+
+                # Execute queries. We use a try-except block for each query in case a table is missing
+                dist_myciti = None
+                try:
+                    dist_myciti = conn.execute(query_myciti, {"lng": lng, "lat": lat}).scalar()
+                except Exception as e:
+                    logger.warning(f"Failed to query myciti_stops: {e}")
+
+                dist_rail = None
+                try:
+                    dist_rail = conn.execute(query_rail, {"lng": lng, "lat": lat}).scalar()
+                except Exception as e:
+                    logger.warning(f"Failed to query rail_stations: {e}")
+
+            # Determine nearest transit
+            distances = []
+            if dist_myciti is not None:
+                distances.append((dist_myciti, "MyCiTi Bus"))
+            if dist_rail is not None:
+                distances.append((dist_rail, "Metrorail"))
+
+            if not distances:
+                # Fallback if both queries failed or returned no data (e.g. empty tables)
+                logger.debug(f"transport_access: no transit data found for ({lat}, {lng})")
+                return CriterionResult(
+                    criterion="transport_access",
+                    score=0,
+                    weight=0,
+                    weighted_score=0,
+                    details={
+                        "distance_to_transit_m": None,
+                        "nearest_transit_type": "None Found",
+                        "walking_time_min": None,
+                        "note": "No transit stops found or database unavailable",
+                    },
+                    constraints=[],
+                    data_source="postgis",
+                )
+
+            # Find minimum distance
+            min_dist, transit_type = min(distances, key=lambda x: x[0])
+
+            # Walking time (80m/min)
+            walking_time_min = round(min_dist / 80, 1)
+
+            # Score calculation
+            # < 400m (5 min) -> 100
+            # < 800m (10 min) -> 80
+            # < 1200m (15 min) -> 60
+            # < 1600m (20 min) -> 40
+            # > 1600m -> 20 (or linear decay)
+            if min_dist <= 400:
+                score = 100
+            elif min_dist <= 800:
+                score = 80
+            elif min_dist <= 1200:
+                score = 60
+            elif min_dist <= 1600:
+                score = 40
+            elif min_dist <= 2400:
+                score = 20
+            else:
+                score = 0
+
+            return CriterionResult(
+                criterion="transport_access",
+                score=score,
+                weight=0,  # Will be set by caller
+                weighted_score=0,  # Will be set by caller
+                details={
+                    "distance_to_transit_m": round(min_dist, 1),
+                    "nearest_transit_type": transit_type,
+                    "walking_time_min": walking_time_min,
+                    "note": "Calculated from PostGIS",
+                },
+                constraints=[],
+                data_source="postgis",
+            )
+
+        except (DatabaseConnectionError, Exception) as e:
+            logger.warning(f"transport_access: database query failed ({e}), using placeholder")
+            return CriterionResult(
+                criterion="transport_access",
+                score=65,
+                weight=0,
+                weighted_score=0,
+                details={
+                    "distance_to_transit_m": None,
+                    "nearest_transit_type": "Unknown",
+                    "walking_time_min": None,
+                    "note": f"{self.PLACEHOLDER_NOTE} (Database Error)",
+                },
+                constraints=[],
+                data_source="placeholder",
+            )
 
     def _eval_utilities(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
         """Evaluate utilities access.
