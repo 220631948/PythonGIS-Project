@@ -88,6 +88,7 @@ export default function SearchAutocomplete({ onSelect, placeholder = "Search pla
     setQuery(suggestion.text);
     setIsOpen(false);
     setSuggestions([]);
+    setSelectedIndex(-1);
 
 
     // Notify parent
@@ -125,6 +126,7 @@ export default function SearchAutocomplete({ onSelect, placeholder = "Search pla
         break;
       case 'Escape':
         setIsOpen(false);
+        setSelectedIndex(-1);
         inputRef.current?.blur();
         break;
       default:
@@ -163,6 +165,7 @@ export default function SearchAutocomplete({ onSelect, placeholder = "Search pla
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
+        setSelectedIndex(-1);
       }
     };
 
@@ -188,8 +191,32 @@ export default function SearchAutocomplete({ onSelect, placeholder = "Search pla
   const displayItems = suggestions.length > 0 ? suggestions :
     (query.length === 0 && recentSearches.length > 0 ? recentSearches : []);
 
+  // Determine active descendant ID
+  const activeDescendantId = selectedIndex >= 0 ? `search-suggestion-${selectedIndex}` : undefined;
+
   return (
     <div className="search-autocomplete" ref={containerRef}>
+      {/* Live region for screen reader announcements */}
+      <div
+        style={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          padding: 0,
+          margin: '-1px',
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          borderWidth: 0
+        }}
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {isOpen && displayItems.length > 0
+          ? `${displayItems.length} suggestions available. Use up and down arrows to navigate.`
+          : ''}
+      </div>
+
       <div className="search-input-wrapper">
         <Search className="search-icon" size={18} />
         <input
@@ -201,10 +228,11 @@ export default function SearchAutocomplete({ onSelect, placeholder = "Search pla
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className="search-input"
-          aria-label="Search"
+          aria-label="Search location"
           aria-autocomplete="list"
           aria-controls="search-suggestions"
           aria-expanded={isOpen && displayItems.length > 0}
+          aria-activedescendant={activeDescendantId}
           role="combobox"
         />
         {isLoading && <Loader className="search-loader" size={16} />}
@@ -214,6 +242,7 @@ export default function SearchAutocomplete({ onSelect, placeholder = "Search pla
             onClick={() => {
               setQuery('');
               setSuggestions([]);
+              setSelectedIndex(-1);
               inputRef.current?.focus();
             }}
             aria-label="Clear search"
@@ -230,11 +259,12 @@ export default function SearchAutocomplete({ onSelect, placeholder = "Search pla
           role="listbox"
         >
           {query.length === 0 && recentSearches.length > 0 && (
-            <li className="suggestions-header">Recent Searches</li>
+            <li className="suggestions-header" role="presentation">Recent Searches</li>
           )}
           {displayItems.map((item, index) => (
             <li
               key={`${item.text}-${index}`}
+              id={`search-suggestion-${index}`}
               className={`suggestion-item ${index === selectedIndex ? 'selected' : ''}`}
               onClick={() => handleSelect(item)}
               onMouseEnter={() => setSelectedIndex(index)}
