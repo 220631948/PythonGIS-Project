@@ -1,6 +1,7 @@
 import sys
 import json
 import logging
+import re
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -109,6 +110,11 @@ async def get_nearby_features(
 
     table_name = TABLE_MAPPING.get(layer, layer.lower().replace('-', '_'))
 
+    # Strict validation to prevent SQL injection
+    # Only allow alphanumeric and underscores
+    if not re.match(r"^[a-zA-Z0-9_]+$", table_name):
+        raise HTTPException(status_code=400, detail="Invalid layer name: must be alphanumeric")
+
     # Filter for consolidated tables
     type_filter = ""
     if layer in ["schools", "clinics", "libraries", "hospitals"]:
@@ -124,9 +130,6 @@ async def get_nearby_features(
         # Verify table exists in spatial_layers or simple check to avoid SQL injection on table name
         # Ideally query known tables from settings/metadata.
         # For prototype, we assume table_name is safe via mapping or clean logic.
-
-        # Use simple SQL construction for table name (parameterized queries can't handle table names)
-        # Check against allow-list or schema first for safety in prod.
 
         # Optimized Query: Construct FeatureCollection directly in PostGIS
         # This avoids transferring multiple rows and parsing/serializing JSON in Python.
