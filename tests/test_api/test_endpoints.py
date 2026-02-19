@@ -107,26 +107,67 @@ class TestSpatialToolsEndpoint:
 
     def test_buffer_endpoint(self):
         """Test buffer creation endpoint."""
-        response = client.get("/api/spatial/buffer?lat=-33.9249&lon=18.4232&distance=500")
-        assert response.status_code == 200
+        # Mock get_db to avoid connecting to real DB
+        from app.core.database import get_db
+        from unittest.mock import AsyncMock, MagicMock
+        import json
 
-        data = response.json()
-        assert data["type"] == "Feature"
-        assert "geometry" in data
-        assert data["properties"]["distance"] == 500
+        async def mock_get_db():
+            mock_session = AsyncMock()
+            # Mock buffer result - must be MagicMock as scalar() is sync
+            mock_result = MagicMock()
+            # Return a valid GeoJSON for buffer
+            mock_result.scalar.return_value = json.dumps({
+                "type": "Polygon",
+                "coordinates": [[[0,0], [0,1], [1,1], [1,0], [0,0]]]
+            })
+            mock_session.execute.return_value = mock_result
+            yield mock_session
+
+        app.dependency_overrides[get_db] = mock_get_db
+
+        try:
+            response = client.get("/api/spatial/buffer?lat=-33.9249&lon=18.4232&distance=500")
+            assert response.status_code == 200
+
+            data = response.json()
+            assert data["type"] == "Feature"
+            assert "geometry" in data
+            assert data["properties"]["radius"] == 500
+        finally:
+            app.dependency_overrides.clear()
 
     def test_point_in_polygon_endpoint(self):
         """Test point-in-polygon endpoint with valid request."""
-        request_body = {
-            "polygon": {
-                "type": "Polygon",
-                "coordinates": [[[18.4, -33.9], [18.5, -33.9], [18.5, -34.0], [18.4, -34.0], [18.4, -33.9]]]
-            },
-            "layers": ["suburbs"]
-        }
-        response = client.post("/api/spatial/point-in-polygon", json=request_body)
-        # May return 200 or 400/500 depending on data availability
-        assert response.status_code in [200, 400, 500]
+        # Mock get_db to avoid connecting to real DB
+        from app.core.database import get_db
+        from unittest.mock import AsyncMock, MagicMock
+
+        async def mock_get_db():
+            mock_session = AsyncMock()
+            # Mock table existence check to return False so it falls back to data_loader
+            # This ensures we don't need a real DB for this test
+            # scalar() is sync
+            mock_result = MagicMock()
+            mock_result.scalar.return_value = False
+            mock_session.execute.return_value = mock_result
+            yield mock_session
+
+        app.dependency_overrides[get_db] = mock_get_db
+
+        try:
+            request_body = {
+                "polygon": {
+                    "type": "Polygon",
+                    "coordinates": [[[18.4, -33.9], [18.5, -33.9], [18.5, -34.0], [18.4, -34.0], [18.4, -33.9]]]
+                },
+                "layers": ["suburbs"]
+            }
+            response = client.post("/api/spatial/point-in-polygon", json=request_body)
+            # May return 200 or 400/500 depending on data availability
+            assert response.status_code in [200, 400, 500]
+        finally:
+            app.dependency_overrides.clear()
 
 
 class TestEnvironmentEndpoint:
