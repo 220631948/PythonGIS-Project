@@ -2,6 +2,7 @@
  * Map module barrel export
  */
 export { default as EnhancedGeoJSONLayer } from './EnhancedGeoJSONLayer';
+export { DataLayers } from './DataLayers';
 export {
   MapEvents,
   MapController,
