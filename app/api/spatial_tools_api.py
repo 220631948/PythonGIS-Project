@@ -1,6 +1,7 @@
 import sys
 import json
 import logging
+import re
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -106,6 +107,10 @@ def get_nearby_features(
     }
 
     table_name = TABLE_MAPPING.get(layer, layer.lower().replace('-', '_'))
+
+    # Validate table name to prevent SQL injection
+    if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$", table_name):
+        raise HTTPException(status_code=400, detail="Invalid layer name")
 
     # Filter for consolidated tables
     type_filter = ""
