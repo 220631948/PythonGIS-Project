@@ -36,37 +36,52 @@ async def point_in_polygon(
         user_poly = shape(request.polygon)
         results = {}
         
+        # Optimize: Batch check table existence
+        existing_tables = set()
+        table_map = {}
+
+        valid_table_names = []
         for layer in request.layers:
-            # 1. Optimize: Check if table exists in DB and use PostGIS
-            # Convert layer name to table name convention
             table_name = layer.lower().replace('-', '_')
-
-            # Basic validation to prevent SQL injection
             if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$", table_name):
+                valid_table_names.append(table_name)
+                table_map[layer] = table_name
+
+        if valid_table_names:
+            try:
+                # Check existence of all tables in one query
+                # Use tuple(valid_table_names) to ensure SQLAlchemy handles the list correctly as a parameter
+                exists_query = text("SELECT table_name FROM information_schema.tables WHERE table_name = ANY(:table_names)")
+                result = await db.execute(exists_query, {"table_names": valid_table_names})
+                existing_tables = {row[0] for row in result.fetchall()}
+            except Exception as e:
+                logger.warning(f"Batch table existence check failed: {e}")
+
+        # Serialize polygon to JSON string ONCE for ST_GeomFromGeoJSON
+        geojson_str = json.dumps(request.polygon)
+
+        for layer in request.layers:
+            table_name = table_map.get(layer)
+
+            # 1. Optimize: Check if table exists in DB and use PostGIS
+            if table_name and table_name in existing_tables:
                 try:
-                    # Check existence using async query
-                    exists_query = text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = :table_name)")
-                    result = await db.execute(exists_query, {"table_name": table_name})
-                    if result.scalar():
-                        # Table exists, run optimized PostGIS query
-                        # Use ST_Intersects which is generally faster and covers most use cases (point inside or on boundary)
-                        # Ensure we handle CRS. PostGIS data is likely 4326.
-                        count_query = text(f"""
-                            SELECT COUNT(*)
-                            FROM "{table_name}"
-                            WHERE ST_Intersects(
-                                geom,
-                                ST_SetSRID(ST_GeomFromGeoJSON(:geojson), 4326)
-                            )
-                        """)
+                    # Table exists, run optimized PostGIS query
+                    # Use ST_Intersects which is generally faster and covers most use cases (point inside or on boundary)
+                    # Ensure we handle CRS. PostGIS data is likely 4326.
+                    count_query = text(f"""
+                        SELECT COUNT(*)
+                        FROM "{table_name}"
+                        WHERE ST_Intersects(
+                            geom,
+                            ST_SetSRID(ST_GeomFromGeoJSON(:geojson), 4326)
+                        )
+                    """)
 
-                        # Serialize polygon to JSON string for ST_GeomFromGeoJSON
-                        geojson_str = json.dumps(request.polygon)
-
-                        count_result = await db.execute(count_query, {"geojson": geojson_str})
-                        count = count_result.scalar()
-                        results[layer] = count
-                        continue
+                    count_result = await db.execute(count_query, {"geojson": geojson_str})
+                    count = count_result.scalar()
+                    results[layer] = count
+                    continue
                 except Exception as e:
                     logger.warning(f"PostGIS query failed for {layer}: {e}")
                     # Fallthrough to data_loader
