@@ -7,9 +7,13 @@ and return the expected data structures.
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
+from app.dependencies import require_admin_key
 
 client = TestClient(app)
 
+# Helper to mock admin auth
+def mock_require_admin_key():
+    return "mocked_admin_key"
 
 class TestHealthEndpoint:
     """Tests for the health check endpoint."""
@@ -44,6 +48,13 @@ class TestHealthEndpoint:
 class TestConfigEndpoint:
     """Tests for the config endpoint."""
 
+    def setup_method(self):
+        app.dependency_overrides[require_admin_key] = mock_require_admin_key
+
+    def teardown_method(self):
+        if require_admin_key in app.dependency_overrides:
+            del app.dependency_overrides[require_admin_key]
+
     def test_config_returns_200(self):
         """Test that config endpoint returns 200 status."""
         response = client.get("/api/config")
@@ -55,9 +66,27 @@ class TestConfigEndpoint:
         data = response.json()
         assert data["app_name"] == "Cape Town GeoHub"
 
+    def test_config_returns_403_without_key(self):
+        """Test that config endpoint returns 403 when no key is provided and not mocked."""
+        # Temporarily remove override for this test
+        if require_admin_key in app.dependency_overrides:
+            del app.dependency_overrides[require_admin_key]
+
+        response = client.get("/api/config")
+        assert response.status_code == 403
+        # Restore override for teardown to be clean (optional but good practice)
+        app.dependency_overrides[require_admin_key] = mock_require_admin_key
+
 
 class TestStatsEndpoint:
     """Tests for the stats endpoint."""
+
+    def setup_method(self):
+        app.dependency_overrides[require_admin_key] = mock_require_admin_key
+
+    def teardown_method(self):
+        if require_admin_key in app.dependency_overrides:
+            del app.dependency_overrides[require_admin_key]
 
     def test_stats_returns_200(self):
         """Test that stats endpoint returns 200 status."""
@@ -259,6 +288,13 @@ class TestStaticFileEndpoints:
 
 class TestCacheEndpoint:
     """Tests for cache management endpoint."""
+
+    def setup_method(self):
+        app.dependency_overrides[require_admin_key] = mock_require_admin_key
+
+    def teardown_method(self):
+        if require_admin_key in app.dependency_overrides:
+            del app.dependency_overrides[require_admin_key]
 
     def test_clear_cache(self):
         """Test cache clearing endpoint."""
