@@ -45,11 +45,12 @@ def test_point_in_polygon_optimized(client, mock_db_session):
     }
 
     # Mock DB responses
-    # First call checks table existence (True)
+    # First call checks table existence (returns row with table name)
     # Second call executes the count query (5)
+    # The first result mimics a single row result from fetchall: [('schools',)]
     mock_db_session.execute.side_effect = [
-        MockResult(True),  # Table exists
-        MockResult(5)      # Count result
+        MockResult(('schools',)),  # Table exists
+        MockResult(5)              # Count result
     ]
 
     # We patch the instance method on the class to ensure it catches calls on the singleton instance
@@ -93,9 +94,9 @@ def test_point_in_polygon_fallback(client, mock_db_session):
     }
 
     # Mock DB responses
-    # Table existence check returns False
+    # Table existence check returns empty result (None -> [])
     mock_db_session.execute.side_effect = [
-        MockResult(False)
+        MockResult(None)
     ]
 
     # Mock data_loader.get_gdf to return a dummy GDF with a point inside the polygon
