@@ -1,0 +1,4 @@
+## 2026-02-21 - [CRITICAL] Admin Endpoints Fail-Open Vulnerability
+**Vulnerability:** The `require_admin_key` dependency was configured to log a warning and return "unprotected" if the `ADMIN_API_KEY` environment variable was not set, effectively allowing unauthorized access to sensitive endpoints (`/api/config`, `/api/cache/clear`, `/api/stats`).
+**Learning:** Defaulting to "fail-open" (allowing access when security configuration is missing) is a dangerous pattern, especially for admin interfaces. It assumes the developer will notice the warning, which is often missed in production logs.
+**Prevention:** Always implement "fail-secure" logic. If a required security configuration (like an API key) is missing, the application must deny access (HTTP 403/500) or fail to start, rather than degrading to an insecure state.
