@@ -573,11 +573,16 @@ class TestHealthAndIntegration:
 
     def test_config_endpoint(self):
         """Test config endpoint"""
-        response = client.get("/api/config")
-        assert response.status_code == 200
-        data = response.json()
-        assert "app_name" in data
-        assert data["app_name"] == "Cape Town GeoHub"
+        from app.dependencies import require_admin_key
+        app.dependency_overrides[require_admin_key] = lambda: "test-admin-key"
+        try:
+            response = client.get("/api/config")
+            assert response.status_code == 200
+            data = response.json()
+            assert "app_name" in data
+            assert data["app_name"] == "Cape Town GeoHub"
+        finally:
+            del app.dependency_overrides[require_admin_key]
 
     def test_suitability_analysis(self):
         """Test suitability analysis still works"""
