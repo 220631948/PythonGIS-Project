@@ -15,13 +15,15 @@ class MockResult:
         return self._data
 
     def fetchall(self):
+        if isinstance(self._data, list):
+            return self._data
         return [self._data] if self._data is not None else []
 
 @pytest.fixture
 def mock_db_session():
     mock_session = AsyncMock()
     # Default behavior: table exists check returns True
-    mock_session.execute.return_value = MockResult(True)
+    mock_session.execute.return_value = MockResult([("table",)])
     return mock_session
 
 @pytest.fixture
@@ -45,10 +47,10 @@ def test_point_in_polygon_optimized(client, mock_db_session):
     }
 
     # Mock DB responses
-    # First call checks table existence (True)
+    # First call checks table existence (returns list of existing tables)
     # Second call executes the count query (5)
     mock_db_session.execute.side_effect = [
-        MockResult(True),  # Table exists
+        MockResult([(layer_name,)]),  # Table exists
         MockResult(5)      # Count result
     ]
 
@@ -93,9 +95,9 @@ def test_point_in_polygon_fallback(client, mock_db_session):
     }
 
     # Mock DB responses
-    # Table existence check returns False
+    # Table existence check returns empty list
     mock_db_session.execute.side_effect = [
-        MockResult(False)
+        MockResult([])
     ]
 
     # Mock data_loader.get_gdf to return a dummy GDF with a point inside the polygon
@@ -119,3 +121,56 @@ def test_point_in_polygon_fallback(client, mock_db_session):
 
         # Verify get_gdf WAS called (fallback used)
         mock_get_gdf.assert_called_once_with(layer_name)
+
+def test_point_in_polygon_batch_optimization_mixed(client, mock_db_session):
+    """
+    Test mixed scenario: some layers in DB, some not.
+    """
+    # Setup
+    layers = ["layer1", "layer2", "layer3"] # layer3 missing from DB
+    polygon = {
+        "type": "Polygon",
+        "coordinates": [[[0, 0], [0, 10], [10, 10], [10, 0], [0, 0]]]
+    }
+
+    # Mock DB responses
+    # 1. Batch existence check: returns list of rows (tuples) for layer1 and layer2
+    # 2. Count for layer1
+    # 3. Count for layer2
+
+    mock_db_session.execute.side_effect = [
+        MockResult([("layer1",), ("layer2",)]), # layer3 NOT in DB
+        MockResult(10),
+        MockResult(20)
+    ]
+
+    # Mock data_loader for fallback (layer3)
+    dummy_gdf = gpd.GeoDataFrame(
+        {'geometry': [Point(1, 1)]}, # 1 point inside
+        crs="EPSG:4326"
+    )
+
+    with patch("app.core.data_loader.DataLoader.get_gdf", return_value=dummy_gdf) as mock_get_gdf:
+        response = client.post("/api/spatial/point-in-polygon", json={
+            "polygon": polygon,
+            "layers": layers
+        })
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Check counts
+        assert data["counts"]["layer1"] == 10
+        assert data["counts"]["layer2"] == 20
+        assert data["counts"]["layer3"] == 1 # From fallback
+
+        # Verify get_gdf called for layer3 ONLY
+        mock_get_gdf.assert_called_once_with("layer3")
+
+        # Analyze calls
+        calls = mock_db_session.execute.call_args_list
+        # Filter for existence checks
+        existence_checks = [str(call[0][0]) for call in calls if "information_schema.tables" in str(call[0][0])]
+
+        # Verify optimization: Should be 1 batched call
+        assert len(existence_checks) == 1

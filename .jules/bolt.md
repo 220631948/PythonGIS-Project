@@ -9,3 +9,7 @@
 ## 2026-02-19 - [Backend] Spatial Intersection Optimization
 **Learning:** Loading entire datasets into memory with `geopandas` for point-in-polygon checks is extremely inefficient for large datasets. Using PostGIS `ST_Intersects` (or `ST_Within`) allows the database to use spatial indexes and only return the count, avoiding data transfer and memory overhead.
 **Action:** Always prefer database-side spatial operations (`ST_Intersects`, `ST_DWithin`) over loading data into application memory. When implementing fallback logic, ensure input geometries are correctly serialized for PostGIS (e.g., `ST_GeomFromGeoJSON`) and coordinate systems are handled (e.g., `ST_SetSRID(..., 4326)`). Also, validating table names with regex is critical when dynamic table names are used.
+
+## 2026-02-21 - [Environment] Pandas 3.0+ Compatibility
+**Learning:** `geopandas==0.14.2` has a known compatibility issue with `pandas>=3.0.0` regarding `StringDtype` inference, causing `TypeError: Cannot interpret '<StringDtype...>' as a data type`.
+**Action:** Ensure `pandas` is pinned to `<3.0.0` (e.g., `2.2.0`) in the environment or update `geopandas` to a version that supports pandas 3.0+.
