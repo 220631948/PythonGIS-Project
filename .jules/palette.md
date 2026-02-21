@@ -1,0 +1,3 @@
+## 2026-02-21 - [Accessibility: Form Labels and IDs in React 19]
+**Learning:** Found multiple form inputs in `ExportPanel` missing proper label associations (`htmlFor`/`id`). Since this project uses React 19, the `useId` hook is the standard and robust way to generate unique IDs for accessibility, avoiding ID collisions in reusable components or multiple instances.
+**Action:** When auditing or building new forms, always use `const id = useId()` to link labels and inputs, rather than manual string concatenation or missing associations. Also, ensure all icon-only buttons (using `lucide-react`) have `aria-label`.

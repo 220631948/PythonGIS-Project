@@ -7,7 +7,7 @@
  * - Printable map configuration
  */
 
-import { useState, useEffect } from 'react'; // React is still needed for hooks
+import { useState, useEffect, useId } from 'react'; // React is still needed for hooks
 import { Download, FileText, Printer, Clock, X } from 'lucide-react';
 import { apiClient } from '../lib/api';
 // Removed ts-ignore as apiClient is typed
@@ -65,6 +65,7 @@ function DataExportForm({ datasets, onExport }: { datasets: Dataset[], onExport:
   const [selectedDataset, setSelectedDataset] = useState('');
   const [format, setFormat] = useState('geojson');
   const [isExporting, setIsExporting] = useState(false);
+  const datasetId = useId();
 
   const handleExport = async () => {
     if (!selectedDataset) return;
@@ -85,8 +86,9 @@ function DataExportForm({ datasets, onExport }: { datasets: Dataset[], onExport:
       <h3><Download size={18} /> Export Dataset</h3>
 
       <div className="form-group">
-        <label>Dataset</label>
+        <label htmlFor={datasetId}>Dataset</label>
         <select
+          id={datasetId}
           value={selectedDataset}
           onChange={(e) => setSelectedDataset(e.target.value)}
         >
@@ -140,6 +142,11 @@ function AnalysisExportForm({ onExport }: { onExport: (_req: ExportRequest) => P
   const [format, setFormat] = useState('geojson');
   const [isExporting, setIsExporting] = useState(false);
 
+  const analysisTypeId = useId();
+  const latId = useId();
+  const lngId = useId();
+  const formatId = useId();
+
   const handleExport = async () => {
     setIsExporting(true);
     try {
@@ -158,8 +165,9 @@ function AnalysisExportForm({ onExport }: { onExport: (_req: ExportRequest) => P
       <h3><FileText size={18} /> Export Analysis</h3>
 
       <div className="form-group">
-        <label>Analysis Type</label>
+        <label htmlFor={analysisTypeId}>Analysis Type</label>
         <select
+          id={analysisTypeId}
           value={analysisType}
           onChange={(e) => setAnalysisType(e.target.value)}
         >
@@ -171,8 +179,9 @@ function AnalysisExportForm({ onExport }: { onExport: (_req: ExportRequest) => P
 
       <div className="form-row">
         <div className="form-group">
-          <label>Latitude</label>
+          <label htmlFor={latId}>Latitude</label>
           <input
+            id={latId}
             type="number"
             step="0.0001"
             value={lat}
@@ -180,8 +189,9 @@ function AnalysisExportForm({ onExport }: { onExport: (_req: ExportRequest) => P
           />
         </div>
         <div className="form-group">
-          <label>Longitude</label>
+          <label htmlFor={lngId}>Longitude</label>
           <input
+            id={lngId}
             type="number"
             step="0.0001"
             value={lng}
@@ -191,8 +201,8 @@ function AnalysisExportForm({ onExport }: { onExport: (_req: ExportRequest) => P
       </div>
 
       <div className="form-group">
-        <label>Format</label>
-        <select value={format} onChange={(e) => setFormat(e.target.value)}>
+        <label htmlFor={formatId}>Format</label>
+        <select id={formatId} value={format} onChange={(e) => setFormat(e.target.value)}>
           <option value="geojson">JSON</option>
           <option value="csv">CSV</option>
         </select>
@@ -221,6 +231,11 @@ function PrintMapForm({ mapBounds, activeLayers, onPrint }: { mapBounds: any, ac
     dpi: 150
   });
 
+  const titleId = useId();
+  const subtitleId = useId();
+  const paperSizeId = useId();
+  const orientationId = useId();
+
   const handlePrint = () => {
     onPrint({
       ...config,
@@ -234,8 +249,9 @@ function PrintMapForm({ mapBounds, activeLayers, onPrint }: { mapBounds: any, ac
       <h3><Printer size={18} /> Print Map</h3>
 
       <div className="form-group">
-        <label>Title</label>
+        <label htmlFor={titleId}>Title</label>
         <input
+          id={titleId}
           type="text"
           value={config.title}
           onChange={(e) => setConfig({...config, title: e.target.value})}
@@ -244,8 +260,9 @@ function PrintMapForm({ mapBounds, activeLayers, onPrint }: { mapBounds: any, ac
       </div>
 
       <div className="form-group">
-        <label>Subtitle</label>
+        <label htmlFor={subtitleId}>Subtitle</label>
         <input
+          id={subtitleId}
           type="text"
           value={config.subtitle}
           onChange={(e) => setConfig({...config, subtitle: e.target.value})}
@@ -255,8 +272,9 @@ function PrintMapForm({ mapBounds, activeLayers, onPrint }: { mapBounds: any, ac
 
       <div className="form-row">
         <div className="form-group">
-          <label>Paper Size</label>
+          <label htmlFor={paperSizeId}>Paper Size</label>
           <select
+            id={paperSizeId}
             value={config.paper_size}
             onChange={(e) => setConfig({...config, paper_size: e.target.value})}
           >
@@ -266,8 +284,9 @@ function PrintMapForm({ mapBounds, activeLayers, onPrint }: { mapBounds: any, ac
           </select>
         </div>
         <div className="form-group">
-          <label>Orientation</label>
+          <label htmlFor={orientationId}>Orientation</label>
           <select
+            id={orientationId}
             value={config.orientation}
             onChange={(e) => setConfig({...config, orientation: e.target.value})}
           >
@@ -407,7 +426,7 @@ export default function ExportPanel({
     <div className="export-panel">
       <div className="panel-header">
         <h2><Download size={20} /> Export & Print</h2>
-        <button onClick={onClose}><X size={18} /></button>
+        <button onClick={onClose} aria-label="Close export panel"><X size={18} /></button>
       </div>
 
       <div className="tab-bar">
