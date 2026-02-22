@@ -1,7 +1,7 @@
 import logging
 import re
 import geopandas as gpd
-from sqlalchemy import inspect, text
+from sqlalchemy import text
 from app.core.database import require_engine, DatabaseConnectionError
 
 logger = logging.getLogger(__name__)
@@ -36,8 +36,12 @@ class SpatialDataStorage:
     def table_exists(self, table_name: str) -> bool:
         """Checks if a table exists in the database."""
         try:
-            insp = inspect(require_engine())
-            return table_name in insp.get_table_names()
+            with require_engine().connect() as conn:
+                result = conn.execute(
+                    text("SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = :table_name AND table_schema = 'public')"),
+                    {"table_name": table_name}
+                )
+                return result.scalar()
         except DatabaseConnectionError:
             return False
         except Exception as e:

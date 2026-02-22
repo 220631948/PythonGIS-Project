@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, ANY
 import geopandas as gpd
 from shapely.geometry import Point
 from app.core.data_loader import DataLoader
@@ -12,20 +12,26 @@ class TestDataLoaderPagination(unittest.TestCase):
         self.loader.data_urls = {"test_dataset": "http://example.com/data.geojson"}
 
     @patch("app.core.data_loader.gpd.read_postgis")
-    @patch("app.core.data_loader.engine")
-    @patch("app.core.data_loader.inspect")
-    def test_get_paginated_gdf_postgis_success(self, mock_inspect, mock_engine, mock_read_postgis):
-        # Mock table exists
-        mock_inspector = MagicMock()
-        mock_inspect.return_value = mock_inspector
-        mock_inspector.get_table_names.return_value = ["test_dataset"]
+    @patch("app.core.data_loading.storage.require_engine")
+    def test_get_paginated_gdf_postgis_success(self, mock_require_engine, mock_read_postgis):
+        # Mock table exists: The first execute call is for table_exists
+        # The second execute call is for get_record_count
 
-        # Mock total count query
         mock_conn = MagicMock()
+        mock_engine = MagicMock()
+        mock_require_engine.return_value = mock_engine
         mock_engine.connect.return_value.__enter__.return_value = mock_conn
-        mock_result = MagicMock()
-        mock_result.scalar.return_value = 100
-        mock_conn.execute.return_value = mock_result
+
+        # Setup side effects for execute results
+        # First call: table_exists -> True
+        # Second call: get_record_count -> 100
+        mock_result_exists = MagicMock()
+        mock_result_exists.scalar.return_value = True
+
+        mock_result_count = MagicMock()
+        mock_result_count.scalar.return_value = 100
+
+        mock_conn.execute.side_effect = [mock_result_exists, mock_result_count]
 
         # Mock read_postgis result
         mock_gdf = gpd.GeoDataFrame(
@@ -42,18 +48,37 @@ class TestDataLoaderPagination(unittest.TestCase):
         # Assertions
         self.assertEqual(total, 100)
         self.assertEqual(len(gdf), 10)
+
+        # Verify table_exists query was executed
+        # We check execute call count
+        self.assertEqual(mock_conn.execute.call_count, 2)
+
+        # Verify the table existence check query
+        exists_call_args = mock_conn.execute.call_args_list[0]
+        # execute(text(...), params)
+        # exists_call_args[0][0] is the text object. str(text_obj) gives the SQL.
+        self.assertIn("SELECT EXISTS", str(exists_call_args[0][0]))
+        self.assertIn("information_schema.tables", str(exists_call_args[0][0]))
+        self.assertEqual(exists_call_args[0][1], {"table_name": dataset_name})
+
         mock_read_postgis.assert_called_once()
         args, kwargs = mock_read_postgis.call_args
-        self.assertIn(f"SELECT * FROM {dataset_name} LIMIT %(limit)s OFFSET %(offset)s", args[0])
+        self.assertIn(f"SELECT * FROM \"{dataset_name}\" LIMIT %(limit)s OFFSET %(offset)s", args[0])
         self.assertEqual(kwargs["params"], {"limit": limit, "offset": offset})
 
     @patch("app.core.data_loader.DataLoader.get_gdf")
-    @patch("app.core.data_loader.inspect")
-    def test_get_paginated_gdf_fallback(self, mock_inspect, mock_get_gdf):
+    @patch("app.core.data_loading.storage.require_engine")
+    def test_get_paginated_gdf_fallback(self, mock_require_engine, mock_get_gdf):
         # Mock table DOES NOT exist
-        mock_inspector = MagicMock()
-        mock_inspect.return_value = mock_inspector
-        mock_inspector.get_table_names.return_value = []
+        mock_conn = MagicMock()
+        mock_engine = MagicMock()
+        mock_require_engine.return_value = mock_engine
+        mock_engine.connect.return_value.__enter__.return_value = mock_conn
+
+        mock_result_exists = MagicMock()
+        mock_result_exists.scalar.return_value = False
+
+        mock_conn.execute.return_value = mock_result_exists
 
         # Mock get_gdf returning full dataframe
         full_gdf = gpd.GeoDataFrame(
@@ -74,6 +99,7 @@ class TestDataLoaderPagination(unittest.TestCase):
         self.assertEqual(gdf.iloc[0]["col1"], 5)
         self.assertEqual(gdf.iloc[-1]["col1"], 9)
 
+        # Verify get_gdf was called as fallback
         mock_get_gdf.assert_called_once_with(dataset_name, force_refresh=False)
 
     def test_get_paginated_gdf_security_check(self):
