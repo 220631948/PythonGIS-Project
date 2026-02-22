@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CheckCircle, AlertCircle, Info, X, LucideIcon } from 'lucide-react';
 
 interface NotificationTypeConfig {
@@ -19,14 +19,14 @@ export interface NotificationItem {
   duration?: number;
 }
 
-interface NotificationProps {
+export interface NotificationProps {
   message: string;
   type?: 'success' | 'error' | 'info';
   onClose: () => void;
   duration?: number;
 }
 
-const Notification: React.FC<NotificationProps> = ({ message, type = 'info', onClose, duration = 4000 }) => {
+export const Notification: React.FC<NotificationProps> = ({ message, type = 'info', onClose, duration = 4000 }) => {
   const [isVisible, setIsVisible] = useState(true);
   const config = (NOTIFICATION_TYPES[type] ?? NOTIFICATION_TYPES.info) as NotificationTypeConfig;
   const IconComponent = config.icon;
@@ -42,11 +42,27 @@ const Notification: React.FC<NotificationProps> = ({ message, type = 'info', onC
     return undefined;
   }, [duration, onClose]);
 
+  const role = type === 'error' ? 'alert' : 'status';
+  const live = type === 'error' ? 'assertive' : 'polite';
+  const label = type === 'error' ? 'Error notification' : 'Notification';
+
   return (
-    <div className={`notification ${config.className} ${isVisible ? 'visible' : 'hidden'}`}>
-      <IconComponent size={18} />
+    <div
+      className={`notification ${config.className} ${isVisible ? 'visible' : 'hidden'}`}
+      role={role}
+      aria-live={live}
+      aria-atomic="true"
+      aria-label={label}
+    >
+      <div className="notification-icon" aria-hidden="true">
+        <IconComponent size={18} />
+      </div>
       <span className="notification-message">{message}</span>
-      <button className="notification-close" onClick={onClose}>
+      <button
+        className="notification-close"
+        onClick={onClose}
+        aria-label="Close notification"
+      >
         <X size={14} />
       </button>
     </div>

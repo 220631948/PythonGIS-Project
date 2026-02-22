@@ -8,7 +8,7 @@ import NotificationContainer from './components/Notification';
 import OfflineDataManager from './components/OfflineDataManager';
 import DataStatusPanel from './components/DataStatusPanel';
 import { InstallBanner, InstallModal } from './components/InstallPrompt';
-import { SkipLink, LiveRegion, useKeyboardShortcuts, announce } from './components/Accessibility';
+import { SkipLink, useKeyboardShortcuts } from './components/Accessibility';
 import GuidedTour, { useTour, HelpButton } from './components/GuidedTour';
 import { KeyboardShortcutsHelp, useKeyboardShortcuts as useHelpOverlay } from './components/KeyboardShortcutsHelp';
 import { ToastProvider } from './components/Common';
@@ -114,7 +114,7 @@ function MainApp() {
     const addNotification = useCallback((message: string, type = 'info') => {
         const id = Date.now() + Math.random(); // Add randomness to prevent collisions
         setNotifications(prev => [...prev, { id, message, type }]);
-        announce(message);
+        // Notification component handles accessibility via ARIA roles
         setTimeout(() => {
             setNotifications(prev => prev.filter(n => n.id !== id));
         }, 5000);
@@ -247,7 +247,6 @@ function MainApp() {
     return (
         <div className={`app-container ${isDarkMode ? 'dark' : ''}`}>
             <SkipLink targetId="main-map" />
-            <LiveRegion message={notifications[notifications.length - 1]?.message} />
 
             <Header
                 onSearch={handleSearch}
