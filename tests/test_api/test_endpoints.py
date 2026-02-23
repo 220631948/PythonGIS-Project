@@ -7,6 +7,7 @@ and return the expected data structures.
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
+from app.dependencies import require_admin_key
 
 client = TestClient(app)
 
@@ -46,14 +47,23 @@ class TestConfigEndpoint:
 
     def test_config_returns_200(self):
         """Test that config endpoint returns 200 status."""
-        response = client.get("/api/config")
-        assert response.status_code == 200
+        # Override dependency to allow access
+        app.dependency_overrides[require_admin_key] = lambda: "test-admin-key"
+        try:
+            response = client.get("/api/config")
+            assert response.status_code == 200
+        finally:
+            app.dependency_overrides = {}
 
     def test_config_contains_app_name(self):
         """Test that config contains application name."""
-        response = client.get("/api/config")
-        data = response.json()
-        assert data["app_name"] == "Cape Town GeoHub"
+        app.dependency_overrides[require_admin_key] = lambda: "test-admin-key"
+        try:
+            response = client.get("/api/config")
+            data = response.json()
+            assert data["app_name"] == "Cape Town GeoHub"
+        finally:
+            app.dependency_overrides = {}
 
 
 class TestStatsEndpoint:
@@ -61,15 +71,23 @@ class TestStatsEndpoint:
 
     def test_stats_returns_200(self):
         """Test that stats endpoint returns 200 status."""
-        response = client.get("/api/stats")
-        assert response.status_code == 200
+        app.dependency_overrides[require_admin_key] = lambda: "test-admin-key"
+        try:
+            response = client.get("/api/stats")
+            assert response.status_code == 200
+        finally:
+            app.dependency_overrides = {}
 
     def test_stats_contains_request_stats(self):
         """Test that stats contains request statistics."""
-        response = client.get("/api/stats")
-        data = response.json()
-        assert "request_stats" in data
-        assert "error_stats" in data
+        app.dependency_overrides[require_admin_key] = lambda: "test-admin-key"
+        try:
+            response = client.get("/api/stats")
+            data = response.json()
+            assert "request_stats" in data
+            assert "error_stats" in data
+        finally:
+            app.dependency_overrides = {}
 
 
 class TestServicesEndpoint:
@@ -262,8 +280,12 @@ class TestCacheEndpoint:
 
     def test_clear_cache(self):
         """Test cache clearing endpoint."""
-        response = client.post("/api/cache/clear")
-        assert response.status_code == 200
+        app.dependency_overrides[require_admin_key] = lambda: "test-admin-key"
+        try:
+            response = client.post("/api/cache/clear")
+            assert response.status_code == 200
 
-        data = response.json()
-        assert "message" in data
+            data = response.json()
+            assert "message" in data
+        finally:
+            app.dependency_overrides = {}
