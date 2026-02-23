@@ -9,3 +9,7 @@
 ## 2026-02-19 - [Backend] Spatial Intersection Optimization
 **Learning:** Loading entire datasets into memory with `geopandas` for point-in-polygon checks is extremely inefficient for large datasets. Using PostGIS `ST_Intersects` (or `ST_Within`) allows the database to use spatial indexes and only return the count, avoiding data transfer and memory overhead.
 **Action:** Always prefer database-side spatial operations (`ST_Intersects`, `ST_DWithin`) over loading data into application memory. When implementing fallback logic, ensure input geometries are correctly serialized for PostGIS (e.g., `ST_GeomFromGeoJSON`) and coordinate systems are handled (e.g., `ST_SetSRID(..., 4326)`). Also, validating table names with regex is critical when dynamic table names are used.
+
+## 2026-02-23 - [Batching Database Existence Checks]
+**Learning:** Found an N+1 query pattern in `point_in_polygon` where each layer triggered a separate `SELECT EXISTS` query.
+**Action:** Replaced iterative checks with a single `SELECT table_name ... WHERE table_name = ANY(:names)` query. This reduces database round-trips from N to 1 for existence checks. Also learned that `test_spatial_tools_security.py` contained async tests running synchronously, which needed fixing to verify the module.
