@@ -12,17 +12,19 @@ _api_key_header = APIKeyHeader(name="X-Admin-API-Key", auto_error=False)
 def require_admin_key(api_key: str = Security(_api_key_header)) -> str:
     """FastAPI dependency that enforces admin API key on protected endpoints.
 
-    If ADMIN_API_KEY is not configured (empty string), access is unrestricted
-    and a warning is logged on first call.
+    If ADMIN_API_KEY is not configured (empty string), access is denied (403 Forbidden).
     """
     expected = settings.ADMIN_API_KEY
     if not expected:
-        # No key configured — allow access but warn
-        logger.warning(
-            "ADMIN_API_KEY not set — admin endpoints are unprotected. "
-            "Set ADMIN_API_KEY in .env for production."
+        # No key configured — FAIL SECURE (deny access)
+        logger.critical(
+            "ADMIN_API_KEY not set — denying access to admin endpoint. "
+            "Set ADMIN_API_KEY in .env or environment to enable access."
         )
-        return "unprotected"
+        raise HTTPException(
+            status_code=403,
+            detail="Admin access is disabled because ADMIN_API_KEY is not configured.",
+        )
     if not api_key or api_key != expected:
         raise HTTPException(
             status_code=403,
