@@ -1,0 +1,3 @@
+## 2026-02-23 - Notification Accessibility
+**Learning:** Toast notifications (like `frontend/src/components/Notification.tsx`) are often invisible to screen readers unless they have `role="alert"` (for errors) or `role="status"` (for info/success). Additionally, icon-only close buttons inside these notifications must have an `aria-label` to be accessible. Exporting internal components allows for isolated unit testing of these accessibility features using `@testing-library/react`.
+**Action:** Always verify toast notifications with screen reader simulation or `getByRole` queries in tests. Ensure internal components are exported if they need to be tested in isolation.

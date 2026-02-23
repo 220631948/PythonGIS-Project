@@ -26,7 +26,7 @@ interface NotificationProps {
   duration?: number;
 }
 
-const Notification: React.FC<NotificationProps> = ({ message, type = 'info', onClose, duration = 4000 }) => {
+export const Notification: React.FC<NotificationProps> = ({ message, type = 'info', onClose, duration = 4000 }) => {
   const [isVisible, setIsVisible] = useState(true);
   const config = (NOTIFICATION_TYPES[type] ?? NOTIFICATION_TYPES.info) as NotificationTypeConfig;
   const IconComponent = config.icon;
@@ -43,10 +43,18 @@ const Notification: React.FC<NotificationProps> = ({ message, type = 'info', onC
   }, [duration, onClose]);
 
   return (
-    <div className={`notification ${config.className} ${isVisible ? 'visible' : 'hidden'}`}>
+    <div
+      className={`notification ${config.className} ${isVisible ? 'visible' : 'hidden'}`}
+      role={type === 'error' ? 'alert' : 'status'}
+      aria-live={type === 'error' ? 'assertive' : 'polite'}
+    >
       <IconComponent size={18} />
       <span className="notification-message">{message}</span>
-      <button className="notification-close" onClick={onClose}>
+      <button
+        className="notification-close"
+        onClick={onClose}
+        aria-label="Close notification"
+      >
         <X size={14} />
       </button>
     </div>
