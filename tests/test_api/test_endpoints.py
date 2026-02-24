@@ -44,6 +44,14 @@ class TestHealthEndpoint:
 class TestConfigEndpoint:
     """Tests for the config endpoint."""
 
+    def setup_method(self):
+        # Bypass admin auth for these tests
+        from app.dependencies import require_admin_key
+        app.dependency_overrides[require_admin_key] = lambda: "authorized"
+
+    def teardown_method(self):
+        app.dependency_overrides.clear()
+
     def test_config_returns_200(self):
         """Test that config endpoint returns 200 status."""
         response = client.get("/api/config")
@@ -58,6 +66,14 @@ class TestConfigEndpoint:
 
 class TestStatsEndpoint:
     """Tests for the stats endpoint."""
+
+    def setup_method(self):
+        # Bypass admin auth for these tests
+        from app.dependencies import require_admin_key
+        app.dependency_overrides[require_admin_key] = lambda: "authorized"
+
+    def teardown_method(self):
+        app.dependency_overrides.clear()
 
     def test_stats_returns_200(self):
         """Test that stats endpoint returns 200 status."""
@@ -259,6 +275,14 @@ class TestStaticFileEndpoints:
 
 class TestCacheEndpoint:
     """Tests for cache management endpoint."""
+
+    def setup_method(self):
+        # Bypass admin auth for these tests
+        from app.dependencies import require_admin_key
+        app.dependency_overrides[require_admin_key] = lambda: "authorized"
+
+    def teardown_method(self):
+        app.dependency_overrides.clear()
 
     def test_clear_cache(self):
         """Test cache clearing endpoint."""
