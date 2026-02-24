@@ -9,3 +9,7 @@
 ## 2026-02-19 - [Backend] Spatial Intersection Optimization
 **Learning:** Loading entire datasets into memory with `geopandas` for point-in-polygon checks is extremely inefficient for large datasets. Using PostGIS `ST_Intersects` (or `ST_Within`) allows the database to use spatial indexes and only return the count, avoiding data transfer and memory overhead.
 **Action:** Always prefer database-side spatial operations (`ST_Intersects`, `ST_DWithin`) over loading data into application memory. When implementing fallback logic, ensure input geometries are correctly serialized for PostGIS (e.g., `ST_GeomFromGeoJSON`) and coordinate systems are handled (e.g., `ST_SetSRID(..., 4326)`). Also, validating table names with regex is critical when dynamic table names are used.
+
+## 2026-02-20 - [Backend] Batched Table Existence Checks
+**Learning:** Checking for table existence inside a loop (N+1 queries) significantly impacts performance when processing multiple layers.
+**Action:** Use `SELECT table_name FROM information_schema.tables WHERE table_name = ANY(:table_names)` to check for multiple tables in a single query. Store the results in a set for O(1) lookup.
