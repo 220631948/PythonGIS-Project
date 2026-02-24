@@ -1,4 +1,4 @@
-# Sentry Configuration for Frontend
+// Sentry Configuration for Frontend
 
 import { init } from '@sentry/react';
 import { Integrations } from '@sentry/tracing';

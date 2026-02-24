@@ -123,6 +123,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           {tabs.map(tab => (
             <button
               key={tab.id}
+              id={`${tab.id}-tab`}
               className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
               title={tab.label}
@@ -157,7 +158,13 @@ const Sidebar: React.FC<SidebarProps> = ({
           
           <OpsStatus />
 
-          <div style={{ flex: 1 }}>
+          <div
+            role="tabpanel"
+            id={`${activeTab}-panel`}
+            aria-labelledby={`${activeTab}-tab`}
+            tabIndex={0}
+            style={{ flex: 1, outline: 'none' }}
+          >
             <LoadingBoundary
               key={activeTab}
               fallback={<ModuleSkeleton />}
