@@ -1,10 +1,10 @@
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 from fastapi.testclient import TestClient
 from app.main import app
 from app.core.database import get_db
 import geopandas as gpd
-from shapely.geometry import Polygon, Point
+from shapely.geometry import Point
 
 # Mock result class for SQLAlchemy
 class MockResult:
@@ -15,13 +15,17 @@ class MockResult:
         return self._data
 
     def fetchall(self):
+        # If data is a list (result set), return it
+        if isinstance(self._data, list):
+             return self._data
+        # Legacy/Simple fallback
         return [self._data] if self._data is not None else []
 
 @pytest.fixture
 def mock_db_session():
     mock_session = AsyncMock()
-    # Default behavior: table exists check returns True
-    mock_session.execute.return_value = MockResult(True)
+    # Default behavior: table exists check returns True (list of tables)
+    mock_session.execute.return_value = MockResult([("schools",)])
     return mock_session
 
 @pytest.fixture
@@ -45,10 +49,10 @@ def test_point_in_polygon_optimized(client, mock_db_session):
     }
 
     # Mock DB responses
-    # First call checks table existence (True)
+    # First call checks table existence (returns list of existing tables)
     # Second call executes the count query (5)
     mock_db_session.execute.side_effect = [
-        MockResult(True),  # Table exists
+        MockResult([(layer_name,)]),  # Table exists (batch check result)
         MockResult(5)      # Count result
     ]
 
@@ -93,9 +97,9 @@ def test_point_in_polygon_fallback(client, mock_db_session):
     }
 
     # Mock DB responses
-    # Table existence check returns False
+    # Table existence check returns empty list
     mock_db_session.execute.side_effect = [
-        MockResult(False)
+        MockResult([])
     ]
 
     # Mock data_loader.get_gdf to return a dummy GDF with a point inside the polygon
