@@ -10,7 +10,7 @@ from pydantic import BaseModel
 import geopandas as gpd
 from shapely.geometry import shape
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
+from sqlalchemy import text, bindparam
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
@@ -36,37 +36,53 @@ async def point_in_polygon(
         user_poly = shape(request.polygon)
         results = {}
         
+        # 1. Optimize: Batch check if tables exist in DB
+        potential_tables = set()
+        layer_to_table = {}
         for layer in request.layers:
-            # 1. Optimize: Check if table exists in DB and use PostGIS
-            # Convert layer name to table name convention
             table_name = layer.lower().replace('-', '_')
-
-            # Basic validation to prevent SQL injection
             if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$", table_name):
+                potential_tables.add(table_name)
+                layer_to_table[layer] = table_name
+
+        existing_tables = set()
+        if potential_tables:
+            try:
+                # Check existence using async query for all potential tables at once
+                exists_query = text("SELECT table_name FROM information_schema.tables WHERE table_name IN :table_names")
+                # Use bindparam with expanding=True for IN clause
+                exists_query = exists_query.bindparams(bindparam("table_names", expanding=True))
+
+                result = await db.execute(exists_query, {"table_names": list(potential_tables)})
+                existing_tables = {row[0] for row in result.fetchall()}
+            except Exception as e:
+                logger.warning(f"Batch table existence check failed: {e}")
+
+        for layer in request.layers:
+            # Check if this layer has a corresponding existing table
+            table_name = layer_to_table.get(layer)
+
+            if table_name and table_name in existing_tables:
                 try:
-                    # Check existence using async query
-                    exists_query = text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = :table_name)")
-                    result = await db.execute(exists_query, {"table_name": table_name})
-                    if result.scalar():
-                        # Table exists, run optimized PostGIS query
-                        # Use ST_Intersects which is generally faster and covers most use cases (point inside or on boundary)
-                        # Ensure we handle CRS. PostGIS data is likely 4326.
-                        count_query = text(f"""
-                            SELECT COUNT(*)
-                            FROM "{table_name}"
-                            WHERE ST_Intersects(
-                                geom,
-                                ST_SetSRID(ST_GeomFromGeoJSON(:geojson), 4326)
-                            )
-                        """)
+                    # Table exists, run optimized PostGIS query
+                    # Use ST_Intersects which is generally faster and covers most use cases (point inside or on boundary)
+                    # Ensure we handle CRS. PostGIS data is likely 4326.
+                    count_query = text(f"""
+                        SELECT COUNT(*)
+                        FROM "{table_name}"
+                        WHERE ST_Intersects(
+                            geom,
+                            ST_SetSRID(ST_GeomFromGeoJSON(:geojson), 4326)
+                        )
+                    """)
 
-                        # Serialize polygon to JSON string for ST_GeomFromGeoJSON
-                        geojson_str = json.dumps(request.polygon)
+                    # Serialize polygon to JSON string for ST_GeomFromGeoJSON
+                    geojson_str = json.dumps(request.polygon)
 
-                        count_result = await db.execute(count_query, {"geojson": geojson_str})
-                        count = count_result.scalar()
-                        results[layer] = count
-                        continue
+                    count_result = await db.execute(count_query, {"geojson": geojson_str})
+                    count = count_result.scalar()
+                    results[layer] = count
+                    continue
                 except Exception as e:
                     logger.warning(f"PostGIS query failed for {layer}: {e}")
                     # Fallthrough to data_loader

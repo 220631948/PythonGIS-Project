@@ -15,6 +15,8 @@ class MockResult:
         return self._data
 
     def fetchall(self):
+        if isinstance(self._data, list):
+            return self._data
         return [self._data] if self._data is not None else []
 
 @pytest.fixture
@@ -45,10 +47,10 @@ def test_point_in_polygon_optimized(client, mock_db_session):
     }
 
     # Mock DB responses
-    # First call checks table existence (True)
+    # First call checks table existence (returns list of rows)
     # Second call executes the count query (5)
     mock_db_session.execute.side_effect = [
-        MockResult(True),  # Table exists
+        MockResult([(layer_name,)]),  # Table exists (batch check returns row with table name)
         MockResult(5)      # Count result
     ]
 
@@ -77,6 +79,7 @@ def test_point_in_polygon_optimized(client, mock_db_session):
         count_query = str(calls[1][0][0])
 
         assert "information_schema.tables" in exists_query
+        assert "IN" in exists_query
         # The query should use ST_Within or ST_Intersects and reference the table
         assert "ST_Within" in count_query or "ST_Intersects" in count_query
         assert layer_name in count_query
@@ -93,9 +96,9 @@ def test_point_in_polygon_fallback(client, mock_db_session):
     }
 
     # Mock DB responses
-    # Table existence check returns False
+    # Table existence check returns empty list
     mock_db_session.execute.side_effect = [
-        MockResult(False)
+        MockResult([])
     ]
 
     # Mock data_loader.get_gdf to return a dummy GDF with a point inside the polygon
