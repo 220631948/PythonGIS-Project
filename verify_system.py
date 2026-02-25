@@ -1,8 +1,6 @@
-import os
 import sys
 import subprocess
 import requests
-import json
 from pathlib import Path
 
 def run_command(cmd, cwd=None):
@@ -87,7 +85,7 @@ def test_data_sources():
                 "accessible": response.status_code == 200,
                 "status_code": response.status_code
             }
-        except:
+        except Exception:
             results[name] = {"accessible": False, "error": "Connection failed"}
 
     accessible = sum(1 for r in results.values() if r["accessible"])
