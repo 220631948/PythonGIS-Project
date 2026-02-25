@@ -20,7 +20,7 @@ from enum import Enum
 from sqlalchemy import func
 
 from app.core.database import SessionLocal
-from app.models.sql_models import BiodiversityArea
+from app.models.sql_models import BiodiversityArea, FloodZone
 
 logger = logging.getLogger(__name__)
 
@@ -246,28 +246,89 @@ class SiteSuitabilityAnalyzer:
             return result
 
     def _eval_flood_risk(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
-        """Evaluate flood risk at location.
+        """Evaluate flood risk at location using PostGIS."""
+        if SessionLocal is None:
+            logger.debug(f"flood_risk: no database connection, using placeholder for ({lat}, {lng})")
+            return CriterionResult(
+                criterion="flood_risk",
+                score=85,
+                weight=0,
+                weighted_score=0,
+                details={
+                    "in_flood_zone": False,
+                    "risk_level": "unknown",
+                    "flood_return_period": "N/A",
+                    "note": self.PLACEHOLDER_NOTE,
+                },
+                constraints=[],
+                data_source="placeholder",
+            )
 
-        TODO: Wire to PostGIS ST_Intersects query against 'flood_zones' layer
-              (MapServer/71 — Stormwater Waterbodies).
-              Query: SELECT 1 FROM flood_zones WHERE ST_Intersects(geom, ST_SetSRID(ST_Point(lng,lat),4326))
-        """
-        # PLACEHOLDER: Returns safe defaults until PostGIS layer is loaded
-        logger.debug(f"flood_risk: placeholder evaluation for ({lat}, {lng})")
-        return CriterionResult(
-            criterion="flood_risk",
-            score=85,
-            weight=0,
-            weighted_score=0,
-            details={
-                "in_flood_zone": False,
-                "risk_level": "unknown",
-                "flood_return_period": "N/A",
-                "note": self.PLACEHOLDER_NOTE,
-            },
-            constraints=[],
-            data_source="placeholder",
-        )
+        session = SessionLocal()
+        try:
+            # Construct point geometry (WGS84)
+            point = func.ST_SetSRID(func.ST_MakePoint(lng, lat), 4326)
+
+            # Query for intersection with flood zones
+            # MapServer/71 — Stormwater Waterbodies
+            area = session.query(FloodZone).filter(
+                func.ST_Intersects(FloodZone.geom, point)
+            ).first()
+
+            if not area:
+                return CriterionResult(
+                    criterion="flood_risk",
+                    score=90,
+                    weight=0,
+                    weighted_score=0,
+                    details={
+                        "in_flood_zone": False,
+                        "risk_level": "Low",
+                        "flood_return_period": "None",
+                        "note": "No flood risk identified"
+                    },
+                    constraints=[],
+                    data_source="postgis",
+                )
+
+            # High risk if in flood zone
+            score = 10
+            risk_level = area.risk_level or "High"
+            return_period = area.return_period or "Unknown"
+
+            return CriterionResult(
+                criterion="flood_risk",
+                score=score,
+                weight=0,
+                weighted_score=0,
+                details={
+                    "in_flood_zone": True,
+                    "risk_level": risk_level,
+                    "flood_return_period": return_period,
+                    "note": f"Located within {risk_level} flood risk zone ({return_period})"
+                },
+                constraints=["High Flood Risk"],
+                data_source="postgis",
+            )
+
+        except Exception as e:
+            logger.error(f"Error querying flood risk data: {e}")
+            return CriterionResult(
+                criterion="flood_risk",
+                score=85,
+                weight=0,
+                weighted_score=0,
+                details={
+                    "in_flood_zone": False,
+                    "risk_level": "unknown",
+                    "flood_return_period": "N/A",
+                    "note": f"Error: {str(e)}",
+                },
+                constraints=[],
+                data_source="error",
+            )
+        finally:
+            session.close()
 
     def _eval_biodiversity(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
         """Evaluate biodiversity constraints using PostGIS."""

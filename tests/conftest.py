@@ -19,12 +19,17 @@ from typing import Generator, Any
 # ============================================================================
 # This allows tests to run in restricted environments where these packages are missing.
 
+def mock_package(name):
+    mock = MagicMock()
+    mock.__path__ = []
+    sys.modules[name] = mock
+    return mock
+
 # Mock Pydantic
 try:
     import pydantic
 except ImportError:
-    pydantic = MagicMock()
-    sys.modules["pydantic"] = pydantic
+    pydantic = mock_package("pydantic")
 
     class MockBaseModel:
         def __init__(self, **kwargs):
@@ -41,8 +46,7 @@ except ImportError:
 try:
     import pydantic_settings
 except ImportError:
-    pydantic_settings = MagicMock()
-    sys.modules["pydantic_settings"] = pydantic_settings
+    pydantic_settings = mock_package("pydantic_settings")
 
     class MockBaseSettings(pydantic.BaseModel):
         pass
@@ -54,9 +58,7 @@ except ImportError:
 try:
     import fastapi
 except ImportError:
-    fastapi = MagicMock()
-    sys.modules["fastapi"] = fastapi
-
+    fastapi = mock_package("fastapi")
     fastapi.FastAPI = MagicMock()
 
     # Configure APIRouter to act as a pass-through decorator
@@ -94,25 +96,33 @@ except ImportError:
             pass
     fastapi.BackgroundTasks = MockBackgroundTasks
 
-    sys.modules["fastapi.staticfiles"] = MagicMock()
-    sys.modules["fastapi.middleware"] = MagicMock()
-    sys.modules["fastapi.middleware.cors"] = MagicMock()
-    sys.modules["fastapi.middleware.gzip"] = MagicMock()
-    sys.modules["fastapi.responses"] = MagicMock()
+    mock_package("fastapi.staticfiles")
+    mock_package("fastapi.middleware")
+    mock_package("fastapi.middleware.cors")
+    mock_package("fastapi.middleware.gzip")
+    mock_package("fastapi.responses")
     sys.modules["fastapi.responses"].FileResponse = MagicMock()
     sys.modules["fastapi.responses"].JSONResponse = MagicMock()
     sys.modules["fastapi.responses"].Response = MagicMock()
-    sys.modules["fastapi.testclient"] = MagicMock()
+    mock_package("fastapi.testclient")
 
 # Mock SQLAlchemy
 try:
     import sqlalchemy
 except ImportError:
-    sqlalchemy = MagicMock()
-    sys.modules["sqlalchemy"] = sqlalchemy
-    sys.modules["sqlalchemy.ext"] = MagicMock()
-    sys.modules["sqlalchemy.ext.asyncio"] = MagicMock()
-    sys.modules["sqlalchemy.orm"] = MagicMock()
+    sqlalchemy = mock_package("sqlalchemy")
+
+    sqlalchemy_orm = mock_package("sqlalchemy.orm")
+    sqlalchemy.orm = sqlalchemy_orm
+
+    sqlalchemy_ext = mock_package("sqlalchemy.ext")
+    sqlalchemy.ext = sqlalchemy_ext
+
+    sqlalchemy_ext_asyncio = mock_package("sqlalchemy.ext.asyncio")
+    sqlalchemy.ext.asyncio = sqlalchemy_ext_asyncio
+
+    sqlalchemy_sql = mock_package("sqlalchemy.sql")
+    sqlalchemy.sql = sqlalchemy_sql
 
     sqlalchemy.orm.declarative_base = MagicMock(return_value=type('Base', (), {}))
     sqlalchemy.orm.sessionmaker = MagicMock()
@@ -122,13 +132,40 @@ except ImportError:
     sqlalchemy.ext.asyncio.AsyncEngine = MagicMock()
     sqlalchemy.create_engine = MagicMock()
     sqlalchemy.text = MagicMock()
+    sqlalchemy.func = MagicMock()
+    sqlalchemy.Column = MagicMock()
+    sqlalchemy.Integer = MagicMock()
+    sqlalchemy.String = MagicMock()
+    sqlalchemy.Float = MagicMock()
+    sqlalchemy.Boolean = MagicMock()
+    sqlalchemy.DateTime = MagicMock()
+    sqlalchemy.JSON = MagicMock()
+    sqlalchemy.Text = MagicMock()
+    sqlalchemy.Index = MagicMock()
+
+# Mock GeoAlchemy2
+try:
+    import geoalchemy2
+except ImportError:
+    geoalchemy2 = mock_package("geoalchemy2")
+    geoalchemy2_shape = mock_package("geoalchemy2.shape")
+    geoalchemy2.shape = geoalchemy2_shape
+    geoalchemy2.Geometry = MagicMock()
+
+# Mock Shapely
+try:
+    import shapely
+    import shapely.geometry
+except ImportError:
+    shapely = mock_package("shapely")
+    shapely_geom = mock_package("shapely.geometry")
+    shapely.geometry = shapely_geom
 
 # Mock httpx
 try:
     import httpx
 except ImportError:
-    httpx = MagicMock()
-    sys.modules["httpx"] = httpx
+    httpx = mock_package("httpx")
     httpx.AsyncClient = MagicMock()
 
 # Mock other dependencies
