@@ -1,0 +1,4 @@
+## 2026-02-25 - [CRITICAL] Missing Auth on Notifications & Fail-Open Policy
+**Vulnerability:** The `create_alert` and `get_notification_stats` endpoints in `app/api/notifications_api.py` were completely unprotected, allowing unauthenticated users to broadcast alerts. Additionally, `require_admin_key` implements a "Fail Open" policy (allows access if key is unset).
+**Learning:** Security dependencies must be explicitly applied to all sensitive endpoints. Configuration-based security toggles (like `ADMIN_API_KEY`) must default to "Fail Secure" (deny access) rather than "Fail Open" (warn and allow) to prevent accidental exposure in misconfigured environments.
+**Prevention:** Use a linter or security scanner to verify auth dependencies on all POST/PUT/DELETE endpoints. Refactor `require_admin_key` to raise 403 if the key is missing, or strictly enforce `DEBUG` checks.
