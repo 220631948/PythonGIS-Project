@@ -8,14 +8,15 @@ from shapely.geometry import Polygon, Point
 
 # Mock result class for SQLAlchemy
 class MockResult:
-    def __init__(self, data):
+    def __init__(self, data, rows=None):
         self._data = data
+        self._rows = rows or []
 
     def scalar(self):
         return self._data
 
     def fetchall(self):
-        return [self._data] if self._data is not None else []
+        return self._rows
 
 @pytest.fixture
 def mock_db_session():
@@ -38,18 +39,19 @@ def test_point_in_polygon_optimized(client, mock_db_session):
     Test that point_in_polygon uses DB optimization when table exists.
     """
     # Setup
-    layer_name = "schools"
+    layer_name = "Schools-Layer"
+    table_name = "schools_layer"
     polygon = {
         "type": "Polygon",
         "coordinates": [[[0, 0], [0, 10], [10, 10], [10, 0], [0, 0]]]
     }
 
     # Mock DB responses
-    # First call checks table existence (True)
+    # First call checks table existence (batch)
     # Second call executes the count query (5)
     mock_db_session.execute.side_effect = [
-        MockResult(True),  # Table exists
-        MockResult(5)      # Count result
+        MockResult(None, rows=[(table_name,)]),  # Table exists (normalized name)
+        MockResult(5)                            # Count result
     ]
 
     # We patch the instance method on the class to ensure it catches calls on the singleton instance
@@ -79,7 +81,7 @@ def test_point_in_polygon_optimized(client, mock_db_session):
         assert "information_schema.tables" in exists_query
         # The query should use ST_Within or ST_Intersects and reference the table
         assert "ST_Within" in count_query or "ST_Intersects" in count_query
-        assert layer_name in count_query
+        assert table_name in count_query
 
 def test_point_in_polygon_fallback(client, mock_db_session):
     """
@@ -93,9 +95,9 @@ def test_point_in_polygon_fallback(client, mock_db_session):
     }
 
     # Mock DB responses
-    # Table existence check returns False
+    # Table existence check returns empty list (no tables exist)
     mock_db_session.execute.side_effect = [
-        MockResult(False)
+        MockResult(None, rows=[])
     ]
 
     # Mock data_loader.get_gdf to return a dummy GDF with a point inside the polygon
