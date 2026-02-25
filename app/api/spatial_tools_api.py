@@ -1,4 +1,5 @@
 import sys
+import asyncio
 import json
 import logging
 import re
@@ -36,21 +37,34 @@ async def point_in_polygon(
         user_poly = shape(request.polygon)
         results = {}
         
+        # 1. Optimized Path: Batch check table existence and run PostGIS queries
+        layer_to_table = {}
+        candidate_layers = []
         for layer in request.layers:
-            # 1. Optimize: Check if table exists in DB and use PostGIS
-            # Convert layer name to table name convention
             table_name = layer.lower().replace('-', '_')
-
-            # Basic validation to prevent SQL injection
             if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$", table_name):
-                try:
-                    # Check existence using async query
-                    exists_query = text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = :table_name)")
-                    result = await db.execute(exists_query, {"table_name": table_name})
-                    if result.scalar():
-                        # Table exists, run optimized PostGIS query
-                        # Use ST_Intersects which is generally faster and covers most use cases (point inside or on boundary)
-                        # Ensure we handle CRS. PostGIS data is likely 4326.
+                layer_to_table[layer] = table_name
+                candidate_layers.append(layer)
+
+        existing_tables = set()
+        if candidate_layers:
+            try:
+                # Batch check existence using async query (reduces N queries to 1)
+                table_names = list(layer_to_table.values())
+                exists_query = text("SELECT table_name FROM information_schema.tables WHERE table_name = ANY(:table_names)")
+                result = await db.execute(exists_query, {"table_names": table_names})
+                existing_tables = {row[0] for row in result.fetchall()}
+            except Exception as e:
+                logger.warning(f"Batch table existence check failed: {e}")
+
+        # Execute count queries for existing tables
+        # Note: We run these sequentially because SQLAlchemy AsyncSession is not task-safe.
+        if existing_tables:
+            geojson_str = json.dumps(request.polygon)
+            for layer in candidate_layers:
+                table_name = layer_to_table[layer]
+                if table_name in existing_tables:
+                    try:
                         count_query = text(f"""
                             SELECT COUNT(*)
                             FROM "{table_name}"
@@ -59,27 +73,29 @@ async def point_in_polygon(
                                 ST_SetSRID(ST_GeomFromGeoJSON(:geojson), 4326)
                             )
                         """)
-
-                        # Serialize polygon to JSON string for ST_GeomFromGeoJSON
-                        geojson_str = json.dumps(request.polygon)
-
                         count_result = await db.execute(count_query, {"geojson": geojson_str})
-                        count = count_result.scalar()
-                        results[layer] = count
-                        continue
-                except Exception as e:
-                    logger.warning(f"PostGIS query failed for {layer}: {e}")
-                    # Fallthrough to data_loader
+                        results[layer] = count_result.scalar()
+                    except Exception as e:
+                        logger.warning(f"PostGIS query failed for {layer}: {e}")
 
-            # 2. Fallback: Load data into memory (slow)
-            gdf = data_loader.get_gdf(layer)
-            if gdf.empty:
-                results[layer] = 0
+        # 2. Fallback Path: For layers that were not in DB or failed DB query
+        for layer in request.layers:
+            if layer in results:
                 continue
-                
-            # Spatial intersection
-            count = gdf[gdf.geometry.within(user_poly)].shape[0]
-            results[layer] = count
+
+            try:
+                # Load data into memory (slow)
+                gdf = data_loader.get_gdf(layer)
+                if gdf.empty:
+                    results[layer] = 0
+                    continue
+
+                # Spatial intersection
+                count = gdf[gdf.geometry.within(user_poly)].shape[0]
+                results[layer] = count
+            except Exception as e:
+                logger.error(f"Fallback failed for layer {layer}: {e}")
+                results[layer] = 0
             
         return {
             "counts": results,
