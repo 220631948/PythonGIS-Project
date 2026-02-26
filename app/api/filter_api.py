@@ -16,7 +16,7 @@ import pandas as pd
 import geopandas as gpd
 
 from app.core.data_loader import data_loader
-from app.spatial_analysis.spatial_utils import gdf_to_geojson
+from app.utils.response_utils import create_geojson_response
 
 logger = logging.getLogger(__name__)
 
@@ -156,13 +156,14 @@ async def filter_dataset(request: FilterRequest):
             filtered = filtered.copy()
             filtered['geometry'] = filtered['geometry'].simplify(request.simplify)
 
-        return {
+        metadata = {
             "dataset": request.dataset,
             "original_count": len(gdf),
             "filtered_count": len(filtered),
-            "filters_applied": len(request.conditions),
-            "geojson": gdf_to_geojson(filtered)
+            "filters_applied": len(request.conditions)
         }
+
+        return create_geojson_response(filtered, metadata=metadata)
 
     except HTTPException:
         raise
@@ -294,12 +295,13 @@ async def text_search(
 
         results = gdf[mask].head(limit)
 
-        return {
+        metadata = {
             "query": q,
             "fields_searched": search_fields,
-            "count": len(results),
-            "geojson": gdf_to_geojson(results)
+            "count": len(results)
         }
+
+        return create_geojson_response(results, metadata=metadata)
 
     except HTTPException:
         raise
