@@ -605,7 +605,7 @@ async def health_check():
 
 
 # Sentry verification endpoint (development / testing only)
-@app.get("/sentry-debug")
+@app.get("/sentry-debug", dependencies=[Depends(require_admin_key)])
 async def sentry_debug():
     """Intentionally raise an error to verify Sentry ingestion.
 
