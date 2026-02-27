@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { CheckCircle, AlertCircle, Info, X, LucideIcon } from 'lucide-react';
 
 interface NotificationTypeConfig {
@@ -19,20 +19,21 @@ export interface NotificationItem {
   duration?: number;
 }
 
-interface NotificationProps {
+export interface NotificationProps {
   message: string;
   type?: 'success' | 'error' | 'info';
   onClose: () => void;
   duration?: number;
 }
 
-const Notification: React.FC<NotificationProps> = ({ message, type = 'info', onClose, duration = 4000 }) => {
+export const Notification: React.FC<NotificationProps> = ({ message, type = 'info', onClose, duration = 4000 }) => {
   const [isVisible, setIsVisible] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
   const config = (NOTIFICATION_TYPES[type] ?? NOTIFICATION_TYPES.info) as NotificationTypeConfig;
   const IconComponent = config.icon;
 
   useEffect(() => {
-    if (duration > 0) {
+    if (duration > 0 && !isPaused) {
       const timer = setTimeout(() => {
         setIsVisible(false);
         setTimeout(onClose, 300); // Allow animation to complete
@@ -40,13 +41,27 @@ const Notification: React.FC<NotificationProps> = ({ message, type = 'info', onC
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [duration, onClose]);
+  }, [duration, onClose, isPaused]);
+
+  // Determine ARIA role and live region based on type
+  const role = type === 'error' ? 'alert' : 'status';
+  const ariaLive = type === 'error' ? 'assertive' : 'polite';
 
   return (
-    <div className={`notification ${config.className} ${isVisible ? 'visible' : 'hidden'}`}>
+    <div
+      className={`notification ${config.className} ${isVisible ? 'visible' : 'hidden'}`}
+      role={role}
+      aria-live={ariaLive}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
       <IconComponent size={18} />
       <span className="notification-message">{message}</span>
-      <button className="notification-close" onClick={onClose}>
+      <button
+        className="notification-close"
+        onClick={onClose}
+        aria-label="Close notification"
+      >
         <X size={14} />
       </button>
     </div>

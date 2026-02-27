@@ -50,7 +50,7 @@ async function fetchWithRetry(
             // Wait before retry (exponential backoff)
             if (attempt < retries) {
                 const delay = retryDelay * Math.pow(2, attempt);
-                // eslint-disable-next-line no-console
+
                 console.log(`[API] Retry ${attempt + 1}/${retries} after ${delay}ms`);
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
