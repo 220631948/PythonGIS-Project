@@ -117,16 +117,30 @@ export default function StyleEditor({
 
   return (
     <div className="style-editor">
-      <div className="style-editor-header" onClick={() => setIsExpanded(!isExpanded)}>
+      <div
+        className="style-editor-header"
+        onClick={() => setIsExpanded(!isExpanded)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+      >
         <div className="header-title">
           <Palette size={16} />
           <span>Layer Style</span>
         </div>
         <div className="header-actions">
           <button
+            type="button"
             className="icon-btn"
             onClick={(e) => { e.stopPropagation(); resetStyle(); }}
             title="Reset to default"
+            aria-label="Reset style to default"
           >
             <RotateCcw size={14} />
           </button>
@@ -150,6 +164,7 @@ export default function StyleEditor({
                     opacity: (STYLE_PRESETS[preset]?.fillOpacity ?? STYLE_PRESETS.default!.fillOpacity) + 0.3
                   }}
                   title={preset}
+                  aria-label={`Apply preset ${preset}`}
                 >
                   {preset.charAt(0).toUpperCase()}
                 </button>
@@ -161,10 +176,13 @@ export default function StyleEditor({
           <div className="style-section">
             <label className="section-label">Fill Color</label>
             <div className="color-row">
-              <div
+              <button
+                type="button"
                 className="color-swatch"
                 style={{ backgroundColor: style.fillColor }}
                 onClick={() => setShowColorPicker(showColorPicker === 'fill' ? null : 'fill')}
+                aria-label="Toggle fill color picker"
+                aria-expanded={showColorPicker === 'fill'}
               />
               <input
                 type="text"
@@ -184,6 +202,7 @@ export default function StyleEditor({
                       updateStyle({ fillColor: color });
                       setShowColorPicker(null);
                     }}
+                    aria-label={`Select fill color ${color}`}
                   />
                 ))}
               </div>
@@ -209,10 +228,13 @@ export default function StyleEditor({
           <div className="style-section">
             <label className="section-label">Stroke Color</label>
             <div className="color-row">
-              <div
+              <button
+                type="button"
                 className="color-swatch"
                 style={{ backgroundColor: style.strokeColor }}
                 onClick={() => setShowColorPicker(showColorPicker === 'stroke' ? null : 'stroke')}
+                aria-label="Toggle stroke color picker"
+                aria-expanded={showColorPicker === 'stroke'}
               />
               <input
                 type="text"
@@ -232,6 +254,7 @@ export default function StyleEditor({
                       updateStyle({ strokeColor: color });
                       setShowColorPicker(null);
                     }}
+                    aria-label={`Select stroke color ${color}`}
                   />
                 ))}
               </div>
