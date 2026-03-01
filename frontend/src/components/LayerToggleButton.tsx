@@ -33,12 +33,13 @@ export const LayerToggleButton: React.FC<LayerToggleButtonProps> = ({
           : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
       } ${className}`}
       aria-pressed={isActive}
+      aria-label={isActive ? `Hide ${layer.name} layer` : `Show ${layer.name} layer`}
     >
       <span className="text-sm font-medium truncate">{layer.name}</span>
       {isActive ? (
-        <Eye size={16} className="text-emerald-500" />
+        <Eye size={16} className="text-emerald-500" aria-hidden="true" />
       ) : (
-        <EyeOff size={16} className="text-slate-400" />
+        <EyeOff size={16} className="text-slate-400" aria-hidden="true" />
       )}
     </button>
   );
