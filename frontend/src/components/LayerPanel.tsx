@@ -87,9 +87,9 @@ const LayerCard: React.FC<LayerCardProps> = ({ layerId, isActive, onToggle, meta
             onToggle();
           }}
           aria-pressed={isActive}
-          aria-label={isActive ? 'Hide layer' : 'Show layer'}
+          aria-label={isActive ? `Hide ${config.name} layer` : `Show ${config.name} layer`}
         >
-          {isActive ? <Eye size={18} /> : <EyeOff size={18} />}
+          {isActive ? <Eye size={18} aria-hidden="true" /> : <EyeOff size={18} aria-hidden="true" />}
         </button>
       </div>
 
