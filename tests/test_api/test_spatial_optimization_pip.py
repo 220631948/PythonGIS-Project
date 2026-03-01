@@ -45,10 +45,15 @@ def test_point_in_polygon_optimized(client, mock_db_session):
     }
 
     # Mock DB responses
-    # First call checks table existence (True)
-    # Second call executes the count query (5)
+    # First call checks table existence (returns a list of tuples containing table names)
+    # Second call executes the count query (returns scalar 5)
+
+    class MockTableResult:
+        def fetchall(self):
+            return [("schools",)]
+
     mock_db_session.execute.side_effect = [
-        MockResult(True),  # Table exists
+        MockTableResult(),  # Table exists
         MockResult(5)      # Count result
     ]
 
