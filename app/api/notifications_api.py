@@ -8,7 +8,8 @@ Provides endpoints for:
 - Email digests for watched locations
 """
 
-from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Query, BackgroundTasks, Depends
+from app.dependencies import require_admin_key
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -163,7 +164,7 @@ async def register_push_token(registration: PushTokenRegistration):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/alerts/create")
+@router.post("/alerts/create", dependencies=[Depends(require_admin_key)])
 async def create_alert(alert: AlertCreate, background_tasks: BackgroundTasks):
     """
     Create a new location-based alert (admin only).
@@ -358,7 +359,7 @@ async def add_location_watch(watch: LocationWatch):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/stats")
+@router.get("/stats", dependencies=[Depends(require_admin_key)])
 async def get_notification_stats():
     """
     Get notification system statistics.
