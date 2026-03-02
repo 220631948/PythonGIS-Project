@@ -236,9 +236,21 @@ export default function FilterPanel({
 
   return (
     <div className="filter-panel">
-      <div className="filter-header" onClick={() => setIsExpanded(!isExpanded)}>
+      <div
+        className="filter-header"
+        onClick={() => setIsExpanded(!isExpanded)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+      >
         <div className="header-title">
-          <Filter size={16} />
+          <Filter size={16} aria-hidden="true" />
           <span>Filters</span>
           {filters.length > 0 && (
             <span className="filter-count">{filters.length}</span>
@@ -249,11 +261,12 @@ export default function FilterPanel({
             <button
               className="clear-btn"
               onClick={(e) => { e.stopPropagation(); clearFilters(); }}
+              aria-label="Clear all filters"
             >
               Clear
             </button>
           )}
-          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          {isExpanded ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
         </div>
       </div>
 
@@ -274,7 +287,11 @@ export default function FilterPanel({
               {filters.length > 1 && (
                 <div className="logic-selector">
                   <span>Match</span>
-                  <select value={logic} onChange={(e) => setLogic(e.target.value)}>
+                  <select
+                    value={logic}
+                    onChange={(e) => setLogic(e.target.value)}
+                    aria-label="Match logic"
+                  >
                     <option value="and">All conditions (AND)</option>
                     <option value="or">Any condition (OR)</option>
                   </select>
@@ -295,6 +312,7 @@ export default function FilterPanel({
                         value: ''
                       })}
                       className="field-select"
+                      aria-label={`Select field for filter ${index + 1}`}
                     >
                       {schema.fields.filter(f => f.name !== 'geometry').map(field => (
                         <option key={field.name} value={field.name}>
@@ -306,6 +324,7 @@ export default function FilterPanel({
                       value={filter.operator}
                       onChange={(e) => updateFilter(filter.id, { operator: e.target.value })}
                       className="operator-select"
+                      aria-label={`Select operator for filter ${index + 1}`}
                     >
                       {getOperatorsForField(filter.field).map(op => (
                         <option key={op} value={op}>
@@ -324,8 +343,9 @@ export default function FilterPanel({
                     <button
                       className="remove-btn"
                       onClick={() => removeFilter(filter.id)}
+                      aria-label={`Remove filter for ${filter.field}`}
                     >
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   </div>
                 ))}
@@ -352,6 +372,8 @@ export default function FilterPanel({
                             key={item.value}
                             className={`facet-chip ${isFacetActive(fieldName, item.value) ? 'active' : ''}`}
                             onClick={() => handleFacetClick(fieldName, item.value)}
+                            aria-label={`Toggle quick filter for ${facetData.display_name}: ${item.value} (${item.count} items)`}
+                            aria-pressed={isFacetActive(fieldName, item.value)}
                           >
                             <span className="facet-value">{item.value}</span>
                             <span className="facet-count">{item.count}</span>
@@ -387,6 +409,7 @@ function FilterValueInput({ field, operator, value, onChange }: FilterValueInput
         onChange={(e) => onChange(e.target.value)}
         className="value-input"
         placeholder="Value"
+        aria-label="Filter value"
       />
     );
   }
@@ -404,6 +427,7 @@ function FilterValueInput({ field, operator, value, onChange }: FilterValueInput
             onChange(selected);
           }}
           className="value-input multi"
+          aria-label={`Select multiple values for ${field.display_name}`}
         >
           {field.values.map(v => (
             <option key={v} value={v}>{v}</option>
@@ -416,6 +440,7 @@ function FilterValueInput({ field, operator, value, onChange }: FilterValueInput
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="value-input"
+        aria-label={`Select value for ${field.display_name}`}
       >
         <option value="">Select...</option>
         {field.values.map(v => (
@@ -437,14 +462,16 @@ function FilterValueInput({ field, operator, value, onChange }: FilterValueInput
             onChange={(e) => onChange([e.target.value, max])}
             className="value-input"
             placeholder="Min"
+            aria-label={`Minimum value for ${field.display_name}`}
           />
-          <span>and</span>
+          <span aria-hidden="true">and</span>
           <input
             type="number"
             value={max}
             onChange={(e) => onChange([min, e.target.value])}
             className="value-input"
             placeholder="Max"
+            aria-label={`Maximum value for ${field.display_name}`}
           />
         </div>
       );
@@ -456,6 +483,7 @@ function FilterValueInput({ field, operator, value, onChange }: FilterValueInput
         onChange={(e) => onChange(e.target.value)}
         className="value-input"
         placeholder={field.min !== undefined ? `${field.min} - ${field.max}` : 'Value'}
+        aria-label={`Number value for ${field.display_name}`}
       />
     );
   }
@@ -471,13 +499,15 @@ function FilterValueInput({ field, operator, value, onChange }: FilterValueInput
             value={start}
             onChange={(e) => onChange([e.target.value, end])}
             className="value-input"
+            aria-label={`Start date for ${field.display_name}`}
           />
-          <span>and</span>
+          <span aria-hidden="true">and</span>
           <input
             type="date"
             value={end}
             onChange={(e) => onChange([start, e.target.value])}
             className="value-input"
+            aria-label={`End date for ${field.display_name}`}
           />
         </div>
       );
@@ -488,6 +518,7 @@ function FilterValueInput({ field, operator, value, onChange }: FilterValueInput
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="value-input"
+        aria-label={`Date value for ${field.display_name}`}
       />
     );
   }
@@ -500,6 +531,7 @@ function FilterValueInput({ field, operator, value, onChange }: FilterValueInput
       onChange={(e) => onChange(e.target.value)}
       className="value-input"
       placeholder="Value"
+      aria-label={`Text value for ${field.display_name}`}
     />
   );
 }
