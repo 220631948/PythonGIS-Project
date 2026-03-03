@@ -49,7 +49,7 @@ export default function IssueReporter({
   onUploadPhoto,
   defaultLocation
 }: IssueReporterProps) {
-  const [step, setStep] = useState<'form' | 'photos' | 'success'>(form');
+  const [step, setStep] = useState<'form' | 'photos' | 'success'>('form');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submittedIssue, setSubmittedIssue] = useState<any>(null);
