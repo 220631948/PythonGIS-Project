@@ -8,7 +8,8 @@ Provides endpoints for:
 - Cache management
 """
 
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, HTTPException, Query, Response, Depends
+from app.dependencies import require_admin_key
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 import logging
@@ -118,7 +119,7 @@ async def get_level_of_detail(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/cache/preload")
+@router.post("/cache/preload", dependencies=[Depends(require_admin_key)])
 async def preload_cache(datasets: list[str], zoom_levels: list[int]):
     """
     Preload cache for specified datasets and zoom levels.
@@ -137,7 +138,7 @@ async def preload_cache(datasets: list[str], zoom_levels: list[int]):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/cache/stats")
+@router.get("/cache/stats", dependencies=[Depends(require_admin_key)])
 async def get_cache_stats():
     """Get cache performance statistics."""
     try:
