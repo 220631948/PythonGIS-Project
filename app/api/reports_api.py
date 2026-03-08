@@ -12,7 +12,7 @@ import logging
 import io
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -168,10 +168,13 @@ async def export_dataset(
             )
 
         elif format.lower() == "geojson":
+            # ⚡ Bolt Optimization: Use direct Response instead of StreamingResponse
+            # for single large string to avoid async generator overhead and enable Content-Length.
+            # to_json() already returns a serialized JSON string.
             geojson_str = gdf.to_json()
 
-            return StreamingResponse(
-                iter([geojson_str]),
+            return Response(
+                content=geojson_str,
                 media_type="application/json",
                 headers={
                     "Content-Disposition": f"attachment; filename={dataset_name}.geojson"
