@@ -329,7 +329,9 @@ async def get_photo(photo_id: str):
 
 # ============ Offline Package ============
 
-@router.post("/offline-package", response_model=OfflinePackage)
+from fastapi import Response
+
+@router.post("/offline-package")
 async def create_offline_package(
     forms: List[str] = Body(default=None, description="Form IDs to include"),
     layers: List[str] = Body(default=None, description="Layer IDs to include"),
@@ -361,31 +363,56 @@ async def create_offline_package(
                     gdf_simplified['geometry'] = gdf_simplified['geometry'].simplify(0.0001)
                     package_layers.append({
                         "id": layer_id,
-                        "geojson": json.loads(gdf_simplified.to_json()),
+                        "geojson": gdf_simplified.to_json(na="null"),
                         "feature_count": len(gdf_simplified)
                     })
             except Exception as e:
                 logger.warning(f"Could not include layer {layer_id}: {e}")
 
-    # Estimate size
-    size_estimate = (
-        sum(len(json.dumps(layer)) for layer in package_layers) / (1024 * 1024) +
-        len(package_forms) * 0.01  # Rough estimate
-    )
+    # Estimate size (roughly)
+    size_estimate = 0
+    for layer in package_layers:
+        size_estimate += len(layer["geojson"]) / (1024 * 1024)
+    size_estimate += len(package_forms) * 0.01  # Rough estimate
 
-    package = OfflinePackage(
-        id=str(uuid.uuid4()),
-        name=f"Offline Package {datetime.utcnow().strftime('%Y-%m-%d')}",
-        forms=package_forms,
-        layers=package_layers,
-        tile_bounds=bbox,
-        tile_zoom_range=[12, 16],
-        size_estimate_mb=round(size_estimate, 2),
-        created_at=datetime.utcnow(),
-        expires_at=datetime.utcnow() + timedelta(days=7)
-    )
+    # Instead of relying on pydantic for serialization which requires dicts,
+    # construct the final JSON string to avoid double serialization of geojson strings
 
-    return package
+    # We serialize the non-layer parts first
+    now = datetime.utcnow()
+
+    # Manually build the layers array JSON string
+    layer_jsons = []
+    for layer in package_layers:
+        layer_json = f'{{"id": "{layer["id"]}", "feature_count": {layer["feature_count"]}, "geojson": {layer["geojson"]}}}'
+        layer_jsons.append(layer_json)
+    layers_str = "[" + ",".join(layer_jsons) + "]"
+
+    # Serialize forms
+    forms_str = json.dumps([f.model_dump(mode='json') for f in package_forms])
+
+    # Serialize bbox
+    bbox_str = json.dumps(bbox) if bbox else "null"
+
+    # Assemble final JSON
+    package_id = str(uuid.uuid4())
+    package_name = f"Offline Package {now.strftime('%Y-%m-%d')}"
+    created_at = now.isoformat()
+    expires_at = (now + timedelta(days=7)).isoformat()
+
+    final_json = f'''{{
+        "id": "{package_id}",
+        "name": "{package_name}",
+        "forms": {forms_str},
+        "layers": {layers_str},
+        "tile_bounds": {bbox_str},
+        "tile_zoom_range": [12, 16],
+        "size_estimate_mb": {round(size_estimate, 2)},
+        "created_at": "{created_at}",
+        "expires_at": "{expires_at}"
+    }}'''
+
+    return Response(content=final_json, media_type="application/json")
 
 
 # ============ Statistics ============
