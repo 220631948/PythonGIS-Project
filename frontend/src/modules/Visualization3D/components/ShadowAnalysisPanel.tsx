@@ -170,6 +170,7 @@ const ShadowAnalysisPanel: React.FC<ShadowAnalysisPanelProps> = ({
             onClick={handleExportReport}
             disabled={!shadowAnalysis}
             title="Export report"
+            aria-label="Export report"
           >
             <Download size={16} />
           </button>
@@ -177,11 +178,13 @@ const ShadowAnalysisPanel: React.FC<ShadowAnalysisPanelProps> = ({
             className={`icon-btn ${showSettings ? 'active' : ''}`}
             onClick={() => setShowSettings(!showSettings)}
             title="Settings"
+            aria-label="Settings"
+            aria-expanded={showSettings}
           >
             <Settings size={16} />
           </button>
           {onClose && (
-            <button className="close-btn" onClick={onClose}>
+            <button className="close-btn" onClick={onClose} aria-label="Close shadow analysis">
               <X size={18} />
             </button>
           )}
@@ -338,6 +341,8 @@ const ShadowAnalysisPanel: React.FC<ShadowAnalysisPanelProps> = ({
                   className="control-btn"
                   onClick={handleToggleAnimation}
                   title={isAnimating ? 'Pause' : 'Play'}
+                  aria-label={isAnimating ? 'Pause animation' : 'Play animation'}
+                  aria-pressed={isAnimating}
                 >
                   {isAnimating ? <Pause size={18} /> : <Play size={18} />}
                 </button>
@@ -346,6 +351,7 @@ const ShadowAnalysisPanel: React.FC<ShadowAnalysisPanelProps> = ({
                   onClick={handleNextFrame}
                   disabled={isAnimating}
                   title="Next frame"
+                  aria-label="Next frame"
                 >
                   <SkipForward size={18} />
                 </button>
