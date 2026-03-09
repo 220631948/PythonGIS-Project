@@ -379,6 +379,34 @@ async def proxy_data(
     try:
         # Domain Intelligence Logic
 
+        # Helper function to avoid double serialization for paginated data
+        def _build_optimized_response(paginated_gdf, total_count, offset, limit, headers):
+            json_str = paginated_gdf.to_json(na="null")
+            if json_str.rstrip().endswith("}"):
+                json_str = json_str.rstrip()[:-1]
+                metadata = {
+                    "total": total_count,
+                    "limit": limit,
+                    "offset": offset,
+                    "returned": len(paginated_gdf),
+                    "has_more": offset + limit < total_count,
+                }
+                metadata_str = json.dumps(metadata)
+                final_json = f'{json_str}, "metadata": {metadata_str}}}'
+                return final_json, Response(content=final_json, media_type="application/json", headers=headers)
+            else:
+                result = {
+                    "type": "FeatureCollection",
+                    "features": json.loads(paginated_gdf.to_json())["features"],
+                    "metadata": {
+                        "total": total_count,
+                        "limit": limit,
+                        "offset": offset,
+                        "returned": len(paginated_gdf),
+                    },
+                }
+                return result, JSONResponse(content=result, headers=headers)
+
         # 1. Transport Domain - Optimize Routes
         if dataset_key == "myciti_routes":
             gdf = data_loader.get_gdf(dataset_key)
@@ -386,25 +414,16 @@ async def proxy_data(
             # Apply pagination
             total = len(optimized)
             paginated = optimized.iloc[offset : offset + limit]
-            result = {
-                "type": "FeatureCollection",
-                "features": json.loads(paginated.to_json())["features"],
-                "metadata": {
-                    "total": total,
-                    "limit": limit,
-                    "offset": offset,
-                    "returned": len(paginated),
-                },
-            }
-            set_cached_response(cache_key, result)
-            return JSONResponse(
-                content=result,
+            final_json, response = _build_optimized_response(
+                paginated, total, offset, limit,
                 headers={
                     "X-Optimization": "TransportOptimizer",
                     "X-Cache": "MISS",
                     "Cache-Control": "public, max-age=86400",
-                },
+                }
             )
+            set_cached_response(cache_key, final_json)
+            return response
 
         # 2. Safety Domain - Merge Precincts with Stats
         elif dataset_key == "safety_precincts":
@@ -415,42 +434,25 @@ async def proxy_data(
                 # Apply pagination
                 total = len(merged)
                 paginated = merged.iloc[offset : offset + limit]
-                result = {
-                    "type": "FeatureCollection",
-                    "features": json.loads(paginated.to_json())["features"],
-                    "metadata": {
-                        "total": total,
-                        "limit": limit,
-                        "offset": offset,
-                        "returned": len(paginated),
-                    },
-                }
-                set_cached_response(cache_key, result)
-                return JSONResponse(
-                    content=result,
+                final_json, response = _build_optimized_response(
+                    paginated, total, offset, limit,
                     headers={
                         "X-Merged": "SafetyAnalyzer",
                         "X-Cache": "MISS",
                         "Cache-Control": "public, max-age=86400",
-                    },
+                    }
                 )
+                set_cached_response(cache_key, final_json)
+                return response
             except Exception as e:
                 logger.error(f"Safety domain error: {e}. Falling back to boundaries.")
                 precincts = data_loader.get_gdf("precincts")
                 total = len(precincts)
                 paginated = precincts.iloc[offset : offset + limit]
-                return JSONResponse(
-                    content={
-                        "type": "FeatureCollection",
-                        "features": json.loads(paginated.to_json())["features"],
-                        "metadata": {
-                            "total": total,
-                            "limit": limit,
-                            "offset": offset,
-                            "returned": len(paginated),
-                        },
-                    }
+                final_json, response = _build_optimized_response(
+                    paginated, total, offset, limit, headers={}
                 )
+                return response
 
         # 3. Default Path - Smart Loader with Pagination
         # Optimized with direct DB pagination
