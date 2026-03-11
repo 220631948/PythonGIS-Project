@@ -10,7 +10,7 @@ Provides endpoints for:
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field, EmailStr
-from typing import List, Optional, Dict, Any
+from typing import List, Dict, Any
 from datetime import datetime
 import logging
 import uuid

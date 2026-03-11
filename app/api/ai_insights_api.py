@@ -8,12 +8,11 @@ Provides endpoints for:
 - Natural language query interface
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import logging
-from datetime import datetime, timedelta
-import json
+from datetime import datetime
 
 router = APIRouter(prefix="/ai", tags=["AI Insights"])
 logger = logging.getLogger(__name__)
@@ -56,7 +55,6 @@ async def predict_traffic(request: TrafficPredictionRequest):
     Uses historical traffic patterns and time-series forecasting.
     """
     try:
-        from app.core.data_loader import data_loader
         import numpy as np
 
         # Parse datetime
@@ -141,7 +139,6 @@ async def predict_crime_hotspots(request: CrimeHotspotRequest):
     Uses DBSCAN or kernel density estimation on historical crime data.
     """
     try:
-        from app.core.data_loader import data_loader
         import numpy as np
 
         # In production, load actual crime data and perform clustering
@@ -207,7 +204,6 @@ async def detect_land_use_changes(request: ChangeDetectionRequest):
     Uses satellite imagery analysis or cadastral data comparison.
     """
     try:
-        import numpy as np
 
         # Mock change detection (in production, analyze satellite imagery or cadastral records)
 

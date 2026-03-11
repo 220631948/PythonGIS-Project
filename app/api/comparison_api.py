@@ -10,7 +10,7 @@ Provides endpoints for:
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import List, Dict
 import logging
 
 router = APIRouter(prefix="/comparison", tags=["Comparative Analysis"])

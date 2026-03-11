@@ -9,10 +9,8 @@ Provides endpoints for:
 """
 
 from fastapi import APIRouter, HTTPException, Query, Response
-from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional
 import logging
-import json
 
 from app.core.database import get_clustered_points
 

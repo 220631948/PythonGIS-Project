@@ -8,7 +8,7 @@ Provides:
 - Offline data package generation
 """
 
-from fastapi import APIRouter, HTTPException, Query, UploadFile, File, Body
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File, Body, Response
 from typing import Optional, List, Dict
 from datetime import datetime, timedelta
 import json
@@ -348,7 +348,9 @@ async def create_offline_package(
             package_forms.append(_forms[form_id])
 
     # Get reference layers
-    package_layers = []
+    package_layers_json = []
+    size_estimate = len(package_forms) * 0.01  # Rough estimate
+
     if layers:
         for layer_id in layers:
             try:
@@ -359,25 +361,22 @@ async def create_offline_package(
                     # Simplify for offline use
                     gdf_simplified = gdf.copy()
                     gdf_simplified['geometry'] = gdf_simplified['geometry'].simplify(0.0001)
-                    package_layers.append({
-                        "id": layer_id,
-                        "geojson": json.loads(gdf_simplified.to_json()),
-                        "feature_count": len(gdf_simplified)
-                    })
+
+                    # ⚡ Bolt Optimization: Avoid json.loads() double-serialization overhead
+                    # We serialize the GeoJSON directly to a string and wrap it in a custom JSON object
+                    geojson_str = gdf_simplified.to_json()
+                    safe_layer_id = json.dumps(layer_id)
+                    layer_json_str = f'{{"id": {safe_layer_id}, "feature_count": {len(gdf_simplified)}, "geojson": {geojson_str}}}'
+                    package_layers_json.append(layer_json_str)
+                    size_estimate += len(layer_json_str) / (1024 * 1024)
             except Exception as e:
                 logger.warning(f"Could not include layer {layer_id}: {e}")
-
-    # Estimate size
-    size_estimate = (
-        sum(len(json.dumps(layer)) for layer in package_layers) / (1024 * 1024) +
-        len(package_forms) * 0.01  # Rough estimate
-    )
 
     package = OfflinePackage(
         id=str(uuid.uuid4()),
         name=f"Offline Package {datetime.utcnow().strftime('%Y-%m-%d')}",
         forms=package_forms,
-        layers=package_layers,
+        layers=[],  # We will manually append the pre-serialized layers
         tile_bounds=bbox,
         tile_zoom_range=[12, 16],
         size_estimate_mb=round(size_estimate, 2),
@@ -385,7 +384,15 @@ async def create_offline_package(
         expires_at=datetime.utcnow() + timedelta(days=7)
     )
 
-    return package
+    # ⚡ Bolt Optimization: Skip Pydantic/FastAPI re-serialization of massive layer data
+    # Serialize the package without the layers, then manually inject the layer array string
+    package_json = package.model_dump_json(exclude={"layers"})
+    layers_str = ",".join(package_layers_json)
+
+    # We strip the closing brace and inject the layers property manually
+    response_content = f'{package_json[:-1]}, "layers": [{layers_str}]}}'
+
+    return Response(content=response_content, media_type="application/json")
 
 
 # ============ Statistics ============
