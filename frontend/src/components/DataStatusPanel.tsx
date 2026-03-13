@@ -142,6 +142,7 @@ const DataStatusPanel: React.FC<DataStatusPanelProps> = ({ isOpen, onClose }) =>
                 </div>
                 <button
                     onClick={onClose}
+                    aria-label="Close status panel"
                     style={{
                         background: 'none',
                         border: 'none',
@@ -158,11 +159,15 @@ const DataStatusPanel: React.FC<DataStatusPanelProps> = ({ isOpen, onClose }) =>
             <div style={{
                 display: 'flex',
                 borderBottom: '1px solid #e5e7eb'
-            }}>
+            }} role="tablist">
                 {(['health', 'log'] as const).map(tab => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
+                        role="tab"
+                        aria-selected={activeTab === tab}
+                        aria-controls={`${tab}-panel`}
+                        id={`${tab}-tab`}
                         style={{
                             flex: 1,
                             padding: '12px',
@@ -179,7 +184,13 @@ const DataStatusPanel: React.FC<DataStatusPanelProps> = ({ isOpen, onClose }) =>
             </div>
 
             {/* Content */}
-            <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+            <div
+                style={{ flex: 1, overflow: 'auto', padding: '16px' }}
+                role="tabpanel"
+                id={`${activeTab}-panel`}
+                aria-labelledby={`${activeTab}-tab`}
+                tabIndex={0}
+            >
                 {loading && (
                     <div style={{ textAlign: 'center', padding: '40px' }}>
                         <div className="spinner" style={{ margin: '0 auto 16px' }}>⏳</div>

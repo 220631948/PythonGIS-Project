@@ -407,23 +407,35 @@ export default function ExportPanel({
     <div className="export-panel">
       <div className="panel-header">
         <h2><Download size={20} /> Export & Print</h2>
-        <button onClick={onClose}><X size={18} /></button>
+        <button onClick={onClose} aria-label="Close export panel"><X size={18} /></button>
       </div>
 
-      <div className="tab-bar">
+      <div className="tab-bar" role="tablist">
         <button
+          role="tab"
+          aria-selected={activeTab === 'data'}
+          aria-controls="data-panel"
+          id="data-tab"
           className={activeTab === 'data' ? 'active' : ''}
           onClick={() => setActiveTab('data')}
         >
           <Download size={14} /> Data
         </button>
         <button
+          role="tab"
+          aria-selected={activeTab === 'analysis'}
+          aria-controls="analysis-panel"
+          id="analysis-tab"
           className={activeTab === 'analysis' ? 'active' : ''}
           onClick={() => setActiveTab('analysis')}
         >
           <FileText size={14} /> Analysis
         </button>
         <button
+          role="tab"
+          aria-selected={activeTab === 'print'}
+          aria-controls="print-panel"
+          id="print-tab"
           className={activeTab === 'print' ? 'active' : ''}
           onClick={() => setActiveTab('print')}
         >
@@ -431,7 +443,13 @@ export default function ExportPanel({
         </button>
       </div>
 
-      <div className="tab-content">
+      <div
+        className="tab-content"
+        role="tabpanel"
+        id={`${activeTab}-panel`}
+        aria-labelledby={`${activeTab}-tab`}
+        tabIndex={0}
+      >
         {activeTab === 'data' && (
           <DataExportForm
             datasets={datasets}
