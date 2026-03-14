@@ -26,13 +26,14 @@ interface NotificationProps {
   duration?: number;
 }
 
-const Notification: React.FC<NotificationProps> = ({ message, type = 'info', onClose, duration = 4000 }) => {
+export const Notification: React.FC<NotificationProps> = ({ message, type = 'info', onClose, duration = 4000 }) => {
   const [isVisible, setIsVisible] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
   const config = (NOTIFICATION_TYPES[type] ?? NOTIFICATION_TYPES.info) as NotificationTypeConfig;
   const IconComponent = config.icon;
 
   useEffect(() => {
-    if (duration > 0) {
+    if (duration > 0 && !isPaused) {
       const timer = setTimeout(() => {
         setIsVisible(false);
         setTimeout(onClose, 300); // Allow animation to complete
@@ -40,14 +41,23 @@ const Notification: React.FC<NotificationProps> = ({ message, type = 'info', onC
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [duration, onClose]);
+  }, [duration, onClose, isPaused]);
 
   return (
-    <div className={`notification ${config.className} ${isVisible ? 'visible' : 'hidden'}`}>
-      <IconComponent size={18} />
+    <div
+      className={`notification ${config.className} ${isVisible ? 'visible' : 'hidden'}`}
+      role={type === 'error' ? 'alert' : 'status'}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      <IconComponent size={18} aria-hidden="true" />
       <span className="notification-message">{message}</span>
-      <button className="notification-close" onClick={onClose}>
-        <X size={14} />
+      <button
+        className="notification-close"
+        onClick={onClose}
+        aria-label="Close notification"
+      >
+        <X size={14} aria-hidden="true" />
       </button>
     </div>
   );
