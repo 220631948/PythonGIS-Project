@@ -87,7 +87,7 @@ async def point_in_polygon(
                     # Fallthrough to data_loader
 
             # 2. Fallback: Load data into memory (slow)
-            gdf = data_loader.get_gdf(layer)
+            gdf = await data_loader.get_gdf_async(layer)
             if gdf.empty:
                 results[layer] = 0
                 continue

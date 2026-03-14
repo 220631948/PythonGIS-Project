@@ -68,7 +68,7 @@ async def get_summary_report(
 
         for ds_name in dataset_list:
             try:
-                gdf = data_loader.get_gdf(ds_name)
+                gdf = await data_loader.get_gdf_async(ds_name)
                 if gdf.empty:
                     continue
 
@@ -130,7 +130,7 @@ async def export_dataset(
     try:
         import pandas as pd
 
-        gdf = data_loader.get_gdf(dataset_name)
+        gdf = await data_loader.get_gdf_async(dataset_name)
         if gdf.empty:
             raise HTTPException(status_code=404, detail=f"Dataset {dataset_name} not found")
 
@@ -227,7 +227,7 @@ async def generate_analysis_report(
 
         for ds_name, ds_label in datasets_to_analyze:
             try:
-                gdf = data_loader.get_gdf(ds_name)
+                gdf = await data_loader.get_gdf_async(ds_name)
                 if gdf.empty:
                     continue
 
@@ -303,7 +303,7 @@ async def get_dashboard_data():
         # Aggregate dataset statistics
         for ds_name in settings.DATA_URLS.keys():
             try:
-                gdf = data_loader.get_gdf(ds_name)
+                gdf = await data_loader.get_gdf_async(ds_name)
                 if gdf.empty:
                     logger.debug(f"Skipping empty dataset: {ds_name}")
                     continue

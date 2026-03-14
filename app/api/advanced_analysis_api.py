@@ -180,7 +180,7 @@ async def validate_topology(
         pass
 
     try:
-        gdf = data_loader.get_gdf(dataset)
+        gdf = await data_loader.get_gdf_async(dataset)
     except Exception:
         raise HTTPException(status_code=404, detail=f"Dataset not found: {dataset}")
 
@@ -272,7 +272,7 @@ async def fix_topology(
     Returns fixed GeoJSON.
     """
     try:
-        gdf = data_loader.get_gdf(dataset)
+        gdf = await data_loader.get_gdf_async(dataset)
     except Exception:
         raise HTTPException(status_code=404, detail=f"Dataset not found: {dataset}")
 
@@ -461,7 +461,7 @@ async def find_nearest_facility(
         raise HTTPException(status_code=400, detail=f"Unknown facility type: {facility_type}")
 
     try:
-        gdf = data_loader.get_gdf(dataset)
+        gdf = await data_loader.get_gdf_async(dataset)
     except Exception:
         raise HTTPException(status_code=404, detail=f"Dataset not found: {dataset}")
 

@@ -63,7 +63,7 @@ async def get_building_extrusion(request: BuildingExtrusionRequest):
         from shapely.geometry import box
 
         # Load buildings dataset
-        buildings_gdf = data_loader.get_gdf("buildings")
+        buildings_gdf = await data_loader.get_gdf_async("buildings")
 
         # Create bounding box
         bounds = request.bounds

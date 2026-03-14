@@ -135,7 +135,7 @@ async def export_data(request: DataExportRequest, background_tasks: BackgroundTa
     background_tasks.add_task(_cleanup_old_exports)
 
     try:
-        gdf = data_loader.get_gdf(request.dataset)
+        gdf = await data_loader.get_gdf_async(request.dataset)
     except Exception:
         raise HTTPException(status_code=404, detail=f"Dataset not found: {request.dataset}")
 

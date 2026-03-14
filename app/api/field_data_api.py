@@ -352,7 +352,7 @@ async def create_offline_package(
     if layers:
         for layer_id in layers:
             try:
-                gdf = data_loader.get_gdf(layer_id)
+                gdf = await data_loader.get_gdf_async(layer_id)
                 if bbox:
                     gdf = gdf.cx[bbox[0]:bbox[2], bbox[1]:bbox[3]]
                 if not gdf.empty:
