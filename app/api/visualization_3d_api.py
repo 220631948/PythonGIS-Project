@@ -8,7 +8,7 @@ Provides endpoints for:
 - 3D viewshed analysis
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import logging
@@ -325,9 +325,9 @@ async def calculate_viewshed(request: ViewshedRequest):
 
 @router.get("/terrain/tiles/{z}/{x}/{y}")
 async def get_terrain_tile(
-    z: int = Query(..., description="Zoom level"),
-    x: int = Query(..., description="Tile X coordinate"),
-    y: int = Query(..., description="Tile Y coordinate")
+    z: int = Path(..., description="Zoom level"),
+    x: int = Path(..., description="Tile X coordinate"),
+    y: int = Path(..., description="Tile Y coordinate")
 ):
     """
     Get terrain RGB tile for 3D terrain rendering.
