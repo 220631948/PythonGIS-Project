@@ -63,7 +63,7 @@ async def get_filter_schema(dataset_name: str):
         except Exception:
             pass
 
-        gdf = data_loader.get_gdf(dataset_name)
+        gdf = await data_loader.get_gdf_async(dataset_name)
         if gdf.empty:
             raise HTTPException(status_code=404, detail=f"Dataset {dataset_name} not found")
 
@@ -138,7 +138,7 @@ async def filter_dataset(request: FilterRequest):
         except Exception:
             pass
 
-        gdf = data_loader.get_gdf(request.dataset)
+        gdf = await data_loader.get_gdf_async(request.dataset)
         if gdf.empty:
             raise HTTPException(status_code=404, detail=f"Dataset {request.dataset} not found")
 
@@ -193,7 +193,7 @@ async def get_facets(request: FacetRequest):
     Returns value counts for specified fields, useful for building filter UIs.
     """
     try:
-        gdf = data_loader.get_gdf(request.dataset)
+        gdf = await data_loader.get_gdf_async(request.dataset)
         if gdf.empty:
             raise HTTPException(status_code=404, detail=f"Dataset {request.dataset} not found")
 
@@ -271,7 +271,7 @@ async def text_search(
     Full-text search across dataset fields.
     """
     try:
-        gdf = data_loader.get_gdf(dataset_name)
+        gdf = await data_loader.get_gdf_async(dataset_name)
         if gdf.empty:
             raise HTTPException(status_code=404, detail=f"Dataset {dataset_name} not found")
 

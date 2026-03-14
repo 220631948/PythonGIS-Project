@@ -74,7 +74,7 @@ async def list_temporal_datasets():
 
     for dataset_name in settings.DATA_URLS.keys():
         try:
-            gdf = data_loader.get_gdf(dataset_name)
+            gdf = await data_loader.get_gdf_async(dataset_name)
             if gdf.empty:
                 continue
 
@@ -108,7 +108,7 @@ async def filter_by_time(
     Returns GeoJSON features that fall within the specified time range.
     """
     try:
-        gdf = data_loader.get_gdf(dataset_name)
+        gdf = await data_loader.get_gdf_async(dataset_name)
         if gdf.empty:
             raise HTTPException(status_code=404, detail=f"Dataset {dataset_name} is empty or not found")
 
@@ -171,7 +171,7 @@ async def get_animation_frames(
     for creating map animations.
     """
     try:
-        gdf = data_loader.get_gdf(dataset_name)
+        gdf = await data_loader.get_gdf_async(dataset_name)
         if gdf.empty:
             raise HTTPException(status_code=404, detail=f"Dataset {dataset_name} not found")
 
@@ -263,7 +263,7 @@ async def temporal_aggregate(
     Returns time-series data suitable for charting.
     """
     try:
-        gdf = data_loader.get_gdf(dataset_name)
+        gdf = await data_loader.get_gdf_async(dataset_name)
         if gdf.empty:
             raise HTTPException(status_code=404, detail="Dataset not found")
 

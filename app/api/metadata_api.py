@@ -371,7 +371,7 @@ async def search_attributes(query: AttributeSearchQuery):
     Find features matching attribute values or ranges.
     """
     try:
-        gdf = data_loader.get_gdf(query.dataset)
+        gdf = await data_loader.get_gdf_async(query.dataset)
     except Exception:
         raise HTTPException(status_code=404, detail=f"Dataset not found: {query.dataset}")
 

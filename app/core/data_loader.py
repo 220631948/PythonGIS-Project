@@ -152,6 +152,13 @@ class DataLoader:
         # Return the GeoDataFrame so callers can use the loaded data
         return gdf
 
+
+    async def get_gdf_async(
+        self, dataset_name: str, force_refresh: bool = False
+    ) -> gpd.GeoDataFrame:
+        """Asynchronously returns a GeoDataFrame without blocking the event loop."""
+        return await asyncio.to_thread(self.get_gdf, dataset_name, force_refresh)
+
     def load_csv(self, dataset_name: str) -> pd.DataFrame:
         """Load tabular data (CSV/Excel) from configured source."""
         return self.fetcher.load_csv(dataset_name)

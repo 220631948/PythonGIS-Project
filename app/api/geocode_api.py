@@ -150,7 +150,7 @@ async def autocomplete(
 
     # Search suburbs (most common search)
     try:
-        suburbs = data_loader.get_gdf("suburbs")
+        suburbs = await data_loader.get_gdf_async("suburbs")
         if suburbs.empty:
             logger.debug("Suburbs dataset is empty, using landmarks only")
         elif 'name' in suburbs.columns:
@@ -179,7 +179,7 @@ async def _search_local_datasets(query: str, limit: int) -> List[GeocodingResult
 
     # Search suburbs
     try:
-        suburbs = data_loader.get_gdf("suburbs")
+        suburbs = await data_loader.get_gdf_async("suburbs")
         if not suburbs.empty and 'name' in suburbs.columns:
             matches = suburbs[suburbs['name'].str.lower().str.contains(query, na=False)]
             for _, row in matches.head(limit).iterrows():
@@ -205,7 +205,7 @@ async def _search_local_datasets(query: str, limit: int) -> List[GeocodingResult
         if len(results) >= limit:
             break
         try:
-            gdf = data_loader.get_gdf(dataset)
+            gdf = await data_loader.get_gdf_async(dataset)
             if not gdf.empty:
                 # Find name column
                 name_col = None
@@ -279,7 +279,7 @@ async def _reverse_geocode_local(lat: float, lon: float) -> Optional[Dict]:
         from shapely.geometry import Point
         point = Point(lon, lat)
 
-        suburbs = data_loader.get_gdf("suburbs")
+        suburbs = await data_loader.get_gdf_async("suburbs")
         if suburbs.empty:
             logger.debug("Suburbs dataset empty for reverse geocoding")
             return None

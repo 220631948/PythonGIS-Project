@@ -171,7 +171,7 @@ async def validate_dataset(dataset_name: str, force_refresh: bool = Query(False)
         raise HTTPException(status_code=404, detail=f"Dataset '{dataset_name}' not configured")
 
     try:
-        gdf = data_loader.get_gdf(dataset_name, force_refresh=force_refresh)
+        gdf = await data_loader.get_gdf_async(dataset_name, force_refresh=force_refresh)
         validation = data_loader.validate_gdf(gdf, dataset_name)
 
         return {

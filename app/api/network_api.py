@@ -197,7 +197,7 @@ async def calculate_service_area(
     """
     try:
         # Load facilities
-        gdf = data_loader.get_gdf(facility_type)
+        gdf = await data_loader.get_gdf_async(facility_type)
         if gdf.empty:
             raise HTTPException(status_code=404, detail=f"Facility type {facility_type} not found")
 
@@ -249,7 +249,7 @@ async def find_nearest_facility(
         point = Point(lon, lat)
 
         # Load facilities
-        gdf = data_loader.get_gdf(facility_type)
+        gdf = await data_loader.get_gdf_async(facility_type)
         if gdf.empty:
             raise HTTPException(status_code=404, detail=f"Facility type {facility_type} not found")
 
@@ -331,7 +331,7 @@ async def analyze_transit_connectivity(
 
         # Check MyCiti stops
         try:
-            stops = data_loader.get_gdf("myciti_stops")
+            stops = await data_loader.get_gdf_async("myciti_stops")
             if not stops.empty:
                 nearby_stops = stops[stops.geometry.within(buffer)]
                 connectivity["transit_options"].append({
@@ -345,7 +345,7 @@ async def analyze_transit_connectivity(
 
         # Check rail stations
         try:
-            rail = data_loader.get_gdf("rail_stations")
+            rail = await data_loader.get_gdf_async("rail_stations")
             if not rail.empty:
                 nearby_rail = rail[rail.geometry.within(buffer)]
                 connectivity["transit_options"].append({
@@ -388,7 +388,7 @@ async def _find_transit_stops_along_route(
         buffer_geom = buffer_wgs.geometry.iloc[0]
 
         # Find stops
-        stops = data_loader.get_gdf("myciti_stops")
+        stops = await data_loader.get_gdf_async("myciti_stops")
         if not stops.empty:
             nearby = stops[stops.geometry.within(buffer_geom)]
             for _, row in nearby.head(10).iterrows():
