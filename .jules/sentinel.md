@@ -2,3 +2,7 @@
 **Vulnerability:** The `create_alert` and `get_notification_stats` endpoints in `app/api/notifications_api.py` were missing the `require_admin_key` dependency, exposing admin functionality to unauthenticated users.
 **Learning:** Even when the docstring or memory states an endpoint is restricted to administrators using a decorator, it's essential to verify its presence in the actual route definition. Missing decorators lead to immediate access control bypasses.
 **Prevention:** Always verify the presence of `dependencies=[Depends(require_admin_key)]` on new or modified endpoints meant for administrators. Incorporate automated security tests to specifically query admin endpoints without authentication headers and assert they return 401/403.
+## 2024-05-24 - Missing Authentication on Admin Endpoints in Performance API
+**Vulnerability:** The `/cache/preload` and `/cache/stats` endpoints in `app/api/performance_api.py` were missing the `dependencies=[Depends(require_admin_key)]` decorator, allowing unauthorized access to administrative functions.
+**Learning:** Endpoints intended for administrators must explicitly include the `require_admin_key` dependency in their FastAPI router decorators to prevent unauthorized access. Docstrings stating "Admin endpoint" are not sufficient to secure the endpoint.
+**Prevention:** Always verify that access control decorators mentioned in docstrings or documentation are explicitly applied to the route definitions, and include security checks in the PR review process for new endpoints.
