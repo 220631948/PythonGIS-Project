@@ -15,3 +15,6 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+## 2024-05-14 - Add ARIA Labels to Icon-Only Panel Controls
+**Learning:** Found a recurring pattern across the app where panel close/dismiss buttons using only icons (like `<X />` or `×`) lacked `aria-label`s, making them unannounced to screen readers. This makes interactive panels confusing for users relying on assistive technology.
+**Action:** Always verify that icon-only interactive controls (especially modal or panel close buttons) include a descriptive `aria-label` explaining their function (e.g., "Close export panel").
