@@ -386,35 +386,30 @@ async def proxy_data(
             # Apply pagination
             total = len(optimized)
             paginated = optimized.iloc[offset : offset + limit]
-            result = {
-                "type": "FeatureCollection",
-                "features": json.loads(paginated.to_json())["features"],
-                "metadata": {
+            json_str = paginated.to_json(na="null")
+
+            if json_str.rstrip().endswith("}"):
+                json_str = json_str.rstrip()[:-1]
+                metadata = {
                     "total": total,
                     "limit": limit,
                     "offset": offset,
                     "returned": len(paginated),
-                },
-            }
-            set_cached_response(cache_key, result)
-            return JSONResponse(
-                content=result,
-                headers={
-                    "X-Optimization": "TransportOptimizer",
-                    "X-Cache": "MISS",
-                    "Cache-Control": "public, max-age=86400",
-                },
-            )
+                }
+                metadata_str = json.dumps(metadata)
+                final_json = f'{json_str}, "metadata": {metadata_str}}}'
 
-        # 2. Safety Domain - Merge Precincts with Stats
-        elif dataset_key == "safety_precincts":
-            try:
-                precincts = data_loader.get_gdf("precincts")
-                stats = data_loader.load_csv("crime_stats")
-                merged = safety_analyzer.merge_stats_with_precincts(precincts, stats)
-                # Apply pagination
-                total = len(merged)
-                paginated = merged.iloc[offset : offset + limit]
+                set_cached_response(cache_key, final_json)
+                return Response(
+                    content=final_json,
+                    media_type="application/json",
+                    headers={
+                        "X-Optimization": "TransportOptimizer",
+                        "X-Cache": "MISS",
+                        "Cache-Control": "public, max-age=86400",
+                    },
+                )
+            else:
                 result = {
                     "type": "FeatureCollection",
                     "features": json.loads(paginated.to_json())["features"],
@@ -429,18 +424,46 @@ async def proxy_data(
                 return JSONResponse(
                     content=result,
                     headers={
-                        "X-Merged": "SafetyAnalyzer",
+                        "X-Optimization": "TransportOptimizer",
                         "X-Cache": "MISS",
                         "Cache-Control": "public, max-age=86400",
                     },
                 )
-            except Exception as e:
-                logger.error(f"Safety domain error: {e}. Falling back to boundaries.")
+
+        # 2. Safety Domain - Merge Precincts with Stats
+        elif dataset_key == "safety_precincts":
+            try:
                 precincts = data_loader.get_gdf("precincts")
-                total = len(precincts)
-                paginated = precincts.iloc[offset : offset + limit]
-                return JSONResponse(
-                    content={
+                stats = data_loader.load_csv("crime_stats")
+                merged = safety_analyzer.merge_stats_with_precincts(precincts, stats)
+                # Apply pagination
+                total = len(merged)
+                paginated = merged.iloc[offset : offset + limit]
+                json_str = paginated.to_json(na="null")
+
+                if json_str.rstrip().endswith("}"):
+                    json_str = json_str.rstrip()[:-1]
+                    metadata = {
+                        "total": total,
+                        "limit": limit,
+                        "offset": offset,
+                        "returned": len(paginated),
+                    }
+                    metadata_str = json.dumps(metadata)
+                    final_json = f'{json_str}, "metadata": {metadata_str}}}'
+
+                    set_cached_response(cache_key, final_json)
+                    return Response(
+                        content=final_json,
+                        media_type="application/json",
+                        headers={
+                            "X-Merged": "SafetyAnalyzer",
+                            "X-Cache": "MISS",
+                            "Cache-Control": "public, max-age=86400",
+                        },
+                    )
+                else:
+                    result = {
                         "type": "FeatureCollection",
                         "features": json.loads(paginated.to_json())["features"],
                         "metadata": {
@@ -450,7 +473,50 @@ async def proxy_data(
                             "returned": len(paginated),
                         },
                     }
-                )
+                    set_cached_response(cache_key, result)
+                    return JSONResponse(
+                        content=result,
+                        headers={
+                            "X-Merged": "SafetyAnalyzer",
+                            "X-Cache": "MISS",
+                            "Cache-Control": "public, max-age=86400",
+                        },
+                    )
+            except Exception as e:
+                logger.error(f"Safety domain error: {e}. Falling back to boundaries.")
+                precincts = data_loader.get_gdf("precincts")
+                total = len(precincts)
+                paginated = precincts.iloc[offset : offset + limit]
+                json_str = paginated.to_json(na="null")
+
+                if json_str.rstrip().endswith("}"):
+                    json_str = json_str.rstrip()[:-1]
+                    metadata = {
+                        "total": total,
+                        "limit": limit,
+                        "offset": offset,
+                        "returned": len(paginated),
+                    }
+                    metadata_str = json.dumps(metadata)
+                    final_json = f'{json_str}, "metadata": {metadata_str}}}'
+
+                    return Response(
+                        content=final_json,
+                        media_type="application/json"
+                    )
+                else:
+                    return JSONResponse(
+                        content={
+                            "type": "FeatureCollection",
+                            "features": json.loads(paginated.to_json())["features"],
+                            "metadata": {
+                                "total": total,
+                                "limit": limit,
+                                "offset": offset,
+                                "returned": len(paginated),
+                            },
+                        }
+                    )
 
         # 3. Default Path - Smart Loader with Pagination
         # Optimized with direct DB pagination

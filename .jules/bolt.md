@@ -9,3 +9,7 @@
 ## 2026-02-19 - [Backend] Spatial Intersection Optimization
 **Learning:** Loading entire datasets into memory with `geopandas` for point-in-polygon checks is extremely inefficient for large datasets. Using PostGIS `ST_Intersects` (or `ST_Within`) allows the database to use spatial indexes and only return the count, avoiding data transfer and memory overhead.
 **Action:** Always prefer database-side spatial operations (`ST_Intersects`, `ST_DWithin`) over loading data into application memory. When implementing fallback logic, ensure input geometries are correctly serialized for PostGIS (e.g., `ST_GeomFromGeoJSON`) and coordinate systems are handled (e.g., `ST_SetSRID(..., 4326)`). Also, validating table names with regex is critical when dynamic table names are used.
+
+## 2026-03-17 - [Backend] Eliminating Double-Serialization in GeoJSON Endpoints
+**Learning:** `paginated.to_json()` outputs a full JSON string. Using `json.loads(paginated.to_json())` just to extract the `"features"` list and then return it via `JSONResponse` causes massive CPU overhead because it forces a String -> Dict -> String conversion cycle.
+**Action:** Always manipulate the JSON string directly (e.g., using string concatenation or slicing) and return it using `Response(content=str, media_type="application/json")`. Make sure the caching mechanism correctly supports storing and returning raw JSON strings to fully bypass FastAPI's serialization overhead.
