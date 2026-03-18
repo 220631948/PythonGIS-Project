@@ -169,10 +169,13 @@ async def get_nearby_features(
 
     # Filter for consolidated tables
     type_filter = ""
+    bind_params = {"lon": lon, "lat": lat, "radius": radius}
+
     if layer in ["schools", "clinics", "libraries", "hospitals"]:
         # Remove plural s for singular type in DB
         facility_type = layer[:-1]
-        type_filter = f"AND facility_type = '{facility_type}'"
+        type_filter = "AND facility_type = :facility_type"
+        bind_params["facility_type"] = facility_type
     elif layer == "myciti_stops":
         type_filter = "AND stop_type = 'bus_stop'"
     elif layer == "rail_stations":
@@ -219,7 +222,7 @@ async def get_nearby_features(
             FROM nearby
         """
 
-        result = await db.execute(text(query_sql), {"lon": lon, "lat": lat, "radius": radius})
+        result = await db.execute(text(query_sql), bind_params)
         geojson_str = result.scalar()
 
         # Return raw response to avoid re-serialization
