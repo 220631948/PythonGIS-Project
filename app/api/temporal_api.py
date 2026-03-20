@@ -8,16 +8,17 @@ Provides REST API for:
 """
 
 import logging
+import json
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Response
 from pydantic import BaseModel
 import geopandas as gpd
 import pandas as pd
 
 from app.config import settings
 from app.core.data_loader import data_loader
-from app.spatial_analysis.spatial_utils import gdf_to_geojson
+from app.spatial_analysis.spatial_utils import gdf_to_geojson, gdf_to_geojson_str
 
 logger = logging.getLogger(__name__)
 
@@ -137,15 +138,34 @@ async def filter_by_time(
         if simplify and simplify > 0:
             filtered['geometry'] = filtered['geometry'].simplify(simplify)
 
-        return TemporalDataResponse(
-            geojson=gdf_to_geojson(filtered),
-            time_range={
-                "start": start_date or str(filtered[temporal_col].min()),
-                "end": end_date or str(filtered[temporal_col].max())
+        # Build response manually to avoid String -> Dict -> String overhead
+        # Use gdf_to_geojson_str which directly generates a JSON string
+        geojson_str = gdf_to_geojson_str(filtered)
+
+        start_val = start_date or str(filtered[temporal_col].min())
+        end_val = end_date or str(filtered[temporal_col].max())
+        feature_count = len(filtered)
+
+        # We construct the metadata part securely using json.dumps to avoid injection,
+        # but slice off the final closing brace so we can manually append the geojson string.
+        # This bypasses Pydantic/FastAPI full serialization overhead.
+        # Note: We must match the TemporalDataResponse model schema.
+        metadata = {
+            "time_range": {
+                "start": start_val,
+                "end": end_val
             },
-            feature_count=len(filtered),
-            temporal_field=temporal_col
-        )
+            "feature_count": feature_count,
+            "temporal_field": temporal_col
+        }
+
+        # Serialize metadata to a string and strip the trailing brace '}'
+        metadata_str = json.dumps(metadata)[:-1]
+
+        # Re-assemble safely
+        response_json = f'{metadata_str}, "geojson": {geojson_str}}}'
+
+        return Response(content=response_json, media_type="application/json")
 
     except HTTPException:
         raise
