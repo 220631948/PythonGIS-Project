@@ -6,3 +6,7 @@
 **Vulnerability:** The `/cache/preload` and `/cache/stats` endpoints in `app/api/performance_api.py` lacked the `require_admin_key` FastAPI dependency, making them publicly accessible despite being intended for administrative use (e.g. cache warming).
 **Learning:** Even when endpoints are described as "Admin endpoint" in docstrings, they are fully public unless explicitly protected by a dependency decorator (e.g., `dependencies=[Depends(require_admin_key)]`).
 **Prevention:** Always verify that access control decorators mentioned in docstrings or documentation are explicitly applied to the route definitions, and include security integration tests to enforce restricted access.
+## 2026-03-20 - Missing Authentication on Metadata Catalog Refresh
+**Vulnerability:** The `/refresh` endpoint in `app/api/metadata_api.py` lacked the `require_admin_key` FastAPI dependency, making it publicly accessible and susceptible to Denial of Service (DoS) attacks or unauthorized resource consumption by allowing anyone to force a cache refresh.
+**Learning:** System-level actions such as cache clearing or refreshing must always be protected. Simply stating "Force refresh" in the docstring does not implement the necessary access control.
+**Prevention:** Ensure that all endpoints performing system-level state changes or administrative actions are explicitly protected using `dependencies=[Depends(require_admin_key)]`.
