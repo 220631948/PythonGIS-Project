@@ -15,3 +15,11 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+
+## 2024-05-26 - Static aria-labels with aria-pressed
+
+**Learning:**
+When building toggle buttons, using dynamic `aria-label`s like "Show layer" / "Hide layer" in combination with `aria-pressed={isActive}` creates redundancy for screen readers (e.g., "Show layer, toggle button not pressed").
+
+**Action:**
+When a toggle button uses `aria-pressed` to indicate its state, always use a static `aria-label` (e.g., "Toggle [Item name]") instead of a dynamic state-based label. This allows the screen reader to cleanly announce the button's name and its pressed state without duplication.
