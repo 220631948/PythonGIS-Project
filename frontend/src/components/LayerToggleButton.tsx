@@ -33,6 +33,7 @@ export const LayerToggleButton: React.FC<LayerToggleButtonProps> = ({
           : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
       } ${className}`}
       aria-pressed={isActive}
+      aria-label={`Toggle ${layer.name} layer`}
     >
       <span className="text-sm font-medium truncate">{layer.name}</span>
       {isActive ? (
