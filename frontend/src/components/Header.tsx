@@ -81,7 +81,7 @@ const Header: React.FC<HeaderProps> = ({
         <button
           className="menu-toggle"
           onClick={onMenuToggle}
-          aria-label={isSidebarOpen ? 'Close sidebar menu' : 'Open sidebar menu'}
+          aria-label="Sidebar menu"
           aria-expanded={isSidebarOpen}
           aria-controls="sidebar-navigation"
         >
