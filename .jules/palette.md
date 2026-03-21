@@ -15,3 +15,6 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+## 2026-03-06 - Tabpanel Accessibility Links
+**Learning:** Tab elements (`role="tab"`) and their associated content areas (`role="tabpanel"`) are often correctly configured with `aria-controls` and `aria-selected`, but frequently miss the required explicit links between them: `id` on the tab (for `aria-labelledby` on the tabpanel) and `id` on the tabpanel (for `aria-controls` on the tab), along with `tabIndex={0}` on the panel for keyboard accessibility.
+**Action:** Always ensure complete dual-linking (ID/Controls and ID/Labelledby) when auditing or building tabbed interfaces.
