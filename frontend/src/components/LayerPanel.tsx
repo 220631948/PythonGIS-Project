@@ -88,7 +88,7 @@ const LayerCard: React.FC<LayerCardProps> = React.memo(({ layerId, isActive, onT
             onToggle(layerId);
           }}
           aria-pressed={isActive}
-          aria-label={isActive ? 'Hide layer' : 'Show layer'}
+          aria-label={`Toggle ${config.name}`}
         >
           {isActive ? <Eye size={18} /> : <EyeOff size={18} />}
         </button>

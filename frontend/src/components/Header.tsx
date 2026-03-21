@@ -81,7 +81,7 @@ const Header: React.FC<HeaderProps> = ({
         <button
           className="menu-toggle"
           onClick={onMenuToggle}
-          aria-label={isSidebarOpen ? 'Close sidebar menu' : 'Open sidebar menu'}
+          aria-label="Toggle sidebar menu"
           aria-expanded={isSidebarOpen}
           aria-controls="sidebar-navigation"
         >
@@ -222,7 +222,8 @@ const Header: React.FC<HeaderProps> = ({
           className="header-btn theme-toggle"
           onClick={onThemeToggle}
           title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-          aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label="Toggle dark mode"
+          aria-pressed={isDarkMode}
         >
           {isDarkMode ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
         </button>
