@@ -15,3 +15,7 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+
+## 2024-03-10 - Screen reader redundancy in list toggle buttons
+**Learning:** For accessibility in lists of toggle buttons that indicate state via `aria-pressed`, dynamic `aria-label`s (like "Show/Hide Layer") result in screen reader redundancy. For example, a screen reader will announce "Show Layer button pressed", which is confusing. Instead, using a static `aria-label` with the item's name is better when combined with `aria-pressed`, as it simply announces the item name and whether it is pressed.
+**Action:** Always use static `aria-label`s on buttons that use `aria-pressed` to avoid conflicting screen reader announcements.
