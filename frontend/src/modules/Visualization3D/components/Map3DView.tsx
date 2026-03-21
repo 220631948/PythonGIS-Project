@@ -196,11 +196,12 @@ const Map3DView: React.FC<Map3DViewProps> = ({
               className="icon-btn"
               onClick={handleToggleFullscreen}
               title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
             >
               {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
             </button>
             {onClose && (
-              <button className="icon-btn" onClick={onClose} title="Close">
+              <button className="icon-btn" onClick={onClose} title="Close" aria-label="Close 3D view">
                 ×
               </button>
             )}
@@ -246,6 +247,7 @@ const Map3DView: React.FC<Map3DViewProps> = ({
                 className="control-btn"
                 onClick={handleResetView}
                 title="Reset view"
+                aria-label="Reset view"
               >
                 <Home size={18} />
                 <span>Reset</span>
@@ -254,6 +256,8 @@ const Map3DView: React.FC<Map3DViewProps> = ({
                 className={`control-btn ${autoRotateEnabled ? 'active' : ''}`}
                 onClick={actions.toggleAutoRotate}
                 title="Toggle auto-rotate"
+                aria-label="Toggle auto-rotate"
+                aria-pressed={autoRotateEnabled}
               >
                 <RotateCw size={18} />
                 <span>Rotate</span>
@@ -262,6 +266,8 @@ const Map3DView: React.FC<Map3DViewProps> = ({
                 className={`control-btn ${showSettings ? 'active' : ''}`}
                 onClick={() => setShowSettings(!showSettings)}
                 title="Settings"
+                aria-label="Settings"
+                aria-expanded={showSettings}
               >
                 <Settings size={18} />
                 <span>Settings</span>
@@ -278,6 +284,8 @@ const Map3DView: React.FC<Map3DViewProps> = ({
                   key={key}
                   className={`layer-toggle ${visible ? 'active' : ''}`}
                   onClick={() => handleToggleLayer(key as keyof LayerVisibility)}
+                  aria-pressed={visible}
+                  aria-label={`Toggle ${key} layer`}
                 >
                   {visible ? <Eye size={16} /> : <EyeOff size={16} />}
                   <span>{key.charAt(0).toUpperCase() + key.slice(1)}</span>
@@ -318,6 +326,7 @@ const Map3DView: React.FC<Map3DViewProps> = ({
             <button
               className="close-btn"
               onClick={() => setShowSettings(false)}
+              aria-label="Close settings"
             >
               ×
             </button>
