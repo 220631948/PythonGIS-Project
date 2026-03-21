@@ -15,3 +15,14 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+
+## 2024-05-26 - Auto-Dismissing Notifications Accessibility and Usability
+
+**Learning:**
+Auto-dismissing toast notifications that rely on a `useEffect` timer can disappear while the user is actively reading them or attempting to interact with them (such as clicking the close button). Additionally, screen readers need to be alerted to new notifications appropriately based on their severity.
+
+**Action:**
+When implementing or updating auto-dismissing notifications:
+1. Always implement a "pause on hover" feature using `onMouseEnter` and `onMouseLeave` to clear or pause the timeout while the user is interacting with the element.
+2. Apply the correct ARIA role based on the notification type: use `role="alert"` for error messages (which requires immediate attention) and `role="status"` for generic or success messages.
+3. Apply `aria-hidden="true"` to decorative icons within the notification to prevent redundant reading by screen readers.
