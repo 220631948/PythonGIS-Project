@@ -377,24 +377,92 @@ class SiteSuitabilityAnalyzer:
     def _eval_wetlands(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
         """Evaluate wetland constraints.
 
-        TODO: Wire to PostGIS query against wetlands/waterbodies layer.
-              Check ST_DWithin for 32m buffer requirement.
+        Checks if the location is within a wetland or its 32m buffer using PostGIS.
         """
-        logger.debug(f"wetlands: placeholder evaluation for ({lat}, {lng})")
-        return CriterionResult(
-            criterion="wetlands",
-            score=80,
-            weight=0,
-            weighted_score=0,
-            details={
-                "in_wetland": False,
-                "buffer_distance_m": None,
-                "required_buffer_m": 32,
-                "note": self.PLACEHOLDER_NOTE,
-            },
-            constraints=[],
-            data_source="placeholder",
-        )
+        try:
+            from app.core.database import require_engine
+            from sqlalchemy import text
+
+            engine = require_engine()
+
+            # Query to check if point is within 32m of any wetland
+            # and get the distance to the nearest one
+            query = text("""
+                SELECT
+                    wetland_type,
+                    ST_Distance(
+                        geom::geography,
+                        ST_SetSRID(ST_Point(:lng, :lat), 4326)::geography
+                    ) as distance_m
+                FROM wetlands
+                WHERE ST_DWithin(
+                    geom::geography,
+                    ST_SetSRID(ST_Point(:lng, :lat), 4326)::geography,
+                    32
+                )
+                ORDER BY distance_m ASC
+                LIMIT 1;
+            """)
+
+            with engine.connect() as conn:
+                result = conn.execute(query, {"lng": lng, "lat": lat}).fetchone()
+
+            if result:
+                # Inside wetland or buffer
+                distance = result.distance_m
+                wetland_type = result.wetland_type
+
+                # If distance is very small (essentially 0), it's inside
+                in_wetland = distance < 1.0
+
+                return CriterionResult(
+                    criterion="wetlands",
+                    score=0,  # Unsuitable
+                    weight=0,  # Will be set by caller
+                    weighted_score=0,
+                    details={
+                        "in_wetland": in_wetland,
+                        "buffer_distance_m": round(distance, 1),
+                        "required_buffer_m": 32,
+                        "wetland_type": wetland_type,
+                        "note": "Site is within wetland or protective buffer",
+                    },
+                    constraints=["Within wetland or 32m buffer"],
+                    data_source="postgis",
+                )
+            else:
+                # Outside buffer
+                return CriterionResult(
+                    criterion="wetlands",
+                    score=100,  # Suitable
+                    weight=0,
+                    weighted_score=0,
+                    details={
+                        "in_wetland": False,
+                        "buffer_distance_m": ">32",
+                        "required_buffer_m": 32,
+                        "note": "Outside wetland buffer zone",
+                    },
+                    constraints=[],
+                    data_source="postgis",
+                )
+
+        except Exception as e:
+            logger.warning(f"Wetlands evaluation failed: {e}")
+            return CriterionResult(
+                criterion="wetlands",
+                score=80,
+                weight=0,
+                weighted_score=0,
+                details={
+                    "in_wetland": False,
+                    "buffer_distance_m": None,
+                    "required_buffer_m": 32,
+                    "note": f"{self.PLACEHOLDER_NOTE} (Error: {str(e)})",
+                },
+                constraints=[],
+                data_source="placeholder",
+            )
 
     def _eval_protected_areas(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
         """Evaluate protected area constraints.
