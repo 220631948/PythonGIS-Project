@@ -564,29 +564,22 @@ async def proxy_data(
             )
         else:
             # Fallback for unexpected format
-            result = {
-                "type": "FeatureCollection",
-                "features": json.loads(gdf.to_json())["features"],
-                "metadata": {
-                    "total": total,
-                    "limit": limit,
-                    "offset": offset,
-                    "returned": len(gdf),
-                    "has_more": offset + limit < total,
-                },
+            metadata = {
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+                "returned": len(gdf),
+                "has_more": offset + limit < total,
             }
-            set_cached_response(cache_key, result)
+            response = create_geojson_response(gdf, metadata=metadata)
+            response.headers["Cache-Control"] = f"public, max-age={settings.CACHE_DURATION_DAYS * 86400}"
+            response.headers["X-Data-Source"] = "City of Cape Town"
+            response.headers["X-Loader-Version"] = "v2"
+            response.headers["X-Cache"] = "MISS"
+            response.headers["X-Total-Count"] = str(total)
+            set_cached_response(cache_key, response.body.decode("utf-8"))
 
-            return JSONResponse(
-                content=result,
-                headers={
-                    "Cache-Control": f"public, max-age={settings.CACHE_DURATION_DAYS * 86400}",
-                    "X-Data-Source": "City of Cape Town",
-                    "X-Loader-Version": "v2",
-                    "X-Cache": "MISS",
-                    "X-Total-Count": str(total),
-                },
-            )
+            return response
 
     except Exception as e:
         # Attach geo context to Sentry (if configured)
