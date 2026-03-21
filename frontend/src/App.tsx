@@ -145,11 +145,11 @@ function MainApp() {
     // Phase 5: Spatial Analysis
     const { analyzeGeometry } = useSpatialAnalysis();
 
-    const handleGeometryCreated = useCallback((e: any) => {
+    const handleGeometryCreated = useCallback(async (e: any) => {
         const { layer, type, geometry } = e;
 
         // Analyze using the new hook
-        analyzeGeometry(geometry, type);
+        await analyzeGeometry(geometry, type);
 
         // Create popup content (use simple HTML to avoid ReactDOMServer issues)
         const popupContent = `
