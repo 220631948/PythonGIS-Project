@@ -249,6 +249,7 @@ export default function FilterPanel({
             <button
               className="clear-btn"
               onClick={(e) => { e.stopPropagation(); clearFilters(); }}
+              aria-label="Clear all filters"
             >
               Clear
             </button>
@@ -324,6 +325,7 @@ export default function FilterPanel({
                     <button
                       className="remove-btn"
                       onClick={() => removeFilter(filter.id)}
+                      aria-label={`Remove filter for ${filter.field}`}
                     >
                       <X size={14} />
                     </button>
