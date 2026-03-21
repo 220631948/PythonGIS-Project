@@ -17,10 +17,10 @@ import logging
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
-from sqlalchemy import func
+from sqlalchemy import func, cast, text
 
 from app.core.database import SessionLocal
-from app.models.sql_models import BiodiversityArea
+from app.models.sql_models import BiodiversityArea, ServiceFacility
 
 logger = logging.getLogger(__name__)
 
@@ -486,27 +486,100 @@ class SiteSuitabilityAnalyzer:
         )
 
     def _eval_utilities(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
-        """Evaluate utilities access.
+        """Evaluate utilities access using PostGIS proximity queries.
 
-        TODO: Wire to PostGIS proximity queries against
-              'water_facilities' (MapServer/178) and
-              'electricity_facilities' (MapServer/176).
+        Queries 'water_facilities' (MapServer/178) and
+        'electricity_facilities' (MapServer/176) via ServiceFacility model.
         """
-        logger.debug(f"utilities: placeholder evaluation for ({lat}, {lng})")
-        return CriterionResult(
-            criterion="utilities_access",
-            score=70,
-            weight=0,
-            weighted_score=0,
-            details={
-                "water_available": None,
-                "electricity_available": None,
-                "sewer_available": None,
-                "note": self.PLACEHOLDER_NOTE,
-            },
-            constraints=[],
-            data_source="placeholder",
-        )
+        if SessionLocal is None:
+            logger.debug(f"utilities: no database connection, using placeholder for ({lat}, {lng})")
+            return CriterionResult(
+                criterion="utilities_access",
+                score=70,
+                weight=0,
+                weighted_score=0,
+                details={
+                    "water_available": False,
+                    "electricity_available": False,
+                    "sewer_available": None,
+                    "note": self.PLACEHOLDER_NOTE,
+                },
+                constraints=[],
+                data_source="placeholder",
+            )
+
+        session = SessionLocal()
+        try:
+            # Construct point geometry (WGS84)
+            point = func.ST_SetSRID(func.ST_MakePoint(lng, lat), 4326)
+
+            # Helper for distance query in meters using geography cast
+            def get_distance(facility_type: str) -> Optional[float]:
+                return session.query(
+                    func.ST_Distance(
+                        cast(ServiceFacility.geom, text("geography")),
+                        cast(point, text("geography"))
+                    )
+                ).filter(
+                    ServiceFacility.facility_type == facility_type
+                ).order_by(
+                    func.ST_Distance(ServiceFacility.geom, point)
+                ).limit(1).scalar()
+
+            dist_water = get_distance('water_facility')
+            dist_elec = get_distance('electricity_facility')
+
+            # Default to 5000m if no facilities found in database
+            d_water = dist_water if dist_water is not None else 5000.0
+            d_elec = dist_elec if dist_elec is not None else 5000.0
+
+            # Score logic (0-500m -> 100, 500m-2000m -> linear drop, >2000m -> 0)
+            def calculate_score(dist: float) -> float:
+                if dist < 500:
+                    return 100.0
+                if dist > 2000:
+                    return 0.0
+                return 100.0 - ((dist - 500.0) / 15.0)
+
+            score_water = calculate_score(d_water)
+            score_elec = calculate_score(d_elec)
+            avg_score = (score_water + score_elec) / 2.0
+
+            return CriterionResult(
+                criterion="utilities_access",
+                score=round(avg_score, 1),
+                weight=0,
+                weighted_score=0,
+                details={
+                    "water_available": d_water < 500,
+                    "electricity_available": d_elec < 500,
+                    "water_distance_m": round(d_water, 1),
+                    "electricity_distance_m": round(d_elec, 1),
+                    "sewer_available": None,
+                    "note": "Calculated via PostGIS proximity query",
+                },
+                constraints=[],
+                data_source="postgis",
+            )
+
+        except Exception as e:
+            logger.error(f"Error querying utilities data: {e}")
+            return CriterionResult(
+                criterion="utilities_access",
+                score=70,
+                weight=0,
+                weighted_score=0,
+                details={
+                    "water_available": False,
+                    "electricity_available": False,
+                    "sewer_available": None,
+                    "note": f"Error: {str(e)}",
+                },
+                constraints=[],
+                data_source="error",
+            )
+        finally:
+            session.close()
 
     def _eval_urban_edge(self, lat: float, lng: float, dev_type: str) -> CriterionResult:
         """Evaluate urban edge compliance.

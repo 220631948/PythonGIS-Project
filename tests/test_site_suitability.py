@@ -1,54 +1,59 @@
 import sys
 from unittest.mock import MagicMock
 
+# Helper to mock packages
+def mock_package(name):
+    if name not in sys.modules:
+        m = MagicMock()
+        m.__path__ = []
+        sys.modules[name] = m
+    return sys.modules[name]
+
 # Mock sqlalchemy and its submodules
-if 'sqlalchemy' not in sys.modules:
-    mock_sqlalchemy = MagicMock()
-    sys.modules['sqlalchemy'] = mock_sqlalchemy
-    sys.modules['sqlalchemy.orm'] = MagicMock()
-    sys.modules['sqlalchemy.ext'] = MagicMock()
-    sys.modules['sqlalchemy.ext.asyncio'] = MagicMock()
-    sys.modules['sqlalchemy.sql'] = MagicMock()
+mock_sqlalchemy = mock_package('sqlalchemy')
+mock_package('sqlalchemy.orm')
+mock_package('sqlalchemy.ext')
+mock_package('sqlalchemy.ext.asyncio')
+mock_package('sqlalchemy.sql')
 
-    # Define common attributes used in imports
-    mock_sqlalchemy.Column = MagicMock()
-    mock_sqlalchemy.Integer = MagicMock()
-    mock_sqlalchemy.String = MagicMock()
-    mock_sqlalchemy.Float = MagicMock()
-    mock_sqlalchemy.DateTime = MagicMock()
-    mock_sqlalchemy.JSON = MagicMock()
-    mock_sqlalchemy.Boolean = MagicMock()
-    mock_sqlalchemy.Text = MagicMock()
-    mock_sqlalchemy.Index = MagicMock()
-    mock_sqlalchemy.func = MagicMock()
-    mock_sqlalchemy.text = MagicMock()
-    mock_sqlalchemy.create_engine = MagicMock()
+# Define common attributes used in imports
+mock_sqlalchemy.Column = MagicMock()
+mock_sqlalchemy.Integer = MagicMock()
+mock_sqlalchemy.String = MagicMock()
+mock_sqlalchemy.Float = MagicMock()
+mock_sqlalchemy.DateTime = MagicMock()
+mock_sqlalchemy.JSON = MagicMock()
+mock_sqlalchemy.Boolean = MagicMock()
+mock_sqlalchemy.Text = MagicMock()
+mock_sqlalchemy.Index = MagicMock()
+mock_sqlalchemy.func = MagicMock()
+mock_sqlalchemy.text = MagicMock()
+mock_sqlalchemy.cast = MagicMock()
+mock_sqlalchemy.create_engine = MagicMock()
 
-    # Mock specific submodules/attributes
-    sys.modules['sqlalchemy.orm'].declarative_base = MagicMock(return_value=MagicMock)
-    sys.modules['sqlalchemy.orm'].sessionmaker = MagicMock()
+# Mock specific submodules/attributes
+sys.modules['sqlalchemy.orm'].declarative_base = MagicMock(return_value=MagicMock)
+sys.modules['sqlalchemy.orm'].sessionmaker = MagicMock()
 
-    sys.modules['sqlalchemy.ext.asyncio'].create_async_engine = MagicMock()
-    sys.modules['sqlalchemy.ext.asyncio'].AsyncSession = MagicMock()
-    sys.modules['sqlalchemy.ext.asyncio'].async_sessionmaker = MagicMock()
-    sys.modules['sqlalchemy.ext.asyncio'].AsyncEngine = MagicMock()
+sys.modules['sqlalchemy.ext.asyncio'].create_async_engine = MagicMock()
+sys.modules['sqlalchemy.ext.asyncio'].AsyncSession = MagicMock()
+sys.modules['sqlalchemy.ext.asyncio'].async_sessionmaker = MagicMock()
+sys.modules['sqlalchemy.ext.asyncio'].AsyncEngine = MagicMock()
 
-    sys.modules['sqlalchemy.sql'].func = MagicMock()
+sys.modules['sqlalchemy.sql'].func = MagicMock()
 
 # Mock geoalchemy2
-if 'geoalchemy2' not in sys.modules:
-    mock_geoalchemy2 = MagicMock()
-    sys.modules['geoalchemy2'] = mock_geoalchemy2
-    sys.modules['geoalchemy2.shape'] = MagicMock()
+mock_geoalchemy2 = mock_package('geoalchemy2')
+mock_package('geoalchemy2.shape')
 
-    mock_geoalchemy2.Geometry = MagicMock()
-    sys.modules['geoalchemy2.shape'].to_shape = MagicMock()
+mock_geoalchemy2.Geometry = MagicMock()
+mock_geoalchemy2.Geography = MagicMock()
+sys.modules['geoalchemy2.shape'].to_shape = MagicMock()
 
 # Mock shapely
-if 'shapely' not in sys.modules:
-    sys.modules['shapely'] = MagicMock()
-    sys.modules['shapely.geometry'] = MagicMock()
-    sys.modules['shapely.geometry'].mapping = MagicMock()
+mock_package('shapely')
+mock_package('shapely.geometry')
+sys.modules['shapely.geometry'].mapping = MagicMock()
 
 # Now we can import the app modules
 import unittest
@@ -170,3 +175,6 @@ class TestSiteSuitability(unittest.TestCase):
 
             self.assertEqual(result.score, 75)
             self.assertEqual(result.data_source, "placeholder")
+
+if __name__ == "__main__":
+    unittest.main()
