@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   MapPin,
   AlertTriangle,
@@ -46,12 +47,12 @@ interface LayerMetadata {
 interface LayerCardProps {
   layerId: string;
   isActive: boolean;
-  onToggle: () => void;
+  onToggle: (layerId: string) => void;
   metadata?: LayerMetadata;
   isLoading?: boolean;
 }
 
-const LayerCard: React.FC<LayerCardProps> = ({ layerId, isActive, onToggle, metadata, isLoading }) => {
+const LayerCard: React.FC<LayerCardProps> = React.memo(({ layerId, isActive, onToggle, metadata, isLoading }) => {
   const config = LAYER_CONFIG[layerId];
   const IconComponent = LAYER_ICONS[layerId] || MapPin;
 
@@ -60,14 +61,14 @@ const LayerCard: React.FC<LayerCardProps> = ({ layerId, isActive, onToggle, meta
   return (
     <div
       className={`layer-card ${isActive ? 'active' : ''} ${isLoading ? 'loading' : ''}`}
-      onClick={onToggle}
+      onClick={() => onToggle(layerId)}
       role="button"
       tabIndex={0}
       aria-pressed={isActive}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          onToggle();
+          onToggle(layerId);
         }
       }}
     >
@@ -84,7 +85,7 @@ const LayerCard: React.FC<LayerCardProps> = ({ layerId, isActive, onToggle, meta
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            onToggle();
+            onToggle(layerId);
           }}
           aria-pressed={isActive}
           aria-label={isActive ? 'Hide layer' : 'Show layer'}
@@ -113,7 +114,7 @@ const LayerCard: React.FC<LayerCardProps> = ({ layerId, isActive, onToggle, meta
       )}
     </div>
   );
-};
+});
 
 interface LayerPanelProps {
   activeLayers: string[];
@@ -152,7 +153,7 @@ const LayerPanel: React.FC<LayerPanelProps> = ({
                 key={layerId}
                 layerId={layerId}
                 isActive={activeLayers.includes(layerId)}
-                onToggle={() => onLayerToggle(layerId)}
+                onToggle={onLayerToggle}
                 metadata={metadata[layerId]}
                 isLoading={loadingLayers.includes(layerId)}
               />
