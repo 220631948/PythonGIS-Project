@@ -15,3 +15,12 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+## 2025-01-28 - Dynamic ARIA Labels on Toggle Buttons
+
+**Learning:**
+Using dynamic `aria-label`s like `aria-label={isActive ? 'Hide layer' : 'Show layer'}` on toggle buttons that already have an `aria-pressed={isActive}` attribute causes screen reader redundancy and contradictory state announcements. The `aria-pressed` attribute is sufficient to convey the state. Furthermore, attempting to "fix" double-focus on nested interactive elements (like a button inside a focusable div card) by setting `tabIndex={-1}` on the actual button is a critical accessibility regression. It disables keyboard navigation for screen reader users and users navigating interactively, as the button itself can no longer receive focus or be triggered natively.
+
+**Action:**
+When implementing toggle buttons that use `aria-pressed`:
+1. Use static `aria-label`s like `aria-label={"Toggle " + itemName}` to avoid screen reader redundancy and confusion.
+2. Ensure the actual `<button>` remains in the tab order (do not use `tabIndex={-1}`). If the visual design uses a wrapper card that is also focusable, consider removing `tabIndex={0}` from the wrapper and relying on standard semantic HTML elements for interaction, or ensuring the child button is the primary interactive target.
