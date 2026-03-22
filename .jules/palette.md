@@ -15,3 +15,6 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+## 2024-03-22 - Missing ARIA Labels on Icon Buttons Using Title Attributes
+**Learning:** There is a recurring pattern in the DashboardBuilder components (and likely others) where icon-only buttons rely exclusively on the `title` attribute for tooltips and lack `aria-label` attributes. While `title` provides visual hover text, it is not consistently read by screen readers across all browser/OS combinations, leading to poor accessibility for interactive elements.
+**Action:** When auditing or building new components, explicitly verify that icon-only buttons have a descriptive `aria-label` attribute, even if a `title` attribute is present for tooltips.
