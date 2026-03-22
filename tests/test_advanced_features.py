@@ -426,7 +426,11 @@ class TestMetadataAPI:
 
     def test_refresh_catalog(self):
         """Test refreshing the catalog"""
-        response = client.post("/api/catalog/refresh")
+        # Valid admin key is required to refresh
+        response = client.post(
+            "/api/catalog/refresh",
+            headers={"X-Admin-Key": "dummy_key"}
+        )
         assert response.status_code == 200
         data = response.json()
         assert "dataset_count" in data
