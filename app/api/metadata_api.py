@@ -7,7 +7,7 @@ Provides:
 - Spatial and attribute query filters
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional, List, Dict
 from datetime import datetime
 import time
@@ -20,6 +20,7 @@ from app.models.metadata_models import (
 )
 from app.core.data_loader import data_loader
 from app.config import settings
+from app.dependencies import require_admin_key
 from app.spatial_analysis.spatial_utils import gdf_to_geojson
 
 logger = logging.getLogger(__name__)
@@ -458,7 +459,7 @@ async def get_catalog_stats():
     )
 
 
-@router.post("/refresh")
+@router.post("/refresh", dependencies=[Depends(require_admin_key)])
 async def refresh_catalog():
     """Force refresh of the metadata catalog"""
     _refresh_cache()
