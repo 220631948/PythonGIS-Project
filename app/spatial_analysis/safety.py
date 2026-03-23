@@ -59,9 +59,7 @@ class SafetyAnalyzer(BaseAnalyzer):
             precincts = data_loader.get_gdf("precincts")
             stats = data_loader.load_csv("crime_stats")
             merged = self.merge_stats_with_precincts(precincts, stats)
-            import json
-
-            return json.loads(merged.to_json())
+            return merged.to_json(na="null")
         except Exception as e:
             logger.error(f"Safety analysis failed: {e}")
             return {"error": str(e)}

@@ -13,3 +13,7 @@
 ## 2026-03-17 - [Backend] Eliminating Double-Serialization in GeoJSON Endpoints
 **Learning:** `paginated.to_json()` outputs a full JSON string. Using `json.loads(paginated.to_json())` just to extract the `"features"` list and then return it via `JSONResponse` causes massive CPU overhead because it forces a String -> Dict -> String conversion cycle.
 **Action:** Always manipulate the JSON string directly (e.g., using string concatenation or slicing) and return it using `Response(content=str, media_type="application/json")`. Make sure the caching mechanism correctly supports storing and returning raw JSON strings to fully bypass FastAPI's serialization overhead.
+
+## 2026-03-23 - [Backend] Safe JSON Serialization with GeoJSON Injection
+**Learning:** Splicing manual JSON strings into Python dictionaries for APIs requires converting the base structure to JSON first (e.g. `json.dumps(base_dict)`), then stripping the trailing brace and appending the stringified GeoJSON. Be extremely careful with manual string formatting: using dict properties like `{"layers": []}` then trying to inject another `"layers"` key via string formatting produces invalid JSON (`{"layers": [], "layers": [...]}`).
+**Action:** When injecting pre-serialized strings (like `gdf.to_json()`) into larger API responses, ensure the parent dictionary is cleaned of any duplicate keys before serialization, and always use `model_dump(mode='json')` on nested Pydantic models to safely serialize `datetime` or `UUID` fields before passing them to `json.dumps()`.

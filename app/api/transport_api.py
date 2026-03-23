@@ -4,6 +4,7 @@ from app.spatial_analysis.transport import transport_analyzer
 
 router = APIRouter(prefix="/transport", tags=["Transport"])
 
+from fastapi import Response
 @router.get("/accessibility")
 async def get_accessibility(
     lat: float = Query(..., description="Latitude of the point"),
@@ -11,6 +12,9 @@ async def get_accessibility(
     simplify: Optional[float] = Query(None, description="Geometry simplification tolerance")
 ):
     data = transport_analyzer.run_analysis(lat=lat, lon=lon, simplify=simplify)
-    if "error" in data:
+    if isinstance(data, dict) and "error" in data:
         raise HTTPException(status_code=500, detail=data["error"])
+
+    if isinstance(data, str):
+        return Response(content=data, media_type="application/json")
     return data

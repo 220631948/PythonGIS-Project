@@ -8,7 +8,7 @@ Provides:
 - Offline data package generation
 """
 
-from fastapi import APIRouter, HTTPException, Query, UploadFile, File, Body
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File, Body, Response
 from typing import Optional, List, Dict
 from datetime import datetime, timedelta
 import json
@@ -361,7 +361,7 @@ async def create_offline_package(
                     gdf_simplified['geometry'] = gdf_simplified['geometry'].simplify(0.0001)
                     package_layers.append({
                         "id": layer_id,
-                        "geojson": json.loads(gdf_simplified.to_json()),
+                        "geojson": gdf_simplified.to_json(na="null"),
                         "feature_count": len(gdf_simplified)
                     })
             except Exception as e:
@@ -369,23 +369,37 @@ async def create_offline_package(
 
     # Estimate size
     size_estimate = (
-        sum(len(json.dumps(layer)) for layer in package_layers) / (1024 * 1024) +
+        sum(len(layer["geojson"]) for layer in package_layers) / (1024 * 1024) +
         len(package_forms) * 0.01  # Rough estimate
     )
 
-    package = OfflinePackage(
-        id=str(uuid.uuid4()),
-        name=f"Offline Package {datetime.utcnow().strftime('%Y-%m-%d')}",
-        forms=package_forms,
-        layers=package_layers,
-        tile_bounds=bbox,
-        tile_zoom_range=[12, 16],
-        size_estimate_mb=round(size_estimate, 2),
-        created_at=datetime.utcnow(),
-        expires_at=datetime.utcnow() + timedelta(days=7)
-    )
+    # Convert the pydantic model to dict, then substitute the raw json strings
+    package_dict = {
+        "id": str(uuid.uuid4()),
+        "name": f"Offline Package {datetime.utcnow().strftime('%Y-%m-%d')}",
+        "forms": [form.model_dump(mode='json') for form in package_forms],
+        "tile_bounds": bbox,
+        "tile_zoom_range": [12, 16],
+        "size_estimate_mb": round(size_estimate, 2),
+        "created_at": datetime.utcnow().isoformat(),
+        "expires_at": (datetime.utcnow() + timedelta(days=7)).isoformat()
+    }
 
-    return package
+    # Manually serialize to string to avoid double encoding the geojson
+    json_parts = []
+    for layer in package_layers:
+        layer_meta = json.dumps({"id": layer["id"], "feature_count": layer["feature_count"]})
+        # Inject the raw geojson string
+        layer_json = f'{layer_meta[:-1]}, "geojson": {layer["geojson"]}}}'
+        json_parts.append(layer_json)
+
+    layers_array_str = "[" + ",".join(json_parts) + "]"
+
+    base_json = json.dumps(package_dict)
+    # Inject layers into the JSON
+    final_json = f'{base_json[:-1]}, "layers": {layers_array_str}}}'
+
+    return Response(content=final_json, media_type="application/json")
 
 
 # ============ Statistics ============
