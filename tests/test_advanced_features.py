@@ -424,9 +424,22 @@ class TestMetadataAPI:
         assert "total_datasets" in data
         assert "by_geometry_type" in data
 
-    def test_refresh_catalog(self):
+    @patch("app.api.metadata_api._refresh_cache")
+    def test_refresh_catalog(self, mock_refresh_cache):
         """Test refreshing the catalog"""
-        response = client.post("/api/catalog/refresh")
+        # Our endpoint expects the actual key from the environment
+        from app.config import settings
+        admin_key = settings.ADMIN_API_KEY
+        if not admin_key:
+            # If there's no configured key during tests, it returns "unprotected"
+            # However we want to pass the mock or any string if unprotected,
+            # or the exact string if protected.
+            admin_key = "dummy"
+
+        response = client.post(
+            "/api/catalog/refresh",
+            headers={"X-Admin-API-Key": admin_key}
+        )
         assert response.status_code == 200
         data = response.json()
         assert "dataset_count" in data
