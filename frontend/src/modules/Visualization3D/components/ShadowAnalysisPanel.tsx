@@ -181,7 +181,7 @@ const ShadowAnalysisPanel: React.FC<ShadowAnalysisPanelProps> = ({
             <Settings size={16} />
           </button>
           {onClose && (
-            <button className="close-btn" onClick={onClose}>
+            <button className="close-btn" onClick={onClose} aria-label="Close Shadow Analysis panel">
               <X size={18} />
             </button>
           )}
@@ -471,7 +471,7 @@ const ShadowAnalysisPanel: React.FC<ShadowAnalysisPanelProps> = ({
             <div className="settings-card">
               <div className="settings-header">
                 <h3>Animation Settings</h3>
-                <button className="close-btn" onClick={() => setShowSettings(false)}>
+                <button className="close-btn" onClick={() => setShowSettings(false)} aria-label="Close Animation Settings">
                   ×
                 </button>
               </div>
