@@ -146,14 +146,16 @@ async def calculate_isochrone(
         # Calculate travel distance for each interval
         speed = TRAVEL_SPEEDS.get(mode, TRAVEL_SPEEDS["walking"])
 
+        # Create base GeoDataFrame and project once outside the loop
+        center_gdf = gpd.GeoDataFrame(geometry=[center], crs=settings.TARGET_CRS)
+        center_proj = center_gdf.to_crs(settings.PROJECTED_CRS)
+
         features = []
         for i in range(intervals, 0, -1):
             interval_minutes = (time_minutes / intervals) * i
             travel_distance = speed * interval_minutes
 
             # Create buffer (simplified isochrone)
-            center_gdf = gpd.GeoDataFrame(geometry=[center], crs=settings.TARGET_CRS)
-            center_proj = center_gdf.to_crs(settings.PROJECTED_CRS)
             buffer_proj = center_proj.geometry.buffer(travel_distance)
             buffer_wgs = gpd.GeoDataFrame(geometry=buffer_proj, crs=settings.PROJECTED_CRS).to_crs(settings.TARGET_CRS)
 
