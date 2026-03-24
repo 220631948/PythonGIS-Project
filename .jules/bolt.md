@@ -13,3 +13,7 @@
 ## 2026-03-17 - [Backend] Eliminating Double-Serialization in GeoJSON Endpoints
 **Learning:** `paginated.to_json()` outputs a full JSON string. Using `json.loads(paginated.to_json())` just to extract the `"features"` list and then return it via `JSONResponse` causes massive CPU overhead because it forces a String -> Dict -> String conversion cycle.
 **Action:** Always manipulate the JSON string directly (e.g., using string concatenation or slicing) and return it using `Response(content=str, media_type="application/json")`. Make sure the caching mechanism correctly supports storing and returning raw JSON strings to fully bypass FastAPI's serialization overhead.
+
+## 2025-03-24 - Hoist Invariant Coordinate Projection in FastAPI Spatial Endpoints
+**Learning:** Calling `GeoDataFrame(geometry=[Point(lon, lat)], crs=...).to_crs(...)` repeatedly inside an interval loop for generating isochrones causes a significant redundant memory allocation and coordinate transformation CPU overhead.
+**Action:** Extract the creation and `to_crs()` call for the center point initialization out of loops and reuse the projected `GeoDataFrame` to improve performance without risking correctness.
