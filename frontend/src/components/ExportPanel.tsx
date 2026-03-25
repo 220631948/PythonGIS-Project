@@ -407,7 +407,7 @@ export default function ExportPanel({
     <div className="export-panel">
       <div className="panel-header">
         <h2><Download size={20} /> Export & Print</h2>
-        <button onClick={onClose}><X size={18} /></button>
+        <button onClick={onClose} aria-label="Close export panel"><X size={18} /></button>
       </div>
 
       <div className="tab-bar">

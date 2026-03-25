@@ -205,7 +205,7 @@ const DatasetInfoModal: React.FC<DatasetInfoModalProps> = ({ dataset, onClose, o
             <Layers size={20} />
             {dataset.name}
           </h2>
-          <button className="modal-close" onClick={onClose}>
+          <button className="modal-close" onClick={onClose} aria-label="Close dataset details">
             <X size={20} />
           </button>
         </div>
@@ -366,7 +366,7 @@ const PortalBrowser: React.FC<PortalBrowserProps> = ({ activeLayers, onToggleLay
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           {searchQuery && (
-            <button className="clear-search" onClick={() => setSearchQuery('')}>
+            <button className="clear-search" onClick={() => setSearchQuery('')} aria-label="Clear search query">
               <X size={14} />
             </button>
           )}
