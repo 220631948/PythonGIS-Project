@@ -15,3 +15,6 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+## 2024-03-26 - Added ARIA attributes for custom tab bars
+**Learning:** Custom tab implementations using `<div>` with child `<button>` elements in this application frequently lack the necessary `role="tablist"` on the container and `role="tab"` and `aria-selected` attributes on the buttons, limiting screen reader accessibility.
+**Action:** When working on components with tabbed interfaces (like `ExportPanel.tsx`), ensure semantic roles and states (`role="tablist"`, `role="tab"`, `aria-selected`) are manually added to non-native tab structures to comply with a11y standards.
