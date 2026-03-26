@@ -13,3 +13,7 @@
 ## 2026-03-17 - [Backend] Eliminating Double-Serialization in GeoJSON Endpoints
 **Learning:** `paginated.to_json()` outputs a full JSON string. Using `json.loads(paginated.to_json())` just to extract the `"features"` list and then return it via `JSONResponse` causes massive CPU overhead because it forces a String -> Dict -> String conversion cycle.
 **Action:** Always manipulate the JSON string directly (e.g., using string concatenation or slicing) and return it using `Response(content=str, media_type="application/json")`. Make sure the caching mechanism correctly supports storing and returning raw JSON strings to fully bypass FastAPI's serialization overhead.
+
+## 2026-03-18 - [Frontend] Memoizing Listed Components with Stable Callbacks
+**Learning:** Passing inline arrow functions (e.g., `onToggle={() => toggleCriterion(id)}`) to child components inside a `.map()` loop defeats `React.memo` because the function reference is recreated on every render of the parent.
+**Action:** When rendering a list of components that need interaction, define a stable callback in the parent using `useCallback`, pass the item's identifier as a prop to the child, and have the child invoke the callback with its identifier. This allows the child component to be effectively memoized and prevents the entire list from re-rendering when only one item changes state.

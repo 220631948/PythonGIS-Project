@@ -90,16 +90,16 @@ interface CriterionResult {
 interface CriterionCardProps {
     result: CriterionResult;
     isExpanded: boolean;
-    onToggle: () => void;
+    onToggle: (id: string) => void;
 }
 
-const CriterionCard: React.FC<CriterionCardProps> = ({ result, isExpanded, onToggle }) => {
+const CriterionCard: React.FC<CriterionCardProps> = React.memo(({ result, isExpanded, onToggle }) => {
   const config = CRITERION_CONFIG[result.criterion] || { name: result.criterion, icon: '📊' };
   const hasConstraints = result.constraints.length > 0;
 
   return (
     <div className={`criterion-card ${hasConstraints ? 'has-constraints' : ''}`}>
-      <button className="criterion-header" onClick={onToggle}>
+      <button className="criterion-header" onClick={() => onToggle(result.criterion)}>
         <div className="criterion-title">
           <span className="criterion-icon">{config.icon}</span>
           <span className="criterion-name">{config.name}</span>
@@ -144,7 +144,7 @@ const CriterionCard: React.FC<CriterionCardProps> = ({ result, isExpanded, onTog
       )}
     </div>
   );
-};
+});
 
 interface Location {
   lat: number;
@@ -204,7 +204,7 @@ const SiteSuitabilityPanel: React.FC<SiteSuitabilityPanelProps> = ({ location, o
     }
   }, [location, developmentType, customWeights, onAnalyze]);
 
-  const toggleCriterion = (criterion: string) => {
+  const toggleCriterion = useCallback((criterion: string) => {
     setExpandedCriteria(prev => {
       const next = new Set(prev);
       if (next.has(criterion)) {
@@ -214,7 +214,7 @@ const SiteSuitabilityPanel: React.FC<SiteSuitabilityPanelProps> = ({ location, o
       }
       return next;
     });
-  };
+  }, []);
 
   const exportReport = () => {
     if (!result) return;
@@ -400,7 +400,7 @@ const SiteSuitabilityPanel: React.FC<SiteSuitabilityPanelProps> = ({ location, o
                   key={criterion.criterion}
                   result={criterion}
                   isExpanded={expandedCriteria.has(criterion.criterion)}
-                  onToggle={() => toggleCriterion(criterion.criterion)}
+                  onToggle={toggleCriterion}
                 />
               ))}
             </div>
