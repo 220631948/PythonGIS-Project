@@ -25,9 +25,9 @@ class TransportOptimizer(BaseAnalyzer):
         try:
             gdf = self.load_dataset("myciti_routes")
             optimized = self.optimize_routes(gdf, tolerance=simplify)
-            import json
 
-            return json.loads(optimized.to_json())
+            # Optimization: return raw JSON string to avoid dict conversion overhead
+            return optimized.to_json(na="null")
         except Exception as e:
             logger.error(f"Transport analysis failed: {e}")
             return {"error": str(e)}
