@@ -169,7 +169,7 @@ function AnnotationDetail({ annotation, onClose, onUpdate }: AnnotationDetailPro
         <span className="annotation-type" style={{ backgroundColor: typeConfig.color }}>
           {typeConfig.label}
         </span>
-        <button className="close-btn" onClick={onClose}><X size={18} /></button>
+        <button className="close-btn" onClick={onClose} aria-label="Close panel"><X size={18} /></button>
       </div>
 
       <h3>{annotation.title}</h3>
