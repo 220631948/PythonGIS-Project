@@ -170,6 +170,7 @@ const ShadowAnalysisPanel: React.FC<ShadowAnalysisPanelProps> = ({
             onClick={handleExportReport}
             disabled={!shadowAnalysis}
             title="Export report"
+            aria-label="Export report"
           >
             <Download size={16} />
           </button>
@@ -177,11 +178,12 @@ const ShadowAnalysisPanel: React.FC<ShadowAnalysisPanelProps> = ({
             className={`icon-btn ${showSettings ? 'active' : ''}`}
             onClick={() => setShowSettings(!showSettings)}
             title="Settings"
+            aria-label="Settings"
           >
             <Settings size={16} />
           </button>
           {onClose && (
-            <button className="close-btn" onClick={onClose}>
+            <button className="close-btn" onClick={onClose} aria-label="Close panel">
               <X size={18} />
             </button>
           )}
@@ -471,7 +473,7 @@ const ShadowAnalysisPanel: React.FC<ShadowAnalysisPanelProps> = ({
             <div className="settings-card">
               <div className="settings-header">
                 <h3>Animation Settings</h3>
-                <button className="close-btn" onClick={() => setShowSettings(false)}>
+                <button className="close-btn" onClick={() => setShowSettings(false)} aria-label="Close settings">
                   ×
                 </button>
               </div>
