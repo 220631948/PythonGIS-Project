@@ -12,7 +12,7 @@ import logging
 import io
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -159,8 +159,11 @@ async def export_dataset(
             df.to_csv(output, index=False)
             output.seek(0)
 
-            return StreamingResponse(
-                iter([output.getvalue()]),
+            # ⚡ Bolt: Return a single fully-materialized string using Response
+            # instead of StreamingResponse(iter([...])) to eliminate generator overhead
+            # and allow the server to automatically set the Content-Length header.
+            return Response(
+                content=output.getvalue(),
                 media_type="text/csv",
                 headers={
                     "Content-Disposition": f"attachment; filename={dataset_name}.csv"
@@ -170,8 +173,11 @@ async def export_dataset(
         elif format.lower() == "geojson":
             geojson_str = gdf.to_json()
 
-            return StreamingResponse(
-                iter([geojson_str]),
+            # ⚡ Bolt: Return a single fully-materialized string using Response
+            # instead of StreamingResponse(iter([...])) to eliminate generator overhead
+            # and allow the server to automatically set the Content-Length header.
+            return Response(
+                content=geojson_str,
                 media_type="application/json",
                 headers={
                     "Content-Disposition": f"attachment; filename={dataset_name}.geojson"
