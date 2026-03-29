@@ -6,3 +6,7 @@
 **Vulnerability:** The `/cache/preload` and `/cache/stats` endpoints in `app/api/performance_api.py` lacked the `require_admin_key` FastAPI dependency, making them publicly accessible despite being intended for administrative use (e.g. cache warming).
 **Learning:** Even when endpoints are described as "Admin endpoint" in docstrings, they are fully public unless explicitly protected by a dependency decorator (e.g., `dependencies=[Depends(require_admin_key)]`).
 **Prevention:** Always verify that access control decorators mentioned in docstrings or documentation are explicitly applied to the route definitions, and include security integration tests to enforce restricted access.
+## 2026-03-29 - [Missing Authentication on Cache/Data Refresh Endpoints]
+**Vulnerability:** Found unauthenticated administrative `POST` endpoints (`/refresh` and `/feeds/{feed_id}/refresh`) in `app/api/metadata_api.py` and `app/api/realtime_api.py` that force cache updates. Unauthenticated users could exploit these to cause Denial of Service (DoS) or exhaust API rate limits from external data providers.
+**Learning:** In FastAPI, state-mutating administrative routes must explicitly define authentication dependencies on the router or individual endpoint. Omitting them leaves them open to the public.
+**Prevention:** Always verify that internal administrative endpoints (like cache clears, preloads, and forceful refreshes) use the `dependencies=[Depends(require_admin_key)]` decorator (or similar authentication mechanisms) to prevent unauthorized access.
