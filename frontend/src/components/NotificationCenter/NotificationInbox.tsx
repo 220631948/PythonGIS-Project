@@ -118,6 +118,7 @@ export default function NotificationInbox({
                 onClick={onMarkAllAsRead}
                 className="action-btn"
                 title="Mark all as read"
+                aria-label="Mark all as read"
               >
                 <CheckCheck size={18} />
               </button>
@@ -178,6 +179,15 @@ export default function NotificationInbox({
                   key={notification.id}
                   className={`notification-item ${notification.read ? 'read' : 'unread'}`}
                   onClick={() => !notification.read && onMarkAsRead(notification.id)}
+                  role={!notification.read ? "button" : undefined}
+                  tabIndex={!notification.read ? 0 : undefined}
+                  aria-describedby={!notification.read ? `mark-read-${notification.id}` : undefined}
+                  onKeyDown={(e) => {
+                    if (!notification.read && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      onMarkAsRead(notification.id);
+                    }
+                  }}
                 >
                   <div className="notification-icon">
                     {getNotificationIcon(notification.notification_type)}
@@ -202,7 +212,12 @@ export default function NotificationInbox({
                     )}
                   </div>
                   {!notification.read && (
-                    <div className="unread-indicator" title="Mark as read" />
+                    <>
+                      <div className="unread-indicator" title="Mark as read" />
+                      <span id={`mark-read-${notification.id}`} style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', borderWidth: 0 }}>
+                        Unread notification. Press Enter to mark as read.
+                      </span>
+                    </>
                   )}
                 </div>
               ))}
