@@ -13,3 +13,11 @@
 ## 2026-03-17 - [Backend] Eliminating Double-Serialization in GeoJSON Endpoints
 **Learning:** `paginated.to_json()` outputs a full JSON string. Using `json.loads(paginated.to_json())` just to extract the `"features"` list and then return it via `JSONResponse` causes massive CPU overhead because it forces a String -> Dict -> String conversion cycle.
 **Action:** Always manipulate the JSON string directly (e.g., using string concatenation or slicing) and return it using `Response(content=str, media_type="application/json")`. Make sure the caching mechanism correctly supports storing and returning raw JSON strings to fully bypass FastAPI's serialization overhead.
+
+## 2026-03-30 - [Backend] Eliminating GeoJSON String->Dict->String Overhead in Pydantic
+**Learning:** Returning a large GeoJSON string by parsing it into a dict () and embedding it within a Pydantic model causes massive CPU overhead and double-serialization penalties. However, when manually constructing JSON strings to bypass this overhead, using raw string interpolation (e.g., `f'{{"id": "{layer_id}"}}'`) creates JSON injection vulnerabilities.
+**Action:** Always safely escape dynamic string variables using `json.dumps(var)` before interpolating them into a manually constructed JSON string. To return the raw JSON string while keeping the OpenAPI documentation intact, continue using `response_model=ModelName` in the router decorator, but explicitly return `Response(content=json_str, media_type="application/json")`.
+
+## 2026-03-30 - [Backend] Eliminating GeoJSON String->Dict->String Overhead in Pydantic
+**Learning:** Returning a large GeoJSON string by parsing it into a dict (`json.loads(gdf.to_json())`) and embedding it within a Pydantic model causes massive CPU overhead and double-serialization penalties. However, when manually constructing JSON strings to bypass this overhead, using raw string interpolation (e.g., `f'{{"id": "{layer_id}"}}'`) creates JSON injection vulnerabilities.
+**Action:** Always safely escape dynamic string variables using `json.dumps(var)` before interpolating them into a manually constructed JSON string. To return the raw JSON string while keeping the OpenAPI documentation intact, continue using `response_model=ModelName` in the router decorator, but explicitly return `Response(content=json_str, media_type="application/json")`.
