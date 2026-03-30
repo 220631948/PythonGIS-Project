@@ -15,3 +15,10 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+## $DATE - ARIA Labels for Icon-Only Buttons in Overlays
+
+**Learning:**
+Icon-only buttons within global overlays and guided tour interfaces (like the "Start guided tour" HelpButton and "Close tour" button in the `GuidedTour` tooltip) often rely solely on `title` attributes or generic icons without accessible names. This creates barriers for screen reader users who cannot visually interpret the icon or access the hover-based title.
+
+**Action:**
+When working with icon-only controls in overlays, tooltips, or any UI components, ensure that descriptive `aria-label` attributes (e.g., `aria-label="Start guided tour"`) are always applied to the interactive `<button>` element to provide a clear accessible name.
