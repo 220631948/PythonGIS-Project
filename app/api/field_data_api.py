@@ -8,7 +8,7 @@ Provides:
 - Offline data package generation
 """
 
-from fastapi import APIRouter, HTTPException, Query, UploadFile, File, Body
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File, Body, Response
 from typing import Optional, List, Dict
 from datetime import datetime, timedelta
 import json
@@ -348,7 +348,8 @@ async def create_offline_package(
             package_forms.append(_forms[form_id])
 
     # Get reference layers
-    package_layers = []
+    package_layers_json_strings = []
+    layers_size_bytes = 0
     if layers:
         for layer_id in layers:
             try:
@@ -359,33 +360,46 @@ async def create_offline_package(
                     # Simplify for offline use
                     gdf_simplified = gdf.copy()
                     gdf_simplified['geometry'] = gdf_simplified['geometry'].simplify(0.0001)
-                    package_layers.append({
-                        "id": layer_id,
-                        "geojson": json.loads(gdf_simplified.to_json()),
-                        "feature_count": len(gdf_simplified)
-                    })
+
+                    # Performance Optimization: string direct serialization
+                    # Avoids json.loads(gdf.to_json()) CPU overhead
+                    geojson_str = gdf_simplified.to_json(na="null")
+
+                    # Calculate string size directly for the estimate
+                    layer_json_str = f'{{"id": {json.dumps(layer_id)}, "geojson": {geojson_str}, "feature_count": {len(gdf_simplified)}}}'
+                    layers_size_bytes += len(layer_json_str.encode("utf-8"))
+                    package_layers_json_strings.append(layer_json_str)
             except Exception as e:
                 logger.warning(f"Could not include layer {layer_id}: {e}")
 
     # Estimate size
     size_estimate = (
-        sum(len(json.dumps(layer)) for layer in package_layers) / (1024 * 1024) +
+        layers_size_bytes / (1024 * 1024) +
         len(package_forms) * 0.01  # Rough estimate
     )
 
-    package = OfflinePackage(
-        id=str(uuid.uuid4()),
-        name=f"Offline Package {datetime.utcnow().strftime('%Y-%m-%d')}",
-        forms=package_forms,
-        layers=package_layers,
-        tile_bounds=bbox,
-        tile_zoom_range=[12, 16],
-        size_estimate_mb=round(size_estimate, 2),
-        created_at=datetime.utcnow(),
-        expires_at=datetime.utcnow() + timedelta(days=7)
+    package_id = str(uuid.uuid4())
+    package_name = f"Offline Package {datetime.utcnow().strftime('%Y-%m-%d')}"
+    created_at = datetime.utcnow().isoformat()
+    expires_at = (datetime.utcnow() + timedelta(days=7)).isoformat()
+
+    # Manually build the JSON structure
+    forms_json = f"[{','.join(form.model_dump_json() for form in package_forms)}]"
+    layers_json = f"[{','.join(package_layers_json_strings)}]"
+    tile_bounds_json = json.dumps(bbox) if bbox else "null"
+
+    final_json = (
+        f'{{"id": {json.dumps(package_id)}, "name": {json.dumps(package_name)}, '
+        f'"forms": {forms_json}, "layers": {layers_json}, '
+        f'"tile_bounds": {tile_bounds_json}, "tile_zoom_range": [12, 16], '
+        f'"size_estimate_mb": {round(size_estimate, 2)}, '
+        f'"created_at": {json.dumps(created_at)}, "expires_at": {json.dumps(expires_at)}}}'
     )
 
-    return package
+    return Response(
+        content=final_json,
+        media_type="application/json"
+    )
 
 
 # ============ Statistics ============
