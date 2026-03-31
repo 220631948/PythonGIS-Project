@@ -99,7 +99,7 @@ const CriterionCard: React.FC<CriterionCardProps> = ({ result, isExpanded, onTog
 
   return (
     <div className={`criterion-card ${hasConstraints ? 'has-constraints' : ''}`}>
-      <button className="criterion-header" onClick={onToggle}>
+      <button className="criterion-header" onClick={onToggle} aria-expanded={isExpanded}>
         <div className="criterion-title">
           <span className="criterion-icon">{config.icon}</span>
           <span className="criterion-name">{config.name}</span>
@@ -274,7 +274,7 @@ const SiteSuitabilityPanel: React.FC<SiteSuitabilityPanelProps> = ({ location, o
           Site Suitability Analysis
         </h3>
         {onClose && (
-          <button className="close-btn" onClick={onClose}>×</button>
+          <button className="close-btn" onClick={onClose} aria-label="Close panel">×</button>
         )}
       </div>
 
