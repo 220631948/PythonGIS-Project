@@ -15,3 +15,7 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+
+## 2026-03-31 - Missing ARIA labels on <X /> Close Buttons
+**Learning:** The project relies heavily on the `<X />` icon component (from lucide-react) for close buttons inside floating panels, tours, and modals (e.g., `ExportPanel`, `GuidedTour`, `SiteSuitabilityPanel`). These buttons frequently lack `aria-label`s, rendering them invisible or confusing to screen readers.
+**Action:** When working on or reviewing new UI panels or modals, explicitly check that any icon-only buttons (especially `<X />` for closing) have descriptive `aria-label` attributes.
