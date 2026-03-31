@@ -73,40 +73,27 @@ def _generate_simple_kml(gdf, name: str) -> str:
 
 def _gdf_to_geojson(gdf) -> str:
     """
-    Convert GeoDataFrame to GeoJSON string manually.
-    Works around numpy 2.0 compatibility issues with geopandas.
+    Convert GeoDataFrame to GeoJSON string.
+    Works around numpy 2.0 compatibility issues with geopandas
+    by safely casting numpy types before serialization.
     """
-    from shapely.geometry import mapping
+    # Create a shallow copy to avoid modifying the original dataframe
+    export_gdf = gdf.copy()
 
-    features = []
-    for idx, row in gdf.iterrows():
-        geom = row.geometry
-        properties = {}
-        for col in gdf.columns:
-            if col != 'geometry':
-                val = row[col]
-                # Handle numpy types
-                if hasattr(val, 'item'):
-                    val = val.item()
-                # Handle NaN
-                if isinstance(val, float) and (val != val):  # NaN check
-                    val = None
-                properties[col] = val
+    # Ensure feature IDs are always strings to prevent frontend breaking changes
+    export_gdf.index = export_gdf.index.astype(str)
 
-        feature = {
-            "type": "Feature",
-            "id": str(idx),
-            "properties": properties,
-            "geometry": mapping(geom) if geom is not None else None
-        }
-        features.append(feature)
+    # Cast numpy scalar types to native Python types for JSON compatibility
+    for col in export_gdf.columns:
+        if col != 'geometry':
+            # Cast column to object dtype first so pandas doesn't auto-coerce
+            # the extracted native Python types back into numpy arrays.
+            export_gdf[col] = export_gdf[col].astype(object).apply(
+                lambda x: x.item() if hasattr(x, 'item') else x
+            )
 
-    geojson = {
-        "type": "FeatureCollection",
-        "features": features
-    }
-
-    return json.dumps(geojson)
+    # Using built-in to_json prevents O(N^2) iterrows and double serialization overhead
+    return export_gdf.to_json(na="null")
 
 
 def _cleanup_old_exports():
