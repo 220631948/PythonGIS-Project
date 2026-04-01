@@ -1,17 +1,7 @@
-## 2024-05-24 - Semantic HTML and ARIA Enhancements in Interactive Components
+## 2025-02-18 - ARIA Labels for Dismiss/Skip actions
 
 **Learning:**
-The application occasionally uses generic HTML elements (`<div>`) for interactive controls such as color swatches (`.color-swatch`) and expandable headers (`.style-editor-header`), relying entirely on `onClick` handlers. Additionally, when attempting to wrap an entire header containing child actions (like a "Reset" button) in a `<button>`, it creates invalid HTML (nested buttons) which breaks the DOM and accessibility tree.
+Icon-only dismiss actions, such as the "X" buttons used to clear errors in components like `AlertSubscriptionManager` or to skip sections like `GuidedTour`, often lack descriptive `aria-label`s. Relying solely on the visual "X" icon leaves screen reader users without context about what is being dismissed.
 
 **Action:**
-When adding accessibility to interactive elements:
-1. Convert clickable `<div>` swatches or isolated actions to `<button type="button">`.
-2. For container elements (like accordion headers) that include child buttons, DO NOT convert the container to a `<button>`. Instead, keep it as a `<div>` and use `role="button"`, `tabIndex={0}`, and an `onKeyDown` handler (listening for 'Enter' or ' ') to ensure keyboard accessibility without nesting interactive elements.
-3. Always supply `aria-label`s to icon-only buttons and `aria-expanded` attributes to elements that toggle content visibility.
-## 2024-05-25 - ARIA Labels for Common UI Icon Buttons
-
-**Learning:**
-Many standard icon-only buttons (such as the "X" buttons used to close modals, panels, and notifications) lack `aria-label`s, rendering them inaccessible or confusing for screen reader users. Relying purely on visual icons like `<X size={16} />` without descriptive labels creates a poor user experience.
-
-**Action:**
-When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+When working with dismissible banners, toasts, or guided overlays, explicitly add an `aria-label` to the close button that details the action (e.g., `aria-label="Dismiss error"` or `aria-label="Skip tour"`) instead of relying on generic "Close" labels.
