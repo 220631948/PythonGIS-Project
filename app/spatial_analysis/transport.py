@@ -1,7 +1,7 @@
 import logging
 import geopandas as gpd
 from shapely.geometry import LineString, MultiLineString
-from typing import Dict, Any
+from typing import Dict, Any, Union
 from app.spatial_analysis.base import BaseAnalyzer
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ class TransportOptimizer(BaseAnalyzer):
     def __init__(self):
         super().__init__("transport")
 
-    def run_analysis(self, **kwargs) -> Dict[str, Any]:
+    def run_analysis(self, **kwargs) -> Union[Dict[str, Any], str]:
         """
         Compatibility method for BaseAnalyzer interface.
         Optimizes MyCiti routes by default.
@@ -25,9 +25,8 @@ class TransportOptimizer(BaseAnalyzer):
         try:
             gdf = self.load_dataset("myciti_routes")
             optimized = self.optimize_routes(gdf, tolerance=simplify)
-            import json
 
-            return json.loads(optimized.to_json())
+            return optimized.to_json(na="null")
         except Exception as e:
             logger.error(f"Transport analysis failed: {e}")
             return {"error": str(e)}

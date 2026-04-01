@@ -6,7 +6,7 @@ Merges tabular crime data with precinct boundary shapefiles
 import logging
 import geopandas as gpd
 import pandas as pd
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
 from app.spatial_analysis.base import BaseAnalyzer
 from app.core.data_loader import data_loader
 
@@ -50,7 +50,7 @@ class SafetyAnalyzer(BaseAnalyzer):
     def __init__(self):
         super().__init__("safety")
 
-    def run_analysis(self, **kwargs) -> Dict[str, Any]:
+    def run_analysis(self, **kwargs) -> Union[Dict[str, Any], str]:
         """
         Compatibility method for BaseAnalyzer interface.
         Merges precincts with crime stats by default.
@@ -59,9 +59,8 @@ class SafetyAnalyzer(BaseAnalyzer):
             precincts = data_loader.get_gdf("precincts")
             stats = data_loader.load_csv("crime_stats")
             merged = self.merge_stats_with_precincts(precincts, stats)
-            import json
 
-            return json.loads(merged.to_json())
+            return merged.to_json(na="null")
         except Exception as e:
             logger.error(f"Safety analysis failed: {e}")
             return {"error": str(e)}
