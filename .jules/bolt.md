@@ -13,3 +13,7 @@
 ## 2026-03-17 - [Backend] Eliminating Double-Serialization in GeoJSON Endpoints
 **Learning:** `paginated.to_json()` outputs a full JSON string. Using `json.loads(paginated.to_json())` just to extract the `"features"` list and then return it via `JSONResponse` causes massive CPU overhead because it forces a String -> Dict -> String conversion cycle.
 **Action:** Always manipulate the JSON string directly (e.g., using string concatenation or slicing) and return it using `Response(content=str, media_type="application/json")`. Make sure the caching mechanism correctly supports storing and returning raw JSON strings to fully bypass FastAPI's serialization overhead.
+
+## 2026-04-01 - [Backend] Double-Serialization Optimization in Fallbacks
+**Learning:** Returning a raw JSON string using `fastapi.Response` instead of `JSONResponse` avoids unnecessary double serialization in endpoints dealing with Pandas/GeoPandas. When a `to_json()` string needs modification (like appending metadata), using `json_str.rsplit('}', 1)[0]` is a safe and highly performant way to strip the trailing brace without using `json.loads()` or brittle `rstrip()` matching.
+**Action:** Always prefer manipulating GeoJSON strings directly using string operations like `rsplit` when injecting metadata into FeatureCollections rather than parsing back to dictionaries.
