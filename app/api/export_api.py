@@ -36,14 +36,19 @@ _exports: Dict[str, ExportResponse] = {}
 
 def _generate_simple_kml(gdf, name: str) -> str:
     """Generate a simple KML string from a GeoDataFrame"""
+    import pandas as pd
+
     kml_parts = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<kml xmlns="http://www.opengis.net/kml/2.2">',
         f'<Document><name>{name}</name>'
     ]
 
-    for idx, row in gdf.iterrows():
-        geom = row.geometry
+    geometries = gdf.geometry.tolist()
+    records = pd.DataFrame(gdf.drop(columns=['geometry'])).to_dict('records')
+    indices = gdf.index.tolist()
+
+    for idx, geom, row in zip(indices, geometries, records):
         if geom is None:
             continue
 
@@ -73,40 +78,21 @@ def _generate_simple_kml(gdf, name: str) -> str:
 
 def _gdf_to_geojson(gdf) -> str:
     """
-    Convert GeoDataFrame to GeoJSON string manually.
-    Works around numpy 2.0 compatibility issues with geopandas.
+    Convert GeoDataFrame to GeoJSON string.
+    Optimized to use native to_json while working around numpy 2.0 compatibility issues.
     """
-    from shapely.geometry import mapping
+    import pandas as pd
 
-    features = []
-    for idx, row in gdf.iterrows():
-        geom = row.geometry
-        properties = {}
-        for col in gdf.columns:
-            if col != 'geometry':
-                val = row[col]
-                # Handle numpy types
-                if hasattr(val, 'item'):
-                    val = val.item()
-                # Handle NaN
-                if isinstance(val, float) and (val != val):  # NaN check
-                    val = None
-                properties[col] = val
+    gdf = gdf.copy()
+    gdf.index = gdf.index.astype(str)
 
-        feature = {
-            "type": "Feature",
-            "id": str(idx),
-            "properties": properties,
-            "geometry": mapping(geom) if geom is not None else None
-        }
-        features.append(feature)
+    for col in gdf.columns:
+        if col != 'geometry':
+            if pd.api.types.is_numeric_dtype(gdf[col]):
+                gdf[col] = gdf[col].astype('object')
+            gdf[col] = gdf[col].apply(lambda x: x.item() if hasattr(x, 'item') else x)
 
-    geojson = {
-        "type": "FeatureCollection",
-        "features": features
-    }
-
-    return json.dumps(geojson)
+    return gdf.to_json(na="null")
 
 
 def _cleanup_old_exports():
