@@ -169,7 +169,7 @@ function AnnotationDetail({ annotation, onClose, onUpdate }: AnnotationDetailPro
         <span className="annotation-type" style={{ backgroundColor: typeConfig.color }}>
           {typeConfig.label}
         </span>
-        <button className="close-btn" onClick={onClose}><X size={18} /></button>
+        <button className="close-btn" onClick={onClose} aria-label="Close"><X size={18} /></button>
       </div>
 
       <h3>{annotation.title}</h3>
@@ -404,7 +404,7 @@ export default function CollaborationPanel({
     <div className="collaboration-panel">
       <div className="panel-header">
         <h2><MessageSquare size={20} /> Collaboration</h2>
-        <button onClick={onClose}><X size={18} /></button>
+        <button onClick={onClose} aria-label="Close"><X size={18} /></button>
       </div>
 
       {isCreating && clickedLocation ? (

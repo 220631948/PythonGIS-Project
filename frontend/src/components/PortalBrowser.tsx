@@ -95,6 +95,7 @@ const DatasetCard: React.FC<DatasetCardProps> = ({ dataset, isActive, onToggle, 
             className="icon-btn"
             onClick={() => onViewInfo(dataset)}
             title="View details"
+            aria-label="View dataset details"
           >
             <Info size={16} />
           </button>
@@ -102,6 +103,7 @@ const DatasetCard: React.FC<DatasetCardProps> = ({ dataset, isActive, onToggle, 
             className={`icon-btn ${isActive ? 'active' : ''}`}
             onClick={() => onToggle(dataset.id)}
             title={isActive ? 'Hide layer' : 'Show layer'}
+            aria-label={isActive ? 'Hide layer' : 'Show layer'}
           >
             {isActive ? <Eye size={16} /> : <EyeOff size={16} />}
           </button>
@@ -205,7 +207,7 @@ const DatasetInfoModal: React.FC<DatasetInfoModalProps> = ({ dataset, onClose, o
             <Layers size={20} />
             {dataset.name}
           </h2>
-          <button className="modal-close" onClick={onClose}>
+          <button className="modal-close" onClick={onClose} aria-label="Close dataset details">
             <X size={20} />
           </button>
         </div>
@@ -366,7 +368,7 @@ const PortalBrowser: React.FC<PortalBrowserProps> = ({ activeLayers, onToggleLay
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           {searchQuery && (
-            <button className="clear-search" onClick={() => setSearchQuery('')}>
+            <button className="clear-search" onClick={() => setSearchQuery('')} aria-label="Clear search">
               <X size={14} />
             </button>
           )}
