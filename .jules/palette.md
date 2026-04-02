@@ -15,3 +15,10 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+## 2026-04-02 - ARIA Labels for Dynamic UI Close Buttons
+
+**Learning:**
+While adding `aria-label`s to standard UI icon-only buttons (like `close` and `X` buttons) is crucial, there are many contextual variations across the app where buttons act as panel-specific close/dismiss actions (e.g., closing the `ExportPanel`, `Notification`, `SiteSuitabilityPanel`, etc.). Relying solely on generic `aria-label="Close"` can lack context for screen reader users when multiple panels or modals are interactable on a single view.
+
+**Action:**
+When applying `aria-label`s to close or dismiss buttons, provide specific context tied to the panel or modal they control, such as `aria-label="Close export panel"` or `aria-label="Close dataset details"`, rather than using a generic `"Close"`, to improve spatial and functional understanding for assistive technologies.

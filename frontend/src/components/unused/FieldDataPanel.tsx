@@ -469,7 +469,7 @@ export default function FieldDataPanel({
             <><WifiOff size={14} className="offline" /> Offline</>
           )}
         </div>
-        <button onClick={onClose}><X size={18} /></button>
+        <button onClick={onClose} aria-label="Close"><X size={18} /></button>
       </div>
 
       <SyncQueue
