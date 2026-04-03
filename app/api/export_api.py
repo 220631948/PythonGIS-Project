@@ -42,13 +42,19 @@ def _generate_simple_kml(gdf, name: str) -> str:
         f'<Document><name>{name}</name>'
     ]
 
-    for idx, row in gdf.iterrows():
-        geom = row.geometry
+    # Extract geometries to list to avoid iteration over full GeoDataFrame rows
+    indices = gdf.index.tolist()
+    geometries = gdf.geometry.tolist()
+    # Extract attributes as dictionary records
+    import pandas as pd
+    attributes = pd.DataFrame(gdf.drop(columns=['geometry'])).to_dict('records')
+
+    for idx, geom, attr in zip(indices, geometries, attributes):
         if geom is None:
             continue
 
         # Get placemark name
-        placemark_name = str(row.get('name', row.get('Name', f'Feature {idx}')))
+        placemark_name = str(attr.get('name', attr.get('Name', f'Feature {idx}')))
 
         kml_parts.append(f'<Placemark><name>{placemark_name}</name>')
 
@@ -77,21 +83,29 @@ def _gdf_to_geojson(gdf) -> str:
     Works around numpy 2.0 compatibility issues with geopandas.
     """
     from shapely.geometry import mapping
+    import pandas as pd
 
     features = []
-    for idx, row in gdf.iterrows():
-        geom = row.geometry
+
+    # Extract data to avoid iterrows() overhead
+    indices = gdf.index.tolist()
+    geometries = gdf.geometry.tolist()
+
+    # Extract attributes as dictionary records
+    df_no_geom = pd.DataFrame(gdf.drop(columns=['geometry']))
+    # Handle columns to match original manual extraction
+    attributes = df_no_geom.to_dict('records')
+
+    for idx, geom, attr in zip(indices, geometries, attributes):
         properties = {}
-        for col in gdf.columns:
-            if col != 'geometry':
-                val = row[col]
-                # Handle numpy types
-                if hasattr(val, 'item'):
-                    val = val.item()
-                # Handle NaN
-                if isinstance(val, float) and (val != val):  # NaN check
-                    val = None
-                properties[col] = val
+        for col, val in attr.items():
+            # Handle numpy types
+            if hasattr(val, 'item'):
+                val = val.item()
+            # Handle NaN
+            if isinstance(val, float) and (val != val):  # NaN check
+                val = None
+            properties[col] = val
 
         feature = {
             "type": "Feature",
