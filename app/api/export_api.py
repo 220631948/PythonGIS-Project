@@ -15,6 +15,7 @@ import json
 import csv
 import uuid
 import logging
+import pandas as pd
 
 from app.models.export_models import (
     ExportFormat, DataExportRequest, AnalysisExportRequest,
@@ -42,8 +43,12 @@ def _generate_simple_kml(gdf, name: str) -> str:
         f'<Document><name>{name}</name>'
     ]
 
-    for idx, row in gdf.iterrows():
-        geom = row.geometry
+    # Optimize iteration over GeoDataFrame
+    indices = gdf.index.tolist()
+    geometries = gdf.geometry.tolist()
+    attributes = pd.DataFrame(gdf.drop(columns=['geometry'])).to_dict('records')
+
+    for idx, geom, row in zip(indices, geometries, attributes):
         if geom is None:
             continue
 
@@ -73,40 +78,25 @@ def _generate_simple_kml(gdf, name: str) -> str:
 
 def _gdf_to_geojson(gdf) -> str:
     """
-    Convert GeoDataFrame to GeoJSON string manually.
+    Convert GeoDataFrame to GeoJSON string.
     Works around numpy 2.0 compatibility issues with geopandas.
     """
-    from shapely.geometry import mapping
+    # Create a copy so we don't modify the original
+    gdf = gdf.copy()
 
-    features = []
-    for idx, row in gdf.iterrows():
-        geom = row.geometry
-        properties = {}
-        for col in gdf.columns:
-            if col != 'geometry':
-                val = row[col]
-                # Handle numpy types
-                if hasattr(val, 'item'):
-                    val = val.item()
-                # Handle NaN
-                if isinstance(val, float) and (val != val):  # NaN check
-                    val = None
-                properties[col] = val
+    # Cast feature IDs to strings
+    gdf.index = gdf.index.astype(str)
 
-        feature = {
-            "type": "Feature",
-            "id": str(idx),
-            "properties": properties,
-            "geometry": mapping(geom) if geom is not None else None
-        }
-        features.append(feature)
+    for col in gdf.columns:
+        if col != 'geometry':
+            # Handle float NaNs and numpy types correctly before to_json
+            if pd.api.types.is_numeric_dtype(gdf[col]):
+                gdf[col] = gdf[col].astype(object)
+            gdf[col] = gdf[col].apply(
+                lambda x: x.item() if hasattr(x, 'item') else x
+            )
 
-    geojson = {
-        "type": "FeatureCollection",
-        "features": features
-    }
-
-    return json.dumps(geojson)
+    return gdf.to_json(na="null")
 
 
 def _cleanup_old_exports():
