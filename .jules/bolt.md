@@ -13,3 +13,7 @@
 ## 2026-03-17 - [Backend] Eliminating Double-Serialization in GeoJSON Endpoints
 **Learning:** `paginated.to_json()` outputs a full JSON string. Using `json.loads(paginated.to_json())` just to extract the `"features"` list and then return it via `JSONResponse` causes massive CPU overhead because it forces a String -> Dict -> String conversion cycle.
 **Action:** Always manipulate the JSON string directly (e.g., using string concatenation or slicing) and return it using `Response(content=str, media_type="application/json")`. Make sure the caching mechanism correctly supports storing and returning raw JSON strings to fully bypass FastAPI's serialization overhead.
+
+## 2026-04-05 - [Backend] Eliminating StreamingResponse Overhead
+**Learning:** Using `StreamingResponse(iter([string]))` for large, fully materialized strings (like GeoJSON or CSV exports) adds unnecessary generator and thread-spawning overhead. It also prevents FastAPI from setting a `Content-Length` header, breaking download progress tracking in clients.
+**Action:** Always return fully constructed strings directly via `Response(content=string, media_type=...)` instead of wrapping them in a `StreamingResponse`.
