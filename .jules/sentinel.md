@@ -6,3 +6,7 @@
 **Vulnerability:** The `/cache/preload` and `/cache/stats` endpoints in `app/api/performance_api.py` lacked the `require_admin_key` FastAPI dependency, making them publicly accessible despite being intended for administrative use (e.g. cache warming).
 **Learning:** Even when endpoints are described as "Admin endpoint" in docstrings, they are fully public unless explicitly protected by a dependency decorator (e.g., `dependencies=[Depends(require_admin_key)]`).
 **Prevention:** Always verify that access control decorators mentioned in docstrings or documentation are explicitly applied to the route definitions, and include security integration tests to enforce restricted access.
+## 2026-04-05 - [CRITICAL] Prevent SQL Injection in Raw PostGIS queries
+**Vulnerability:** Python f-string interpolation used for unstructured parameters (`simplify`) directly in raw SQL queries (`app/spatial_analysis/services.py`).
+**Learning:** Even seemingly benign operations like 'simplify' inputs can lead to SQL injection if they bypass ORM abstraction without parameterization.
+**Prevention:** Always map unstructured variables to named bind parameters (e.g., `:simplify`) and pass them using the explicit parameters dictionary in `conn.execute()` instead of Python f-strings.
