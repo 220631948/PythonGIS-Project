@@ -15,3 +15,7 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+
+## 2026-04-05 - Accessible Custom Tabs
+**Learning:** Custom tab implementations using generic elements (like div and button) without proper ARIA roles lack semantics for screen readers.
+**Action:** When implementing custom tabs, always ensure the container has role='tablist', tab buttons have role='tab', aria-selected, and content containers have role='tabpanel'.

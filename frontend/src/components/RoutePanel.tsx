@@ -242,7 +242,20 @@ export default function RoutePanel({
 
   return (
     <div className="route-panel">
-      <div className="panel-header" onClick={() => setIsExpanded(!isExpanded)}>
+      <div
+        className="panel-header"
+        onClick={() => setIsExpanded(!isExpanded)}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+        aria-controls="route-panel-content"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
+      >
         <div className="header-title">
           <Navigation size={16} />
           <span>Network Analysis</span>
@@ -252,6 +265,7 @@ export default function RoutePanel({
             <button
               className="clear-btn"
               onClick={(e) => { e.stopPropagation(); clearAll(); }}
+              aria-label="Clear all inputs and results"
             >
               Clear
             </button>
@@ -261,22 +275,34 @@ export default function RoutePanel({
       </div>
 
       {isExpanded && (
-        <div className="panel-content">
+        <div id="route-panel-content" className="panel-content" role="region" aria-label="Network Analysis Tools">
           {/* Tabs */}
-          <div className="tab-bar">
+          <div className="tab-bar" role="tablist">
             <button
+              id="tab-route"
+              role="tab"
+              aria-selected={activeTab === 'route'}
+              aria-controls="tabpanel-route"
               className={`tab ${activeTab === 'route' ? 'active' : ''}`}
               onClick={() => setActiveTab('route')}
             >
               Route
             </button>
             <button
+              id="tab-isochrone"
+              role="tab"
+              aria-selected={activeTab === 'isochrone'}
+              aria-controls="tabpanel-isochrone"
               className={`tab ${activeTab === 'isochrone' ? 'active' : ''}`}
               onClick={() => setActiveTab('isochrone')}
             >
               Isochrone
             </button>
             <button
+              id="tab-nearest"
+              role="tab"
+              aria-selected={activeTab === 'nearest'}
+              aria-controls="tabpanel-nearest"
               className={`tab ${activeTab === 'nearest' ? 'active' : ''}`}
               onClick={() => setActiveTab('nearest')}
             >
@@ -285,13 +311,15 @@ export default function RoutePanel({
           </div>
 
           {/* Transport Mode */}
-          <div className="mode-selector">
+          <div className="mode-selector" role="group" aria-label="Transport Mode">
             {TRANSPORT_MODES.map(m => (
               <button
                 key={m.id}
                 className={`mode-btn ${mode === m.id ? 'active' : ''}`}
                 onClick={() => setMode(m.id)}
                 title={m.label}
+                aria-label={`Transport mode: ${m.label}`}
+                aria-pressed={mode === m.id}
               >
                 <m.icon size={18} />
               </button>
@@ -300,7 +328,7 @@ export default function RoutePanel({
 
           {/* Route Tab */}
           {activeTab === 'route' && (
-            <div className="tab-content">
+            <div id="tabpanel-route" role="tabpanel" aria-labelledby="tab-route" className="tab-content">
               <div className="location-inputs">
                 <div className="location-row">
                   <div className="location-marker origin">A</div>
@@ -383,7 +411,7 @@ export default function RoutePanel({
 
           {/* Isochrone Tab */}
           {activeTab === 'isochrone' && (
-            <div className="tab-content">
+            <div id="tabpanel-isochrone" role="tabpanel" aria-labelledby="tab-isochrone" className="tab-content">
               <div className="location-inputs">
                 <div className="location-row">
                   <div className="location-marker origin">●</div>
@@ -466,7 +494,7 @@ export default function RoutePanel({
 
           {/* Nearest Tab */}
           {activeTab === 'nearest' && (
-            <div className="tab-content">
+            <div id="tabpanel-nearest" role="tabpanel" aria-labelledby="tab-nearest" className="tab-content">
               <div className="location-inputs">
                 <div className="location-row">
                   <div className="location-marker origin">●</div>
