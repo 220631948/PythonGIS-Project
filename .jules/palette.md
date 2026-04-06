@@ -15,3 +15,11 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+## 2026-04-06 - Keyboard Accessibility for Panel Headers and Mode Buttons
+
+**Learning:**
+Expandable panel headers (like in `RoutePanel`) and mode selection buttons (like walking/cycling icons) often rely purely on mouse clicks and lack proper ARIA attributes, making them inaccessible to keyboard and screen reader users. Additionally, wrapping a header that contains child buttons in a single `<button>` tag causes invalid HTML and breaks accessibility tools.
+
+**Action:**
+1. For expandable panel headers containing child actions, maintain them as `<div>` elements but add `role="button"`, `tabIndex={0}`, `aria-expanded`, and an `onKeyDown` handler for Space/Enter keys to toggle state safely.
+2. For icon-only mode buttons and action buttons (like "Clear"), always provide descriptive `aria-label` attributes and use `aria-pressed` to communicate their active state to screen readers.
