@@ -75,28 +75,34 @@ def _gdf_to_geojson(gdf) -> str:
     """
     Convert GeoDataFrame to GeoJSON string manually.
     Works around numpy 2.0 compatibility issues with geopandas.
+    Optimized to bypass iterrows() overhead.
     """
     from shapely.geometry import mapping
+    import pandas as pd
+
+    indices = gdf.index.tolist()
+    geometries = gdf.geometry.tolist()
+
+    # Extract properties using to_dict to avoid iterrows
+    props_df = pd.DataFrame(gdf.drop(columns=['geometry']))
+    attributes = props_df.to_dict('records')
 
     features = []
-    for idx, row in gdf.iterrows():
-        geom = row.geometry
-        properties = {}
-        for col in gdf.columns:
-            if col != 'geometry':
-                val = row[col]
-                # Handle numpy types
-                if hasattr(val, 'item'):
-                    val = val.item()
-                # Handle NaN
-                if isinstance(val, float) and (val != val):  # NaN check
-                    val = None
-                properties[col] = val
+    for idx, geom, prop in zip(indices, geometries, attributes):
+        cleaned_prop = {}
+        for col, val in prop.items():
+            # Handle numpy types
+            if hasattr(val, 'item'):
+                val = val.item()
+            # Handle NaN
+            if isinstance(val, float) and (val != val):  # NaN check
+                val = None
+            cleaned_prop[col] = val
 
         feature = {
             "type": "Feature",
             "id": str(idx),
-            "properties": properties,
+            "properties": cleaned_prop,
             "geometry": mapping(geom) if geom is not None else None
         }
         features.append(feature)
