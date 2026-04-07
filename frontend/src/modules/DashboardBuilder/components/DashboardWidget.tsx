@@ -361,16 +361,17 @@ const DashboardWidget: React.FC<DashboardWidgetProps> = ({
               onClick={() => setShowSettings(!showSettings)}
               className="widget-action-btn"
               title="Settings"
+              aria-label="Settings"
             >
               <Settings size={14} />
             </button>
-            <button onClick={onDuplicate} className="widget-action-btn" title="Duplicate">
+            <button onClick={onDuplicate} className="widget-action-btn" title="Duplicate" aria-label="Duplicate">
               <Copy size={14} />
             </button>
-            <button onClick={() => setIsExpanded(true)} className="widget-action-btn" title="Expand">
+            <button onClick={() => setIsExpanded(true)} className="widget-action-btn" title="Expand" aria-label="Expand">
               <Maximize2 size={14} />
             </button>
-            <button onClick={onRemove} className="widget-action-btn text-red-600" title="Remove">
+            <button onClick={onRemove} className="widget-action-btn text-red-600" title="Remove" aria-label="Remove">
               <Trash2 size={14} />
             </button>
           </div>
@@ -413,6 +414,7 @@ const DashboardWidget: React.FC<DashboardWidgetProps> = ({
               <button
                 onClick={() => setIsExpanded(false)}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                aria-label="Close widget"
               >
                 ✕
               </button>
