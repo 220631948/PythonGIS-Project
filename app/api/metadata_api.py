@@ -7,9 +7,10 @@ Provides:
 - Spatial and attribute query filters
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional, List, Dict
 from datetime import datetime
+from app.dependencies import require_admin_key
 import time
 import logging
 
@@ -458,7 +459,7 @@ async def get_catalog_stats():
     )
 
 
-@router.post("/refresh")
+@router.post("/refresh", dependencies=[Depends(require_admin_key)])
 async def refresh_catalog():
     """Force refresh of the metadata catalog"""
     _refresh_cache()
