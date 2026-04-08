@@ -15,3 +15,9 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+
+## 2026-04-08 - Missing ARIA Labels on Generic Icon Buttons
+**Learning:**
+Generic icon-only buttons (like `<X>` icons used for closing modals, dismissing errors, or clearing searches) frequently lack `aria-label` attributes and rely only on visual context in this application.
+**Action:**
+When adding or modifying generic utility buttons, always explicitly add descriptive `aria-label`s (e.g., `aria-label="Clear search"`, `aria-label="Dismiss error"`) to these interactive elements to ensure screen-reader accessibility.
