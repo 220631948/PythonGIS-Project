@@ -73,40 +73,16 @@ def _generate_simple_kml(gdf, name: str) -> str:
 
 def _gdf_to_geojson(gdf) -> str:
     """
-    Convert GeoDataFrame to GeoJSON string manually.
-    Works around numpy 2.0 compatibility issues with geopandas.
+    Convert GeoDataFrame to GeoJSON string.
+    Optimized to avoid iterrows while maintaining numpy 2.0 compatibility.
     """
-    from shapely.geometry import mapping
-
-    features = []
-    for idx, row in gdf.iterrows():
-        geom = row.geometry
-        properties = {}
-        for col in gdf.columns:
-            if col != 'geometry':
-                val = row[col]
-                # Handle numpy types
-                if hasattr(val, 'item'):
-                    val = val.item()
-                # Handle NaN
-                if isinstance(val, float) and (val != val):  # NaN check
-                    val = None
-                properties[col] = val
-
-        feature = {
-            "type": "Feature",
-            "id": str(idx),
-            "properties": properties,
-            "geometry": mapping(geom) if geom is not None else None
-        }
-        features.append(feature)
-
-    geojson = {
-        "type": "FeatureCollection",
-        "features": features
-    }
-
-    return json.dumps(geojson)
+    export_gdf = gdf.copy()
+    export_gdf.index = export_gdf.index.astype(str)
+    for col in export_gdf.select_dtypes(include=['number']).columns:
+        export_gdf[col] = export_gdf[col].astype('object').apply(
+            lambda x: x.item() if hasattr(x, 'item') else x
+        )
+    return export_gdf.to_json(na="null")
 
 
 def _cleanup_old_exports():
