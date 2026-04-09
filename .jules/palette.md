@@ -15,3 +15,6 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+## 2026-04-09 - Add aria-label and title to generic icon-only close/clear buttons
+**Learning:** Many generic icon-only buttons (like `<X>` components from lucide-react or raw `×` characters used for closing modals, dismissing errors, or clearing searches) frequently lack `aria-label` attributes and rely only on visual context. Additionally, missing `title` attributes means sighted users do not get tooltip context for the actions.
+**Action:** Always explicitly add descriptive `aria-label`s and `title` attributes to these interactive elements (e.g. `aria-label="Close notification" title="Close notification"`).
