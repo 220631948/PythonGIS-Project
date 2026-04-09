@@ -366,7 +366,7 @@ const PortalBrowser: React.FC<PortalBrowserProps> = ({ activeLayers, onToggleLay
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           {searchQuery && (
-            <button className="clear-search" onClick={() => setSearchQuery('')}>
+            <button className="clear-search" onClick={() => setSearchQuery('')} aria-label="Clear search" title="Clear search">
               <X size={14} />
             </button>
           )}
