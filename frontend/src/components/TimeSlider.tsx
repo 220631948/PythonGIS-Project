@@ -176,6 +176,7 @@ export default function TimeSlider({
         <button
           className={`settings-btn ${showSettings ? 'active' : ''}`}
           onClick={() => setShowSettings(!showSettings)}
+          aria-label="Toggle time settings"
         >
           <Settings size={16} />
         </button>

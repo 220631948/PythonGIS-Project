@@ -71,6 +71,7 @@ const FeedCard: React.FC<FeedCardProps> = ({ feed, data, onRefresh, isRefreshing
           className="refresh-btn"
           onClick={() => onRefresh(feed.id)}
           disabled={isRefreshing || !feed.active}
+          aria-label="Refresh feed"
         >
           <RefreshCw size={14} className={isRefreshing ? 'spin' : ''} />
         </button>
@@ -295,7 +296,7 @@ export default function RealtimePanel({ isOpen, onClose, onNotification }: Realt
     <div className="realtime-panel">
       <div className="panel-header">
         <h2><Radio size={20} /> Real-Time Data</h2>
-        <button onClick={onClose}><X size={18} /></button>
+        <button onClick={onClose} aria-label="Close panel"><X size={18} /></button>
       </div>
 
       <div className="panel-controls">
