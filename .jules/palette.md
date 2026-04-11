@@ -15,3 +15,10 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+## 2026-04-11 - Keyboard Accessibility for Custom Containers
+
+**Learning:**
+Like previous components, `RoutePanel.tsx`'s `.panel-header` relies on a generic `<div>` with only an `onClick` handler, making it inaccessible to keyboard users. In addition, nested interactive icon-only buttons (like transport mode buttons) frequently lack `aria-label`s and ARIA states.
+
+**Action:**
+Continue applying the pattern of adding `role="button"`, `tabIndex={0}`, `aria-expanded`, and an `onKeyDown` handler for 'Enter'/'Space' to clickable `<div>` containers. Consistently add `aria-label`, `aria-pressed`, and `aria-hidden="true"` on inner SVGs to custom icon-only buttons.
