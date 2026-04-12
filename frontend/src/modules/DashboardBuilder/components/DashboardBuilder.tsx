@@ -136,6 +136,7 @@ const DashboardBuilder: React.FC<DashboardBuilderProps> = ({ dashboardId, onClos
             className="btn-icon"
             onClick={() => setShowWidgetLibrary(!showWidgetLibrary)}
             title="Add widget"
+            aria-label="Add widget"
           >
             <Plus size={18} />
           </button>
@@ -145,6 +146,7 @@ const DashboardBuilder: React.FC<DashboardBuilderProps> = ({ dashboardId, onClos
             onClick={handleSaveDashboard}
             disabled={!dashboard || !hasUnsavedChanges || isSaving}
             title="Save dashboard"
+            aria-label="Save dashboard"
           >
             <Save size={18} />
             {isSaving && <span className="ml-2 text-xs">Saving...</span>}
@@ -154,6 +156,7 @@ const DashboardBuilder: React.FC<DashboardBuilderProps> = ({ dashboardId, onClos
             className="btn-icon"
             onClick={() => setShowLoadDialog(!showLoadDialog)}
             title="Load dashboard"
+            aria-label="Load dashboard"
           >
             <FolderOpen size={18} />
           </button>
@@ -163,6 +166,7 @@ const DashboardBuilder: React.FC<DashboardBuilderProps> = ({ dashboardId, onClos
             onClick={actions.exportDashboard}
             disabled={!dashboard}
             title="Export dashboard"
+            aria-label="Export dashboard"
           >
             <Download size={18} />
           </button>
@@ -171,6 +175,7 @@ const DashboardBuilder: React.FC<DashboardBuilderProps> = ({ dashboardId, onClos
             className="btn-icon"
             onClick={handleImportDashboard}
             title="Import dashboard"
+            aria-label="Import dashboard"
           >
             <Upload size={18} />
           </button>
@@ -181,6 +186,7 @@ const DashboardBuilder: React.FC<DashboardBuilderProps> = ({ dashboardId, onClos
             className={`btn-icon ${previewMode ? 'active' : ''}`}
             onClick={() => setPreviewMode(!previewMode)}
             title={previewMode ? 'Edit mode' : 'Preview mode'}
+            aria-label={previewMode ? 'Edit mode' : 'Preview mode'}
           >
             {previewMode ? <Edit3 size={18} /> : <Eye size={18} />}
           </button>
@@ -189,12 +195,13 @@ const DashboardBuilder: React.FC<DashboardBuilderProps> = ({ dashboardId, onClos
             className="btn-icon"
             onClick={() => setShowSettings(!showSettings)}
             title="Settings"
+            aria-label="Settings"
           >
             <Settings size={18} />
           </button>
 
           {onClose && (
-            <button className="btn-icon" onClick={onClose} title="Close">
+            <button className="btn-icon" onClick={onClose} title="Close" aria-label="Close">
               ×
             </button>
           )}
@@ -298,6 +305,8 @@ const DashboardBuilder: React.FC<DashboardBuilderProps> = ({ dashboardId, onClos
               <button
                 className="ml-auto text-gray-500 hover:text-gray-700"
                 onClick={() => setShowSettings(false)}
+                title="Close settings"
+                aria-label="Close settings"
               >
                 ×
               </button>
@@ -370,6 +379,8 @@ const DashboardBuilder: React.FC<DashboardBuilderProps> = ({ dashboardId, onClos
               <button
                 className="text-gray-500 hover:text-gray-700"
                 onClick={() => setShowLoadDialog(false)}
+                title="Close dialog"
+                aria-label="Close dialog"
               >
                 ×
               </button>
