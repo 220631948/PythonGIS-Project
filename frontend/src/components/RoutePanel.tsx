@@ -292,6 +292,7 @@ export default function RoutePanel({
                 className={`mode-btn ${mode === m.id ? 'active' : ''}`}
                 onClick={() => setMode(m.id)}
                 title={m.label}
+                aria-label={`Select ${m.label} mode`}
               >
                 <m.icon size={18} />
               </button>
