@@ -17,12 +17,11 @@ def require_admin_key(api_key: str = Security(_api_key_header)) -> str:
     """
     expected = settings.ADMIN_API_KEY
     if not expected:
-        # No key configured — allow access but warn
-        logger.warning(
-            "ADMIN_API_KEY not set — admin endpoints are unprotected. "
-            "Set ADMIN_API_KEY in .env for production."
+        logger.error("ADMIN_API_KEY not set — admin endpoints are disabled for security.")
+        raise HTTPException(
+            status_code=403,
+            detail="Admin endpoints are disabled due to missing configuration.",
         )
-        return "unprotected"
     if not api_key or api_key != expected:
         raise HTTPException(
             status_code=403,
