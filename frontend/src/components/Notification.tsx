@@ -46,8 +46,8 @@ const Notification: React.FC<NotificationProps> = ({ message, type = 'info', onC
     <div className={`notification ${config.className} ${isVisible ? 'visible' : 'hidden'}`}>
       <IconComponent size={18} />
       <span className="notification-message">{message}</span>
-      <button className="notification-close" onClick={onClose}>
-        <X size={14} />
+      <button className="notification-close" onClick={onClose} aria-label="Close notification" title="Close notification">
+        <X size={14} aria-hidden="true" />
       </button>
     </div>
   );

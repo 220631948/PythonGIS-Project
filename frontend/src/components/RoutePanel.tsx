@@ -242,9 +242,21 @@ export default function RoutePanel({
 
   return (
     <div className="route-panel">
-      <div className="panel-header" onClick={() => setIsExpanded(!isExpanded)}>
+      <div
+        className="panel-header"
+        onClick={() => setIsExpanded(!isExpanded)}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
+      >
         <div className="header-title">
-          <Navigation size={16} />
+          <Navigation size={16} aria-hidden="true" />
           <span>Network Analysis</span>
         </div>
         <div className="header-actions">
@@ -256,7 +268,7 @@ export default function RoutePanel({
               Clear
             </button>
           )}
-          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          {isExpanded ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
         </div>
       </div>
 
