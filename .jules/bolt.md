@@ -13,3 +13,7 @@
 ## 2026-03-17 - [Backend] Eliminating Double-Serialization in GeoJSON Endpoints
 **Learning:** `paginated.to_json()` outputs a full JSON string. Using `json.loads(paginated.to_json())` just to extract the `"features"` list and then return it via `JSONResponse` causes massive CPU overhead because it forces a String -> Dict -> String conversion cycle.
 **Action:** Always manipulate the JSON string directly (e.g., using string concatenation or slicing) and return it using `Response(content=str, media_type="application/json")`. Make sure the caching mechanism correctly supports storing and returning raw JSON strings to fully bypass FastAPI's serialization overhead.
+
+## 2026-04-15 - [Backend] GeoDataFrame Iteration Optimization
+**Learning:** Iterating over GeoDataFrames with `iterrows()` in serialization functions causes significant CPU overhead due to Pandas Series creation for every row.
+**Action:** Use `zip(gdf.index.tolist(), gdf.geometry.tolist(), pd.DataFrame(gdf.drop(columns=['geometry'])).to_dict('records'))` to safely extract and iterate over data, avoiding `iterrows()` entirely while preserving exact data structures for explicit Numpy 2.0 type checks.
