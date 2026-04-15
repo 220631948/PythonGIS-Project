@@ -8,13 +8,14 @@ Provides:
 - NO MOCK DATA - all data sourced from real open data APIs
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Dict, Any
 from datetime import datetime, timedelta, timezone
 import asyncio
 import logging
 import httpx
 
+from app.dependencies import require_admin_key
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/realtime", tags=["Real-Time Data"])
@@ -351,7 +352,7 @@ async def get_feed(feed_id: str, force_refresh: bool = Query(False)):
     return cached
 
 
-@router.post("/feeds/{feed_id}/refresh")
+@router.post("/feeds/{feed_id}/refresh", dependencies=[Depends(require_admin_key)])
 async def refresh_feed(feed_id: str):
     """Force refresh a specific feed from its open data source."""
     if feed_id not in _feed_configs:
