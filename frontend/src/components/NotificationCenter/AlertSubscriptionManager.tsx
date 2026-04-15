@@ -140,7 +140,7 @@ export default function AlertSubscriptionManager({
         {error && (
           <div className="error-banner">
             <span>{error}</span>
-            <button onClick={() => setError(null)}><X size={16} /></button>
+            <button onClick={() => setError(null)} aria-label="Dismiss error" title="Dismiss error"><X size={16} /></button>
           </div>
         )}
 
