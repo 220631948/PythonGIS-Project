@@ -231,7 +231,7 @@ export default function IssueReporter({
           <div className="error-banner">
             <AlertCircle size={16} />
             <span>{error}</span>
-            <button onClick={() => setError(null)}><X size={16} /></button>
+            <button onClick={() => setError(null)} aria-label="Dismiss error" title="Dismiss error"><X size={16} /></button>
           </div>
         )}
 
