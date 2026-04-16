@@ -15,3 +15,11 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+
+## 2026-04-16 - ARIA Labels on Toggle and Animation Controls
+
+**Learning:**
+Interactive components dealing with state toggles (like layer visibility toggles) and animation controls (like play/pause buttons in the ShadowAnalysisPanel) frequently omit `aria-label` attributes. Without these, screen readers announce generic buttons, making it impossible for visually impaired users to understand what action the button will perform or what state it will trigger.
+
+**Action:**
+When working with icon-only buttons that toggle states or control playback, explicitly provide dynamic `aria-label` attributes that reflect the *action* or *current state* (e.g., `aria-label={isActive ? 'Hide layer' : 'Show layer'}` or `aria-label={isAnimating ? 'Pause animation' : 'Play animation'}`).
