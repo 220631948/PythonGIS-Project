@@ -196,11 +196,12 @@ const Map3DView: React.FC<Map3DViewProps> = ({
               className="icon-btn"
               onClick={handleToggleFullscreen}
               title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
             >
               {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
             </button>
             {onClose && (
-              <button className="icon-btn" onClick={onClose} title="Close">
+              <button className="icon-btn" onClick={onClose} title="Close" aria-label="Close 3D View">
                 ×
               </button>
             )}
@@ -318,6 +319,7 @@ const Map3DView: React.FC<Map3DViewProps> = ({
             <button
               className="close-btn"
               onClick={() => setShowSettings(false)}
+              aria-label="Close settings"
             >
               ×
             </button>
