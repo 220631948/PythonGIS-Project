@@ -19,6 +19,8 @@ from app.models.metadata_models import (
     GeometryType, UpdateFrequency, SpatialExtent
 )
 from app.core.data_loader import data_loader
+from app.dependencies import require_admin_key
+from fastapi import Depends
 from app.config import settings
 from app.spatial_analysis.spatial_utils import gdf_to_geojson
 
@@ -458,7 +460,7 @@ async def get_catalog_stats():
     )
 
 
-@router.post("/refresh")
+@router.post("/refresh", dependencies=[Depends(require_admin_key)])
 async def refresh_catalog():
     """Force refresh of the metadata catalog"""
     _refresh_cache()

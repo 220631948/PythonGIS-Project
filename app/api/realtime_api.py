@@ -11,6 +11,8 @@ Provides:
 from fastapi import APIRouter, HTTPException, Query
 from typing import Dict, Any
 from datetime import datetime, timedelta, timezone
+from app.dependencies import require_admin_key
+from fastapi import Depends
 import asyncio
 import logging
 import httpx
@@ -351,7 +353,7 @@ async def get_feed(feed_id: str, force_refresh: bool = Query(False)):
     return cached
 
 
-@router.post("/feeds/{feed_id}/refresh")
+@router.post("/feeds/{feed_id}/refresh", dependencies=[Depends(require_admin_key)])
 async def refresh_feed(feed_id: str):
     """Force refresh a specific feed from its open data source."""
     if feed_id not in _feed_configs:
