@@ -324,6 +324,7 @@ export default function FilterPanel({
                     <button
                       className="remove-btn"
                       onClick={() => removeFilter(filter.id)}
+                      aria-label="Remove filter"
                     >
                       <X size={14} />
                     </button>
