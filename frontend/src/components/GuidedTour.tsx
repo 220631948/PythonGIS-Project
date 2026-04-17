@@ -106,7 +106,7 @@ function TourTooltip({ step, stepIndex, totalSteps, onNext, onPrev, onSkip, onCo
 
   return (
     <div className={`tour-tooltip ${step.position}`}>
-      <button className="close-btn" onClick={onSkip}><X size={16} /></button>
+      <button className="close-btn" onClick={onSkip} aria-label="Close tour tooltip"><X size={16} /></button>
 
       <div className="tour-content">
         <h3>{step.title}</h3>
