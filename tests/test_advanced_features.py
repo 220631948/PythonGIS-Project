@@ -426,10 +426,15 @@ class TestMetadataAPI:
 
     def test_refresh_catalog(self):
         """Test refreshing the catalog"""
-        response = client.post("/api/catalog/refresh")
-        assert response.status_code == 200
-        data = response.json()
-        assert "dataset_count" in data
+        from unittest.mock import patch
+        with patch('app.dependencies.settings.ADMIN_API_KEY', 'test_key'):
+            response = client.post(
+                "/api/catalog/refresh",
+                headers={"X-Admin-API-Key": "test_key"}
+            )
+            assert response.status_code == 200
+            data = response.json()
+            assert "dataset_count" in data
 
 
 class TestAdvancedAnalysisAPI:
@@ -531,10 +536,15 @@ class TestRealtimeAPI:
 
     def test_refresh_feed(self):
         """Test refreshing a feed"""
-        response = client.post("/api/realtime/feeds/weather_alerts/refresh")
-        assert response.status_code == 200
-        data = response.json()
-        assert "message" in data
+        from unittest.mock import patch
+        with patch('app.dependencies.settings.ADMIN_API_KEY', 'test_key'):
+            response = client.post(
+                "/api/realtime/feeds/weather_alerts/refresh",
+                headers={"X-Admin-API-Key": "test_key"}
+            )
+            assert response.status_code == 200
+            data = response.json()
+            assert "_feed_info" in data
 
     def test_refresh_all_feeds(self):
         """Test refreshing all feeds"""
