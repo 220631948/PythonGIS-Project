@@ -242,7 +242,19 @@ export default function RoutePanel({
 
   return (
     <div className="route-panel">
-      <div className="panel-header" onClick={() => setIsExpanded(!isExpanded)}>
+      <div
+        className="panel-header"
+        onClick={() => setIsExpanded(!isExpanded)}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
+      >
         <div className="header-title">
           <Navigation size={16} />
           <span>Network Analysis</span>

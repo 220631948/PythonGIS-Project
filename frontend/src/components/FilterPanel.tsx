@@ -236,7 +236,19 @@ export default function FilterPanel({
 
   return (
     <div className="filter-panel">
-      <div className="filter-header" onClick={() => setIsExpanded(!isExpanded)}>
+      <div
+        className="filter-header"
+        onClick={() => setIsExpanded(!isExpanded)}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
+      >
         <div className="header-title">
           <Filter size={16} />
           <span>Filters</span>
