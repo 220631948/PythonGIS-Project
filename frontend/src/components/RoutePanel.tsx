@@ -252,6 +252,7 @@ export default function RoutePanel({
             <button
               className="clear-btn"
               onClick={(e) => { e.stopPropagation(); clearAll(); }}
+              aria-label="Clear route"
             >
               Clear
             </button>
