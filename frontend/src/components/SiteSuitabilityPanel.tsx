@@ -274,7 +274,7 @@ const SiteSuitabilityPanel: React.FC<SiteSuitabilityPanelProps> = ({ location, o
           Site Suitability Analysis
         </h3>
         {onClose && (
-          <button className="close-btn" onClick={onClose}>×</button>
+          <button className="close-btn" onClick={onClose} aria-label="Close site suitability panel">×</button>
         )}
       </div>
 
