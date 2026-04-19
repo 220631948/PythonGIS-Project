@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response
 from typing import Optional
 from app.spatial_analysis.transport import transport_analyzer
 
@@ -11,6 +11,11 @@ async def get_accessibility(
     simplify: Optional[float] = Query(None, description="Geometry simplification tolerance")
 ):
     data = transport_analyzer.run_analysis(lat=lat, lon=lon, simplify=simplify)
-    if "error" in data:
+
+    if isinstance(data, str):
+        return Response(content=data, media_type="application/json")
+
+    if isinstance(data, dict) and "error" in data:
         raise HTTPException(status_code=500, detail=data["error"])
+
     return data

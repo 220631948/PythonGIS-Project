@@ -1,6 +1,5 @@
 import json
 import logging
-import geopandas as gpd
 from typing import Dict, Any, Optional, Union
 from sqlalchemy import text
 
@@ -9,7 +8,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from app.spatial_analysis.base import BaseAnalyzer
-from app.spatial_analysis.spatial_utils import gdf_to_geojson
 from app.config import settings
 from app.core.database import require_engine
 

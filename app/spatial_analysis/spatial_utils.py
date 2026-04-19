@@ -1,9 +1,9 @@
 import geopandas as gpd
 import json
-from shapely.geometry import Point, Polygon, LineString, mapping
+from shapely.geometry import Point, Polygon
 from shapely.ops import transform
 import pyproj
-from typing import List, Union, Dict, Any
+from typing import Dict, Any
 from app.config import settings
 
 # Initialize transformers for common spatial operations to avoid GeoDataFrame overhead

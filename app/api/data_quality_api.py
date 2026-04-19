@@ -9,7 +9,6 @@ Provides endpoints for:
 """
 
 from fastapi import APIRouter, HTTPException
-from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 import logging
 

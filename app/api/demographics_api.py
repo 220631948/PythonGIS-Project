@@ -8,9 +8,9 @@ Provides endpoints for:
 - Multi-criteria suitability scoring
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import Dict
 import logging
 import numpy as np
 
