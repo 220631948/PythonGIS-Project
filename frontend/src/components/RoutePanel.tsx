@@ -252,6 +252,7 @@ export default function RoutePanel({
             <button
               className="clear-btn"
               onClick={(e) => { e.stopPropagation(); clearAll(); }}
+              aria-label="Clear all"
             >
               Clear
             </button>
@@ -292,6 +293,7 @@ export default function RoutePanel({
                 className={`mode-btn ${mode === m.id ? 'active' : ''}`}
                 onClick={() => setMode(m.id)}
                 title={m.label}
+                aria-label={m.label}
               >
                 <m.icon size={18} />
               </button>
