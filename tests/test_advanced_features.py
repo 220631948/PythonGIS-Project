@@ -13,13 +13,12 @@ Tests for:
 import pytest
 from fastapi.testclient import TestClient
 from datetime import datetime
-import json
 import sys
 import os
-from unittest.mock import patch, MagicMock
+import unittest.mock
+from unittest.mock import patch
 import geopandas as gpd
-from shapely.geometry import Point, Polygon
-import pandas as pd
+from shapely.geometry import Point
 
 # Add the project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -424,9 +423,12 @@ class TestMetadataAPI:
         assert "total_datasets" in data
         assert "by_geometry_type" in data
 
-    def test_refresh_catalog(self):
+    @patch('app.dependencies.settings.ADMIN_API_KEY', 'test_key')
+    @patch('app.api.metadata_api._refresh_cache')
+    def test_refresh_catalog(self, mock_refresh):
         """Test refreshing the catalog"""
-        response = client.post("/api/catalog/refresh")
+        mock_refresh.return_value = None
+        response = client.post("/api/catalog/refresh", headers={"X-Admin-API-Key": "test_key"})
         assert response.status_code == 200
         data = response.json()
         assert "dataset_count" in data
@@ -529,9 +531,12 @@ class TestRealtimeAPI:
         assert "_feed_info" in data
         assert data["_feed_info"]["feed_id"] == "traffic_status"
 
-    def test_refresh_feed(self):
+    @patch('app.dependencies.settings.ADMIN_API_KEY', 'test_key')
+    @patch('app.api.realtime_api._refresh_feed', new_callable=unittest.mock.AsyncMock)
+    def test_refresh_feed(self, mock_refresh):
         """Test refreshing a feed"""
-        response = client.post("/api/realtime/feeds/weather_alerts/refresh")
+        mock_refresh.return_value = {"message": "success"}
+        response = client.post("/api/realtime/feeds/weather_alerts/refresh", headers={"X-Admin-API-Key": "test_key"})
         assert response.status_code == 200
         data = response.json()
         assert "message" in data
