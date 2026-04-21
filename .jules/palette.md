@@ -15,3 +15,10 @@ Many standard icon-only buttons (such as the "X" buttons used to close modals, p
 
 **Action:**
 When adding or updating UI elements like notifications, modals, or side panels, always include a descriptive `aria-label` (e.g., `aria-label="Close notification"`, `aria-label="Close modal"`) on the surrounding `<button>` tag for icon-only controls.
+
+## $(date +%Y-%m-%d) - Adding aria-labels to icon-only buttons
+**Learning:** Found a widespread pattern across multiple components (Dashboard, ExportPanel, Notification, PortalBrowser, RealtimePanel, SiteSuitabilityPanel) where icon-only buttons (like `lucide-react`'s `<X />`, `<RefreshCw />`, `<Download />`) were used without `aria-label`s. This is a critical accessibility issue for screen-reader users, as they are completely blind to the action these buttons perform.
+**Action:** Always verify that every interactive button, particularly close buttons (e.g., `<button onClick={onClose}><X size={18} /></button>`), has a descriptive `aria-label` (e.g., `aria-label="Close export panel"`).
+## 2026-04-21 - Adding aria-labels to icon-only buttons
+**Learning:** Found a widespread pattern across multiple components (Dashboard, ExportPanel, Notification, PortalBrowser, RealtimePanel, SiteSuitabilityPanel) where icon-only buttons (like `lucide-react`'s `<X />`, `<RefreshCw />`, `<Download />`) were used without `aria-label`s. This is a critical accessibility issue for screen-reader users, as they are completely blind to the action these buttons perform.
+**Action:** Always verify that every interactive button, particularly close buttons (e.g., `<button onClick={onClose}><X size={18} /></button>`), has a descriptive `aria-label` (e.g., `aria-label="Close export panel"`).

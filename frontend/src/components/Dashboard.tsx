@@ -186,6 +186,7 @@ export default function Dashboard({ isOpen, onClose }: DashboardProps) {
               onClick={loadDashboardData}
               disabled={isLoading}
               title="Refresh data"
+              aria-label="Refresh dashboard data"
             >
               <RefreshCw size={18} className={isLoading ? 'spin' : ''} />
             </button>
@@ -194,6 +195,7 @@ export default function Dashboard({ isOpen, onClose }: DashboardProps) {
               onClick={exportToCSV}
               disabled={!dashboardData}
               title="Export to CSV"
+              aria-label="Export dashboard data to CSV"
             >
               <Download size={18} />
             </button>
