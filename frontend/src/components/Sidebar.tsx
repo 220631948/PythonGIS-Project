@@ -50,6 +50,16 @@ interface TabConfig {
  * Sidebar with 7-module architecture per Vibecoding spec:
  * Services | Transport | Safety | Environment | Land Use | Utilities | Data
  */
+const TABS: TabConfig[] = [
+  { id: 'services', icon: Building2, label: 'Services', color: '#3b82f6' },
+  { id: 'transport', icon: Bus, label: 'Transport', color: '#10b981' },
+  { id: 'safety', icon: Shield, label: 'Safety', color: '#ef4444' },
+  { id: 'environment', icon: TreePine, label: 'Environment', color: '#22c55e' },
+  { id: 'landuse', icon: MapIcon, label: 'Land Use', color: '#8b5cf6' },
+  { id: 'utilities', icon: Trash2, label: 'Utilities', color: '#f59e0b' },
+  { id: 'data', icon: Database, label: 'Data', color: '#6366f1' }
+];
+
 const Sidebar: React.FC<SidebarProps> = ({
   activeLayers,
   onLayerToggle,
@@ -70,16 +80,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       onLayerUpdate(null);
     }
   }, [activeTab, onLayerUpdate]);
-
-  const tabs: TabConfig[] = [
-    { id: 'services', icon: Building2, label: 'Services', color: '#3b82f6' },
-    { id: 'transport', icon: Bus, label: 'Transport', color: '#10b981' },
-    { id: 'safety', icon: Shield, label: 'Safety', color: '#ef4444' },
-    { id: 'environment', icon: TreePine, label: 'Environment', color: '#22c55e' },
-    { id: 'landuse', icon: MapIcon, label: 'Land Use', color: '#8b5cf6' },
-    { id: 'utilities', icon: Trash2, label: 'Utilities', color: '#f59e0b' },
-    { id: 'data', icon: Database, label: 'Data', color: '#6366f1' }
-  ];
 
 
 
@@ -120,7 +120,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           borderBottom: '1px solid var(--color-border)',
           backgroundColor: 'var(--color-bg-secondary)'
         }}>
-          {tabs.map(tab => (
+          {TABS.map(tab => (
             <button
               key={tab.id}
               className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}

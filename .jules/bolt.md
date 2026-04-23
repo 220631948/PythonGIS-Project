@@ -13,3 +13,11 @@
 ## 2026-03-17 - [Backend] Eliminating Double-Serialization in GeoJSON Endpoints
 **Learning:** `paginated.to_json()` outputs a full JSON string. Using `json.loads(paginated.to_json())` just to extract the `"features"` list and then return it via `JSONResponse` causes massive CPU overhead because it forces a String -> Dict -> String conversion cycle.
 **Action:** Always manipulate the JSON string directly (e.g., using string concatenation or slicing) and return it using `Response(content=str, media_type="application/json")`. Make sure the caching mechanism correctly supports storing and returning raw JSON strings to fully bypass FastAPI's serialization overhead.
+echo "## $(date +%Y-%m-%d) - [Frontend] Prevent Static Object Recreation" >> .jules/bolt.md
+cat << 'INNER_EOF' >> .jules/bolt.md
+**Learning:** Defining static arrays and objects (like `categories` and `tabs`) inside React component functions causes them to be recreated on every single render. This leads to unnecessary garbage collection, memory allocation, and can trigger unwanted re-renders if passed as props to memoized children.
+**Action:** Always hoist purely static objects and arrays outside of the React component's scope (or wrap them in `useMemo` if they depend on static scope) to ensure a single instance is maintained throughout the component's lifecycle.
+INNER_EOF
+## 2026-04-23 - [Frontend] Prevent Static Object Recreation
+**Learning:** Defining static arrays and objects (like `categories` and `tabs`) inside React component functions causes them to be recreated on every single render. This leads to unnecessary garbage collection, memory allocation, and can trigger unwanted re-renders if passed as props to memoized children.
+**Action:** Always hoist purely static objects and arrays outside of the React component's scope to ensure a single instance is maintained throughout the component's lifecycle.
