@@ -123,20 +123,20 @@ interface LayerPanelProps {
   loadingLayers?: string[];
 }
 
+const CATEGORIES: Record<string, string[]> = {
+  'Urban Planning': ['zoning-layer', 'building-footprints-layer', 'open-spaces-layer'],
+  'Transport': ['myciti-stops-layer', 'myciti-routes-layer', 'railway-stations-layer'],
+  'Public Services': ['services-layer', 'water-facilities-layer', 'clinics-layer', 'housing-offices-layer', 'courts-layer'],
+  'Recreation': ['parks-layer', 'sports-layer', 'swimming-pools-layer'],
+  'Safety & Risk': ['safety-layer', 'flood-layer', 'cemeteries-layer', 'trading-layer']
+};
+
 const LayerPanel: React.FC<LayerPanelProps> = ({ 
   activeLayers, 
   onLayerToggle, 
   metadata = {}, 
   loadingLayers = [] 
 }) => {
-  const categories: Record<string, string[]> = {
-    'Urban Planning': ['zoning-layer', 'building-footprints-layer', 'open-spaces-layer'],
-    'Transport': ['myciti-stops-layer', 'myciti-routes-layer', 'railway-stations-layer'],
-    'Public Services': ['services-layer', 'water-facilities-layer', 'clinics-layer', 'housing-offices-layer', 'courts-layer'],
-    'Recreation': ['parks-layer', 'sports-layer', 'swimming-pools-layer'],
-    'Safety & Risk': ['safety-layer', 'flood-layer', 'cemeteries-layer', 'trading-layer']
-  };
-
   return (
     <div className="layer-panel">
       <div className="panel-header">
@@ -145,7 +145,7 @@ const LayerPanel: React.FC<LayerPanelProps> = ({
       </div>
 
       <div className="layers-list">
-        {Object.entries(categories).map(([category, layers]) => (
+        {Object.entries(CATEGORIES).map(([category, layers]) => (
           <div key={category} className="layer-category">
             <h4 className="category-title">{category}</h4>
             {layers.map(layerId => (
