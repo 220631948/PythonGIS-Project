@@ -107,6 +107,7 @@ try:
         advanced_search_api,
         performance_api,
         extensions_api,
+        benchmark_api,
     )
 except Exception as exc:  # pragma: no cover
     import logging as _logging
@@ -115,7 +116,7 @@ except Exception as exc:  # pragma: no cover
     visualization_3d_api = ai_insights_api = community_api = notifications_api = None
     demographics_api = environmental_api = dashboard_builder_api = comparison_api = None
     workspace_api = pdf_reports_api = data_quality_api = advanced_search_api = None
-    performance_api = extensions_api = None
+    performance_api = extensions_api = benchmark_api = None
 
 # Setup logging
 setup_logging()
@@ -296,6 +297,8 @@ if performance_api:
     app.include_router(performance_api.router, prefix=settings.API_PREFIX)
 if extensions_api:
     app.include_router(extensions_api.router, prefix=settings.API_PREFIX)
+if benchmark_api:
+    app.include_router(benchmark_api.router, prefix=settings.API_PREFIX)
 
 # Generic Data Proxy Endpoint (Phase 7.5: System Integration)
 # Bounded in-memory cache with automatic TTL eviction (B5 refactor)

@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:e2e": "playwright test",
+    "test:perf": "playwright test tests/performance.spec.js",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "verify": "node scripts/verify-build.js",
